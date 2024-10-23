@@ -96,6 +96,7 @@ while j < n:
     formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
     file_name = outerFolder_expt + f"{formatted_datetime}_" + expt_name + ".png"
     plt.savefig(file_name, dpi=300);
+    plt.close(fig)
 
 
 # #####################################

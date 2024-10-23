@@ -129,7 +129,7 @@ while j < n:
         q1_a_guess = np.min(signal) - np.max(signal)
 
     q1_b_guess = 0
-    q1_c_guess = delay_times[-1] / 7  # if not fitting change /6 or /5
+    q1_c_guess = delay_times[-1] / 5  # if not fitting change /6 or /5
     q1_d_guess = np.max(signal)
 
     q1_guess = [q1_a_guess, q1_b_guess, q1_c_guess, q1_d_guess]
@@ -137,7 +137,7 @@ while j < n:
     q1_fit_exponential = exponential(delay_times, *q1_popt)
 
     T1_est = q1_popt[2]
-    T1_err = q1_pcov[2][2]
+    T1_err = np.sqrt(pcov[2][2])
 
     # I subplot
     ax1.plot(delay_times, I, label="Gain (a.u.)", linewidth=2)
@@ -173,6 +173,7 @@ while j < n:
     formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
     file_name = outerFolder_expt + f"{formatted_datetime}_" + expt_name + f"_q{QubitIndex+1}.png"
     fig.savefig(file_name, dpi=300, bbox_inches='tight')  # , facecolor='white'
+    plt.close(fig)
 
     ### Save the T1 and error into arrays and pickle them
     q1_t1.append(T1_est)

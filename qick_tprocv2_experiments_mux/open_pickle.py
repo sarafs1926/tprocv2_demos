@@ -25,14 +25,16 @@ from system_config import *
 import pickle
 import pandas as pd
 
-expt_name = "T1_ge"
-outerFolder_expt = outerFolder + "/" + expt_name + "/"
-file_name = "T1_benchmark_Q1_40000x.pkl"
+# expt_name = "T1_ge"
+# outerFolder_expt = outerFolder + expt_name + "/"
+# file_name = outerFolder_expt + "T1_benchmark_Q1_2024-10-23_06-50-49_40000x.pkl"
 
-with open(outerFolder_expt+file_name, "rb") as f:
+file_name = "/data/QICK_data/6transmon_run4a/2024-10-22/T1_ge/T1_benchmark_Q1_2024-10-22_23-40-29_40000x.pkl"
+
+with open(file_name, "rb") as f:
     T1_est = pickle.load(f)
     T1_err = pickle.load(f)
     dates = pickle.load(f)
 
 print(T1_est, T1_err, dates)
-
+print("stop")

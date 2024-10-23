@@ -22,7 +22,7 @@ MIXMUXGEN_CH = 4
 MUXRO_CH = [2,3,4,5,6,7]
 
 # Qubit you want to work with
-QUBIT_INDEX = 0
+QUBIT_INDEX = 1
 
 # Hardware Configuration
 hw_cfg={
@@ -43,8 +43,9 @@ readout_cfg={
 
     # Changes related to the resonator output channel
     "mixer_freq": 6000,  # [MHz]
-    "res_freq_ge": [6191.619, 6215.98, 6292.301, 6405.83, 6433.059, 6468.901], #MHz
-    "res_gain_ge": [1] + [0]*5,
+    "res_freq_ge": [6191.479, 6215.96, 6292.301, 6405.83, 6433.059, 6468.901], #MHz
+    # "res_gain_ge": [1] + [0]*5,
+    "res_gain_ge": [0] + [1] + [0] * 4,
     # "res_gain_ge": [1,1,0.7,0.7,0.7,1], #[0.4287450656184295, 0.4903077560386716, 0.4903077560386716, 0.3941941738241592, 0.3941941738241592, 0.4903077560386716],  # DAC units
     # "res_freq_ef": [7149.44, 0, 0, 0, 0, 0], # [MHz]
     # "res_gain_ef": [0.6, 0, 0, 0, 0, 0], # [DAC units]
@@ -56,15 +57,10 @@ readout_cfg={
 
 # Qubit Configuration
 qubit_cfg={
-    "qubit_freq_ge": [4184.10, 3821.43, 4156.88, 4459.12, 4471.18, 4998.04], # Freqs of Qubit g/e Transition
+    "qubit_freq_ge": [4184.15, 3821.13, 4156.88, 4459.12, 4471.18, 4998.04], # Freqs of Qubit g/e Transition
     "qubit_gain_ge": [0.1]*6, #[0.4287450656184295, 0.4287450656184295, 0.4903077560386716, 0.6, 0.4903077560386716, 0.4287450656184295], # For spec pulse
     "qubit_length_ge": 15, # [us] for spec Pulse
-    # "qubit_freq_ef": [2795.876,0,0,0,0,0], # Freqs of Qubit e/f Transition
-    # "qubit_gain_ef": [0.323, 0, 0, 0, 0, 0], # Qubit Spec and Time Rabi Constant Pulse Gain
-    # "qubit_length_ef": 15.0, # [us] for Constant Pulse
     "qubit_phase": 0, # [deg]
-    "sigma": [0.08, 0.15, 0.1, 0.08, 0.12, 0.13],
-    "pi_amp": [0.75, 0.8, 0.8, 0.8, 0.8, 0.8],
-    # [us] for Gaussian Pulse
-    # "sigma_ef": 3.0 / 5, # [us] for Gaussian Pulse
+    "sigma": [0.08, 0.15, 0.1, 0.08, 0.12, 0.13], # [us] for Gaussian Pulse
+    "pi_amp": [0.8, 0.74, 0.8, 0.8, 0.8, 0.8],
 }

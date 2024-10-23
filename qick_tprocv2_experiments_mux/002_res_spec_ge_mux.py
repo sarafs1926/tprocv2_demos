@@ -100,8 +100,8 @@ while j < n:
 
     for i in range(6):
         plt.subplot(2, 3, i + 1)
-        plt.plot(fpts + config['res_freq_ge'][i], amps[i], '-', linewidth=1.5)
-        freq_r = fpts[np.argmin(amps[i])] + config['res_freq_ge'][i]
+        plt.plot(fpts + fcenter[i], amps[i], '-', linewidth=1.5)
+        freq_r = fpts[np.argmin(amps[i])] + fcenter[i]
         res_freqs.append(freq_r)
         plt.axvline(freq_r, linestyle='--', color='orange', linewidth=1.5)
         plt.xlabel("Frequency (MHz)", fontweight='normal')
@@ -123,6 +123,7 @@ while j < n:
     formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
     file_name = outerFolder_expt + f"{formatted_datetime}_" + expt_name + ".png"
     plt.savefig(file_name, dpi=300);
+    plt.close(fig)
 
     ### Save params
     res_gains = config["res_gain_ge"]
