@@ -39,8 +39,8 @@ expt_cfg = {
     },
 
     "T1_ge": {
-        "reps": 2000,
-        "py_avg": 1,
+        "reps": 200,
+        "rounds": 10,
         "start": [0.0] * 6,  # [us]
         "stop": [500.0] * 6,  # [us] ### Should be ~10x T1! Should change this per qubit.
         "steps": 80,

@@ -1,10 +1,7 @@
 from qick import *
-from qick.pyro import make_proxy
 import system_config
 import copy
 
-# soc, soccfg = make_proxy(ns_host="192.168.1.144", ns_port=8000, proxy_name="rfsoc")
-# print(soccfg)
 
 # Add DAC and ADC Channels
 def add_qubit_channel(system_config, QubitIndex):
@@ -20,7 +17,7 @@ def add_readout_cfg(system_config, QubitIndex):
     readout_config = copy.deepcopy(system_config.readout_cfg)
     var = ["res_freq_ge", "res_gain_ge",
            "res_freq_ef", "res_gain_ef",
-           "res_phase", "threshold"]
+           "res_phase", "ro_phase", "threshold"]
     for Index in var:
         value = readout_config[Index][QubitIndex]
         readout_config.update([(Index,value)])

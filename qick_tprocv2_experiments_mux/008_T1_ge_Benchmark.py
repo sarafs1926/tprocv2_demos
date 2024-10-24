@@ -13,8 +13,6 @@ from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
 import numpy as np
 import pickle
-import h5py
-import os
 
 # Used for live plotting, need to run "python -m visdom.server" in the terminal and open the IP address in browser
 # import visdom
@@ -185,42 +183,19 @@ while j < n:
     fig.savefig(file_name, dpi=300, bbox_inches='tight')  # , facecolor='white'
     plt.close(fig)
 
-    ### Save the T1 and error into arrays
+    ### Save the T1 and error into arrays and pickle them
     q1_t1.append(T1_est)
     q1_t1_err.append(T1_err)
     print(q1_t1, q1_t1_err, dates)
 
-    # Create the HDF5 file and save data
-    h5_filename = outerFolder_expt + f"{formatted_datetime}_" + expt_name + f"_q{QubitIndex + 1}.h5"
-    with h5py.File(h5_filename, 'w') as f:
-        # Save T1 and error
-        f.create_dataset("T1_estimates", data=np.array(q1_t1))
-        f.create_dataset("T1_errors", data=np.array(q1_t1_err))
+    with open(outerFolder_expt + "T1_benchmark_Q1_" + f"{formatted_starttime}_"+ str(n) + "x.pkl", 'wb') as f:
+        pickle.dump(q1_t1, f)
+        pickle.dump(q1_t1_err, f)
+        pickle.dump(dates,f)
+        pickle.dump(I, f)
+        pickle.dump(Q, f)
+        pickle.dump(delay_times, f)
 
-        # Save dates
-        f.create_dataset("dates", data=np.array(dates, dtype='S'))
-
-        # Save I, Q, and delay times
-        f.create_dataset("I", data=I)
-        f.create_dataset("Q", data=Q)
-        f.create_dataset("delay_times", data=delay_times)
-
-        # Save q1_fit_exponential so we can plot it later
-        f.create_dataset("q1_fit_exponential", data=q1_fit_exponential)
-
-        # Save the parameters needed for plotting the text
-        f.create_dataset("pi_amp", data=np.array([config['pi_amp']]))
-        f.create_dataset("sigma", data=np.array([config['sigma']]))
-        f.create_dataset("reps", data=np.array([config['reps']]))
-        f.create_dataset("rounds", data=np.array([config['rounds']]))
-        f.create_dataset("T1_est", data=np.array([T1_est]))
-        f.create_dataset("T1_err", data=np.array([T1_err]))
-
-        # Save plot_middle value
-        f.create_dataset("plot_middle", data=np.array([plot_middle]))
-
-        # Save Qubit_num as QubitIndex + 1
-        f.create_dataset("Qubit_num", data=np.array([QubitIndex + 1]))
 
 # #####################################
 # # ----- Saves data to a file ----- #
