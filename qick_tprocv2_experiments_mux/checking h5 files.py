@@ -110,7 +110,22 @@ for file_name in os.listdir(folder_path2):
                     f" T1 = {T1_est:.3f} ± {T1_err:.3f} µs", fontsize=16, ha='center', va='top')
 
             plt.tight_layout()
-            plt.savefig('/home/quietuser/Documents/Fit_Tests2/'+ file_name.split('.')[0] + '.png')
+            save_folder = '/data/QICK_data/6transmon_run4a/2024-10-24/T1_ge/Updated_Q2_Data/'
+            plt.savefig(save_folder+ file_name.split('.')[0] + '.png')
+
+            # Save all data to a new .h5 file with the updated parameters
+            h5_save_path = os.path.join(save_folder, file_name)  # Keep the same file name
+            with h5py.File(file_path, 'r') as f_src, h5py.File(h5_save_path, 'w') as f_dest:
+                # Copy all datasets from original file to new file
+                for key in f_src.keys():
+                    f_src.copy(key, f_dest)
+
+                # Update modified parameters
+                f_dest["T1_est"][...] = T1_est
+                f_dest["T1_err"][...] = T1_err
+                if "q1_fit_exponential" in f_dest:
+                    del f_dest["q1_fit_exponential"]  # Remove old dataset if it exists
+                f_dest.create_dataset("q1_fit_exponential", data=q1_fit_exponential)
 
 
 
