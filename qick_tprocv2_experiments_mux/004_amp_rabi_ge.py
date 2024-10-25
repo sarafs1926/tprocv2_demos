@@ -36,6 +36,7 @@ q_config = all_qubit_state(system_config)
 config = {**q_config['Q' + str(QubitIndex)], **exp_cfg}
 print(config)
 
+
 ##################
 # Define Program #
 ##################
@@ -71,19 +72,20 @@ class AmplitudeRabiProgram(AveragerProgramV2):
                        )
 
         self.add_loop("gainloop", cfg["steps"])
-    
+
     def _body(self, cfg):
-        self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)  #play probe pulse
-        self.delay_auto(t=0.01, tag='waiting') #Wait til qubit pulse is done before proceeding
+        self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)  # play probe pulse
+        self.delay_auto(t=0.01, tag='waiting')  # Wait til qubit pulse is done before proceeding
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
         # relax delay ...
+
 
 ###################
 # Run the Program
 ###################
 
-amp_rabi=AmplitudeRabiProgram(soccfg, reps=exp_cfg['reps'], final_delay=exp_cfg['relax_delay'], cfg=config)
+amp_rabi = AmplitudeRabiProgram(soccfg, reps=exp_cfg['reps'], final_delay=exp_cfg['relax_delay'], cfg=config)
 iq_list = amp_rabi.acquire(soc, soft_avgs=exp_cfg["rounds"], progress=True)
 gains = amp_rabi.get_pulse_param('qubit_pulse', "gain", as_array=True)
 
@@ -142,21 +144,20 @@ plot_middle = (ax1.get_position().x0 + ax1.get_position().x1) / 2
 
 # Add title, centered on the plot area
 fig.text(plot_middle, 0.98,
-         f"Rabi Q{QubitIndex + 1}, pi gain %.2f" % pi_amp + f", {config['sigma'] * 1000} ns sigma" + f", {config['reps']} avgs",
+         f"Rabi Q{QubitIndex + 1}, pi gain %.2f" % pi_amp + f", {config['sigma'] * 1000} ns sigma" +  f", {config['reps']}*{config['rounds']} avgs",
          fontsize=24, ha='center', va='top')
 
 # Adjust the top margin to make room for the title
 plt.subplots_adjust(top=0.93)
-
 
 ### Save figure
 outerFolder_expt = outerFolder + "/" + expt_name + "/"
 create_folder_if_not_exists(outerFolder_expt)
 now = datetime.datetime.now()
 formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-file_name = outerFolder_expt + f"{formatted_datetime}_" + expt_name + f"_q{QubitIndex+1}.png"
+file_name = outerFolder_expt + f"{formatted_datetime}_" + expt_name + f"_q{QubitIndex + 1}.png"
 
-fig.savefig(file_name, dpi=300, bbox_inches='tight') #, facecolor='white'
+fig.savefig(file_name, dpi=300, bbox_inches='tight')  # , facecolor='white'
 plt.close(fig)
 
 # #####################################

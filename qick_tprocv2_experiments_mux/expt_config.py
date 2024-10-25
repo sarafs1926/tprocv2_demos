@@ -12,8 +12,8 @@ expt_cfg = {
     },
 
     "res_spec": {
-        "reps": 50,
-        "rounds": 1,
+        "reps": 300,
+        "rounds": 10,
         "start": -3.5,  # [MHz]
         "step_size": 0.12,  # [MHz]
         "steps": 101,
@@ -21,30 +21,30 @@ expt_cfg = {
     },
 
     "qubit_spec_ge": {
-        "reps": 1000,
-        "rounds": 1,
+        "reps": 300,
+        "rounds": 10,
         "start": list(VNA_qubit-5), # [MHz]
         "stop":  list(VNA_qubit+5), # [MHz]
         "steps": 300,
-        "relax_delay": 300, # [us]
+        "relax_delay": 500, # [us]
     },
 
     "power_rabi_ge": {
-        "reps": 1500,
-        "rounds": 1,
+        "reps": 300,
+        "rounds": 10,
         "start": [0.0] * 6, # [DAC units]
         "stop":  [1.0] * 6, # [DAC units]
         "steps": 100,
-        "relax_delay": 300, # [us]
+        "relax_delay": 500, # [us]
     },
 
     "T1_ge": {
-        "reps": 200,
+        "reps": 300,
         "rounds": 10,
         "start": [0.0] * 6,  # [us]
         "stop": [500.0] * 6,  # [us] ### Should be ~10x T1! Should change this per qubit.
         "steps": 80,
-        "relax_delay": 500,  # [us] ### Should be >10x T1!
+        "relax_delay": 1000,  # [us] ### Should be >10x T1!
         "wait_time": 0.0,  # [us]
     },
 #     "Ramsey_ge": {

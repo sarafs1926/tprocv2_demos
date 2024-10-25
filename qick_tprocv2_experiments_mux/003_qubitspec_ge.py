@@ -105,6 +105,7 @@ def fit_lorenzian(I, Q, freqs, freq_q):
 
     return mean_I, mean_Q, I_fit, Q_fit, widest_curve_mean, widest_fwhm
 
+
 # ----- Experiment configurations ----- #
 expt_name = "qubit_spec_ge"
 QubitIndex = QUBIT_INDEX
@@ -114,6 +115,7 @@ exp_cfg = add_qubit_experiment(expt_cfg, expt_name, QubitIndex)
 q_config = all_qubit_state(system_config)
 config = {**q_config['Q' + str(QubitIndex)], **exp_cfg}
 print(config)
+
 
 ##################
 # Define Program #
@@ -144,24 +146,25 @@ class PulseProbeSpectroscopyProgram(AveragerProgramV2):
                        style="const",
                        length=cfg['qubit_length_ge'],
                        freq=cfg['qubit_freq_ge'],
-                       phase= 0,
+                       phase=0,
                        gain=cfg['qubit_gain_ge'],
-                      )
+                       )
 
         self.add_loop("freqloop", cfg["steps"])
-    
+
     def _body(self, cfg):
-        self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)  #play probe pulse
-        self.delay_auto(t=0.01, tag='waiting') #Wait til qubit pulse is done before proceeding
+        self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)  # play probe pulse
+        self.delay_auto(t=0.01, tag='waiting')  # Wait til qubit pulse is done before proceeding
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
         # relax delay ...
+
 
 ###################
 # Run the Program
 ###################
 
-qspec=PulseProbeSpectroscopyProgram(soccfg, reps=config['reps'], final_delay= 0.5, cfg=config)
+qspec = PulseProbeSpectroscopyProgram(soccfg, reps=config['reps'], final_delay=0.5, cfg=config)
 iq_list = qspec.acquire(soc, soft_avgs=exp_cfg["rounds"], progress=True)
 freqs = qspec.get_pulse_param('qubit_pulse', "freq", as_array=True)
 
@@ -171,7 +174,7 @@ Q = iq_list[QubitIndex][0, :, 1]
 freqs = np.array(freqs)
 freq_q = freqs[np.argmax(I)]
 
-mean_I, mean_Q, I_fit, Q_fit, widest_curve_mean,widest_fwhm = fit_lorenzian(I, Q, freqs, freq_q)
+mean_I, mean_Q, I_fit, Q_fit, widest_curve_mean, widest_fwhm = fit_lorenzian(I, Q, freqs, freq_q)
 
 # Plot the data and fits
 fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
@@ -201,7 +204,9 @@ plt.tight_layout()
 plot_middle = (ax1.get_position().x0 + ax1.get_position().x1) / 2
 
 # Add title, centered on the plot area
-fig.text(plot_middle, 0.98, f"Qubit Spectroscopy Q{QubitIndex+1}, %.2f MHz" %widest_curve_mean + f" FWHM: {round(widest_fwhm,1)}" + f", {config['reps']} avgs", fontsize=24, ha='center', va='top')
+fig.text(plot_middle, 0.98,
+         f"Qubit Spectroscopy Q{QubitIndex + 1}, %.2f MHz" % widest_curve_mean + f" FWHM: {round(widest_fwhm, 1)}" + f", {config['reps']}*{config['rounds']} avgs",
+         fontsize=24, ha='center', va='top')
 
 # Adjust the top margin to make room for the title
 plt.subplots_adjust(top=0.93)
@@ -211,9 +216,9 @@ outerFolder_expt = outerFolder + "/" + expt_name + "/"
 create_folder_if_not_exists(outerFolder_expt)
 now = datetime.datetime.now()
 formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-file_name = outerFolder_expt + f"{formatted_datetime}_" + expt_name + f"_q{QubitIndex+1}.png"
+file_name = outerFolder_expt + f"{formatted_datetime}_" + expt_name + f"_q{QubitIndex + 1}.png"
 
-fig.savefig(file_name, dpi=300, bbox_inches='tight') #, facecolor='white'
+fig.savefig(file_name, dpi=300, bbox_inches='tight')  # , facecolor='white'
 plt.close(fig)
 
 # #####################################

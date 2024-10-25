@@ -22,7 +22,14 @@ MIXMUXGEN_CH = 4
 MUXRO_CH = [2,3,4,5,6,7]
 
 # Qubit you want to work with
-QUBIT_INDEX = 1
+QUBIT_INDEX = 2
+
+def set_res_gain_ge(QUBIT_INDEX, num_qubits=6):
+    """Sets the gain for the selected qubit to 1, others to 0."""
+    res_gain_ge = [0] * num_qubits  # Initialize all gains to 0
+    if 0 <= QUBIT_INDEX < num_qubits: #makes sure you are within the range of options
+        res_gain_ge[QUBIT_INDEX] = 1  # Set the gain for the selected qubit
+    return res_gain_ge
 
 # Hardware Configuration
 hw_cfg={
@@ -43,9 +50,9 @@ readout_cfg={
 
     # Changes related to the resonator output channel
     "mixer_freq": 6000,  # [MHz]
-    "res_freq_ge": [6191.479, 6215.96, 6292.301, 6405.83, 6433.059, 6468.901], #MHz
+    "res_freq_ge": [6191.479, 6216.060, 6292.301, 6405.83, 6433.059, 6468.901], #MHz
     # "res_gain_ge": [1] + [0]*5,
-    "res_gain_ge": [0] + [1] + [0] * 4,
+    "res_gain_ge": set_res_gain_ge(QUBIT_INDEX), #utomatically sets all gains to zero except for the qubit you are observing
     # "res_gain_ge": [1,1,0.7,0.7,0.7,1], #[0.4287450656184295, 0.4903077560386716, 0.4903077560386716, 0.3941941738241592, 0.3941941738241592, 0.4903077560386716],  # DAC units
     # "res_freq_ef": [7149.44, 0, 0, 0, 0, 0], # [MHz]
     # "res_gain_ef": [0.6, 0, 0, 0, 0, 0], # [DAC units]
@@ -57,10 +64,10 @@ readout_cfg={
 
 # Qubit Configuration
 qubit_cfg={
-    "qubit_freq_ge": [4184.15, 3821.13, 4156.88, 4459.12, 4471.18, 4998.04], # Freqs of Qubit g/e Transition
-    "qubit_gain_ge": [0.1]*6, #[0.4287450656184295, 0.4287450656184295, 0.4903077560386716, 0.6, 0.4903077560386716, 0.4287450656184295], # For spec pulse
+    "qubit_freq_ge": [4184.15, 3821.15, 4156.88, 4459.12, 4471.18, 4998.04], # Freqs of Qubit g/e Transition
+    "qubit_gain_ge": [0.05]*6, #[0.4287450656184295, 0.4287450656184295, 0.4903077560386716, 0.6, 0.4903077560386716, 0.4287450656184295], # For spec pulse
     "qubit_length_ge": 15, # [us] for spec Pulse
     "qubit_phase": 0, # [deg]
     "sigma": [0.08, 0.15, 0.1, 0.08, 0.12, 0.13], # [us] for Gaussian Pulse
-    "pi_amp": [0.8, 0.74, 0.8, 0.8, 0.8, 0.8],
+    "pi_amp": [0.8, 0.76, 0.8, 0.8, 0.8, 0.8],
 }

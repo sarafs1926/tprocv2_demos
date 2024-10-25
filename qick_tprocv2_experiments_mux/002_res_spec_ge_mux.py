@@ -86,7 +86,7 @@ while j < n:
     res_freqs = []
 
     # Increase figure size
-    plt.figure(figsize=(12, 8))
+    fig = plt.figure(figsize=(12, 8))
 
     # Set larger font sizes
     plt.rcParams.update({
