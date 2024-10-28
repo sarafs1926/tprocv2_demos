@@ -22,7 +22,7 @@ MIXMUXGEN_CH = 4
 MUXRO_CH = [2,3,4,5,6,7]
 
 # Qubit you want to work with
-QUBIT_INDEX = 2
+QUBIT_INDEX = 5
 
 def set_res_gain_ge(QUBIT_INDEX, num_qubits=6):
     """Sets the gain for the selected qubit to 1, others to 0."""
