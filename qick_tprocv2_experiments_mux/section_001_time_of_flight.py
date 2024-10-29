@@ -5,7 +5,8 @@ from expt_config import *
 from system_config import *
 
 class TOFExperiment:
-    def __init__(self, QubitIndex, outerFolder):
+    def __init__(self, QubitIndex, outerFolder, trigger_time=0):
+        # every time a class instance is created, these definitions are set
         self.expt_name = "tof"
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
@@ -14,16 +15,13 @@ class TOFExperiment:
         self.exp_cfg = expt_cfg[self.expt_name]
         self.q_config = all_qubit_state(system_config)
         self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
-        self.config.update([('trig_time', 0.0)])
-        print(self.config)
 
-        self.soccfg = self.initialize_soc_configuration()
-        self.run_program()
+        # Update parameters to see TOF pulse with your setup
+        self.config.update([('trig_time', trigger_time)])  #starting off with TOF = 0, we will change this later to be the found TOF
+        print('TOF configuration: ',self.config)
 
-    def initialize_soc_configuration(self):
-        return soccfg
 
-    def run_program(self):
+    def run(self, soccfg, soc):
         class MuxProgram(AveragerProgramV2):
             def _initialize(self, cfg):
                 ro_chs = cfg['ro_ch']
@@ -53,7 +51,7 @@ class TOFExperiment:
                 self.pulse(ch=cfg['res_ch'], name="mymux", t=0)
 
 
-        prog = MuxProgram(self.soccfg, reps=1, final_delay=0.5, cfg=self.config)
+        prog = MuxProgram(soccfg, reps=1, final_delay=0.5, cfg=self.config)
         iq_list = prog.acquire_decimated(soc, soft_avgs=self.config['soft_avgs'])
         self.plot_results(prog, iq_list)
 

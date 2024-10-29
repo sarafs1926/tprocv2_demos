@@ -7,71 +7,64 @@ from build_state import *
 from expt_config import *
 from system_config import *
 
-def create_folder_if_not_exists(folder_path):
-    """Creates a folder if it doesn't exist."""
-    import os
-    os.makedirs(folder_path, exist_ok=True)
-
-
 class AmplitudeRabiExperiment:
-    def __init__(self, QubitIndex, outerFolder):
+    def __init__(self, QubitIndex, outerFolder, config):
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
         self.expt_name = "power_rabi_ge"
-        self.Qubit = 'Q' + str(self.QubitIndex)
-        self.run_experiment()
 
-
-    def run_experiment(self):
-        # Experiment configurations
         self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
-        self.q_config = all_qubit_state(system_config)
-        self.config = {**self.q_config['Q' + str(self.QubitIndex)], **self.exp_cfg}
-        #print(self.config) #Commented out for cleaner output in other script
+        self.config = config
+        print('Rabi configuration: ',self.config)
 
-        # Define and Run Program
+    def run(self, soccfg, soc):
         amp_rabi = AmplitudeRabiProgram(soccfg, reps=self.exp_cfg['reps'], final_delay=self.exp_cfg['relax_delay'], cfg=self.config)
-        self.iq_list = amp_rabi.acquire(soc, soft_avgs=self.exp_cfg["rounds"], progress=True)
-        self.gains = amp_rabi.get_pulse_param('qubit_pulse', "gain", as_array=True)
+        iq_list = amp_rabi.acquire(soc, soft_avgs=self.exp_cfg["rounds"], progress=True)
+        gains = amp_rabi.get_pulse_param('qubit_pulse', "gain", as_array=True)
 
-        #Data Analysis and Plotting
-        self.analyze_and_plot()
+        self.plot_results( iq_list, gains)
+        return self.config
 
+    def cosine(self, x, a, b, c, d):
+        return a * np.cos(2. * np.pi * b * x - c * 2 * np.pi) + d
 
-    def analyze_and_plot(self):
-        def cosine(x, a, b, c, d):
-            return a * np.cos(2. * np.pi * b * x - c * 2 * np.pi) + d
+    def create_folder_if_not_exists(self, folder_path):
+        import os
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
+
+    def plot_results(self, iq_list, gains):
 
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
         plt.rcParams.update({'font.size': 18})
 
-        I = self.iq_list[self.QubitIndex][0, :, 0]
-        Q = self.iq_list[self.QubitIndex][0, :, 1]
+        I = iq_list[self.QubitIndex][0, :, 0]
+        Q = iq_list[self.QubitIndex][0, :, 1]
 
         q1_amp = I
         q1_a_guess = (np.max(q1_amp) - np.min(q1_amp)) / 2
-        q1_b_guess = 1 / self.gains[-1]
+        q1_b_guess = 1 / gains[-1]
         q1_c_guess = 0
         q1_d_guess = np.mean(q1_amp)
 
         q1_guess = [q1_a_guess, q1_b_guess, q1_c_guess, q1_d_guess]
-        q1_popt, q1_pcov = curve_fit(cosine, self.gains, q1_amp, maxfev=100000, p0=q1_guess)
-        q1_fit_cosine = cosine(self.gains, *q1_popt)
+        q1_popt, q1_pcov = curve_fit(self.cosine, gains, q1_amp, maxfev=100000, p0=q1_guess)
+        q1_fit_cosine = self.cosine(gains, *q1_popt)
 
         first_three_avg = np.mean(q1_fit_cosine[:3])
         last_three_avg = np.mean(q1_fit_cosine[-3:])
 
         if last_three_avg > first_three_avg:
-            pi_amp = self.gains[np.argmax(q1_fit_cosine)]
+            pi_amp = gains[np.argmax(q1_fit_cosine)]
         else:
-            pi_amp = self.gains[np.argmin(q1_fit_cosine)]
+            pi_amp = gains[np.argmin(q1_fit_cosine)]
 
-        ax1.plot(self.gains, I, label="Gain (a.u.)", linewidth=2)
+        ax1.plot(gains, I, label="Gain (a.u.)", linewidth=2)
         ax1.set_ylabel("I Amplitude (a.u.)", fontsize=20)
-        ax1.plot(self.gains, q1_fit_cosine, '-', color='red', linewidth=3, label="Fit")
+        ax1.plot(gains, q1_fit_cosine, '-', color='red', linewidth=3, label="Fit")
         ax1.tick_params(axis='both', which='major', labelsize=16)
 
-        ax2.plot(self.gains, Q, label="Q", linewidth=2)
+        ax2.plot(gains, Q, label="Q", linewidth=2)
         ax2.set_xlabel("Gain (a.u.)", fontsize=20)
         ax2.set_ylabel("Q Amplitude (a.u.)", fontsize=20)
         ax2.tick_params(axis='both', which='major', labelsize=16)
@@ -85,15 +78,13 @@ class AmplitudeRabiExperiment:
         plt.subplots_adjust(top=0.93)
 
         outerFolder_expt = self.outerFolder + "/" + self.expt_name + "/"
-        create_folder_if_not_exists(outerFolder_expt)
+        self.create_folder_if_not_exists(outerFolder_expt)
         now = datetime.datetime.now()
         formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
         file_name = outerFolder_expt + f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex+1}.png"
 
         fig.savefig(file_name, dpi=300, bbox_inches='tight')
-        print('saving rbi to: ', file_name)
         plt.close(fig)
-
 
 
 class AmplitudeRabiProgram(AveragerProgramV2):

@@ -7,110 +7,34 @@ import numpy as np
 from scipy.optimize import curve_fit
 import datetime
 
-
-def lorentzian(f, f0, gamma, A, B):
-    return A * gamma ** 2 / ((f - f0) ** 2 + gamma ** 2) + B
-
-
-def max_offset_difference_with_x(x_values, y_values, offset):
-    max_average_difference = -1
-    corresponding_x = None
-
-    # average all 3 to avoid noise spikes
-    for i in range(len(y_values) - 2):
-        # group 3 vals
-        y_triplet = y_values[i:i + 3]
-
-        # avg differences for these 3 vals
-        average_difference = sum(abs(y - offset) for y in y_triplet) / 3
-
-        # see if this is the highest difference yet
-        if average_difference > max_average_difference:
-            max_average_difference = average_difference
-            # x value for the middle y value in the 3 vals
-            corresponding_x = x_values[i + 1]
-
-    return corresponding_x, max_average_difference
-
-
-def fit_lorenzian(I, Q, freqs, freq_q):
-    # guesses
-    initial_guess_I = [freq_q, 1, np.max(I), np.min(I)]  # x guess (which is very off here), amplitude guess, offset
-    initial_guess_Q = [freq_q, 1, np.max(Q), np.min(Q)]
-
-    # fitting the Lorentzian
-    params_I, _ = curve_fit(lorentzian, freqs, I, p0=initial_guess_I)
-    params_Q, _ = curve_fit(lorentzian, freqs, Q, p0=initial_guess_Q)
-
-    x_max_diff_I, max_diff_I = max_offset_difference_with_x(freqs, I, params_I[3])
-    x_max_diff_Q, max_diff_Q = max_offset_difference_with_x(freqs, Q, params_Q[3])
-
-    # guesses
-    initial_guess_I = [x_max_diff_I, 1, np.max(I),
-                       np.min(I)]  # x guess (which is now accurate), amplitude guess, offset
-    initial_guess_Q = [x_max_diff_Q, 1, np.max(Q), np.min(Q)]
-
-    # fitting the Lorentzian
-    params_I, _ = curve_fit(lorentzian, freqs, I, p0=initial_guess_I)
-    params_Q, _ = curve_fit(lorentzian, freqs, Q, p0=initial_guess_Q)
-
-    # make line from the fits
-    I_fit = lorentzian(freqs, *params_I)
-    Q_fit = lorentzian(freqs, *params_Q)
-
-    mean_I = params_I[0]  # the mean which is from f0 from the fitted parameters for I
-    mean_Q = params_Q[0]  # the mean which is from f0 from the fitted parameters for Q
-
-    # find which fit has the widest curve, becasue data is so noisy im going to assume a thin curve is fitting to a noise peak if there is nothing there
-    fwhm_I = 2 * params_I[1]
-    fwhm_Q = 2 * params_Q[1]
-
-    # Determine which fit has the widest curve
-    if fwhm_I > fwhm_Q:
-        widest_fit = "I"
-        widest_curve_mean = mean_I
-        widest_fwhm = fwhm_I
-    else:
-        widest_fit = "Q"
-        widest_curve_mean = mean_Q
-        widest_fwhm = fwhm_Q
-
-    # Print the FWHM for the fit with the widest curve
-    print(f"The widest FWHM is for the {widest_fit} data: {widest_fwhm}")
-
-    return mean_I, mean_Q, I_fit, Q_fit, widest_curve_mean, widest_fwhm
-
-
-def create_folder_if_not_exists(folder_path):
-    import os
-    if not os.path.exists(folder_path):
-        os.makedirs(folder_path)
-
-
 class QubitSpectroscopy:
-    def __init__(self, QubitIndex, outerFolder):
+    def __init__(self, QubitIndex, outerFolder, config):
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
         self.expt_name = "qubit_spec_ge"
-        self.Qubit = 'Q' + str(self.QubitIndex)
+
         self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
-        self.q_config = all_qubit_state(system_config)
-        self.config = {**self.q_config['Q' + str(self.QubitIndex)], **self.exp_cfg}
+        self.config = config
+        print('Qubit Spec configuration: ', self.config)
 
     def run(self, soccfg, soc):
         qspec = PulseProbeSpectroscopyProgram(soccfg, reps=self.config['reps'], final_delay=0.5, cfg=self.config)
         iq_list = qspec.acquire(soc, soft_avgs=self.exp_cfg["rounds"], progress=True)
         freqs = qspec.get_pulse_param('qubit_pulse', "freq", as_array=True)
 
-        # Prepare your data
+        self.plot_results(iq_list, freqs)
+        return self.config
+
+    def plot_results(self, iq_list, freqs):
         I = iq_list[self.QubitIndex][0, :, 0]
         Q = iq_list[self.QubitIndex][0, :, 1]
+
         freqs = np.array(freqs)
         freq_q = freqs[np.argmax(I)]
 
-        mean_I, mean_Q, I_fit, Q_fit, widest_curve_mean, widest_fwhm = fit_lorenzian(I, Q, freqs, freq_q)
+        mean_I, mean_Q, I_fit, Q_fit, widest_curve_mean, widest_fwhm = self.fit_lorenzian(I, Q, freqs, freq_q)
 
-        # Plotting and saving (same as before)
+        # Plotting and saving
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
         plt.rcParams.update({'font.size': 18})
 
@@ -153,8 +77,82 @@ class QubitSpectroscopy:
         file_name = outerFolder_expt + f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png"
 
         fig.savefig(file_name, dpi=300, bbox_inches='tight')  # , facecolor='white'
-        print("Saving to: ", file_name)
         plt.close(fig)
+
+    def lorentzian(self, f, f0, gamma, A, B):
+        return A * gamma ** 2 / ((f - f0) ** 2 + gamma ** 2) + B
+
+    def max_offset_difference_with_x(self, x_values, y_values, offset):
+        max_average_difference = -1
+        corresponding_x = None
+
+        # average all 3 to avoid noise spikes
+        for i in range(len(y_values) - 2):
+            # group 3 vals
+            y_triplet = y_values[i:i + 3]
+
+            # avg differences for these 3 vals
+            average_difference = sum(abs(y - offset) for y in y_triplet) / 3
+
+            # see if this is the highest difference yet
+            if average_difference > max_average_difference:
+                max_average_difference = average_difference
+                # x value for the middle y value in the 3 vals
+                corresponding_x = x_values[i + 1]
+
+        return corresponding_x, max_average_difference
+
+    def fit_lorenzian(self, I, Q, freqs, freq_q):
+        # guesses
+        initial_guess_I = [freq_q, 1, np.max(I), np.min(I)]  # x guess (which is very off here), amplitude guess, offset
+        initial_guess_Q = [freq_q, 1, np.max(Q), np.min(Q)]
+
+        # fitting the Lorentzian
+        params_I, _ = curve_fit(self.lorentzian, freqs, I, p0=initial_guess_I)
+        params_Q, _ = curve_fit(self.lorentzian, freqs, Q, p0=initial_guess_Q)
+
+        x_max_diff_I, max_diff_I = self.max_offset_difference_with_x(freqs, I, params_I[3])
+        x_max_diff_Q, max_diff_Q = self.max_offset_difference_with_x(freqs, Q, params_Q[3])
+
+        # guesses
+        initial_guess_I = [x_max_diff_I, 1, np.max(I),
+                           np.min(I)]  # x guess (which is now accurate), amplitude guess, offset
+        initial_guess_Q = [x_max_diff_Q, 1, np.max(Q), np.min(Q)]
+
+        # fitting the Lorentzian
+        params_I, _ = curve_fit(self.lorentzian, freqs, I, p0=initial_guess_I)
+        params_Q, _ = curve_fit(self.lorentzian, freqs, Q, p0=initial_guess_Q)
+
+        # make line from the fits
+        I_fit = self.lorentzian(freqs, *params_I)
+        Q_fit = self.lorentzian(freqs, *params_Q)
+
+        mean_I = params_I[0]  # the mean which is from f0 from the fitted parameters for I
+        mean_Q = params_Q[0]  # the mean which is from f0 from the fitted parameters for Q
+
+        # find which fit has the widest curve, becasue data is so noisy im going to assume a thin curve is fitting to a noise peak if there is nothing there
+        fwhm_I = 2 * params_I[1]
+        fwhm_Q = 2 * params_Q[1]
+
+        # Determine which fit has the widest curve
+        if fwhm_I > fwhm_Q:
+            widest_fit = "I"
+            widest_curve_mean = mean_I
+            widest_fwhm = fwhm_I
+        else:
+            widest_fit = "Q"
+            widest_curve_mean = mean_Q
+            widest_fwhm = fwhm_Q
+
+        # Print the FWHM for the fit with the widest curve
+        print(f"The widest FWHM is for the {widest_fit} data: {widest_fwhm}")
+
+        return mean_I, mean_Q, I_fit, Q_fit, widest_curve_mean, widest_fwhm
+
+    def create_folder_if_not_exists(self, folder_path):
+        import os
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
 
 
 class PulseProbeSpectroscopyProgram(AveragerProgramV2):
