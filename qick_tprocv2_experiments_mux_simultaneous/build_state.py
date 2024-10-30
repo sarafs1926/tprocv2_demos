@@ -9,8 +9,9 @@ import copy
 # Add DAC and ADC Channels
 def add_qubit_channel(system_config, QubitIndex):
     hw_config = copy.deepcopy(system_config.hw_cfg)
-    var = ["qubit_ch", "res_ch", "ro_ch"] # "qubit_ch_ef"]
+    var = ["res_ch", "ro_ch", "qubit_ch"] # "qubit_ch_ef"]
     for Index in var:
+        # print(hw_config[Index])
         value = hw_config[Index][QubitIndex]
         hw_config.update([(Index,value)])
     return hw_config
@@ -42,7 +43,7 @@ def qubit_state(system_config, QubitIndex):
 
 def all_qubit_state(system_config):
     state = {}
-    for QubitIndex in range(6):
+    for QubitIndex in range(4): ### HARD CODED FIX
         Qi_state = copy.deepcopy(qubit_state(system_config, QubitIndex))
         state.update([("Q"+str(QubitIndex),Qi_state)])
     return state

@@ -1,8 +1,10 @@
 from qick import *
 import numpy as np
 
-VNA_res = np.array([6191.519, 6216, 6292.321, 6405.85, 6432.959, 6468.441,])
-VNA_qubit = np.array([4184.10, 3821.43, 4156.88, 4459.12, 4471.18, 4998.04])  # Freqs of Qubit g/e Transition
+# VNA_res = np.array([6191.519, 6216, 6292.321, 6405.85, 6432.959, 6468.441,])
+VNA_res = np.array([6187.191, 5827.678, 6074.095, 5958.673])
+#VNA_qubit = np.array([4833.534, 4708.3075, 4531.86 , 4694.5]) from run 22b
+VNA_qubit = np.array([4909, 4749.4, 4569, 4759]) #from run 25
 
 expt_cfg = {
     "tof": {

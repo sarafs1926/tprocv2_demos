@@ -45,7 +45,7 @@ class SingleToneSpectroscopyProgram(AveragerProgramV2):
         self.add_pulse(ch=res_ch, name="mymux",
                        style="const",
                        length=cfg["res_length"],
-                       mask=[0, 1, 2, 3, 4, 5],
+                       mask=[0, 1, 2, 3],
                        )
 
     def _body(self, cfg):
@@ -86,7 +86,7 @@ while j < n:
     res_freqs = []
 
     # Increase figure size
-    plt.figure(figsize=(12, 8))
+    fig = plt.figure(figsize=(12, 8))
 
     # Set larger font sizes
     plt.rcParams.update({
@@ -98,7 +98,7 @@ while j < n:
         'legend.fontsize': 14,  # Legend font size
     })
 
-    for i in range(6):
+    for i in range(4):
         plt.subplot(2, 3, i + 1)
         plt.plot(fpts + fcenter[i], amps[i], '-', linewidth=1.5)
         freq_r = fpts[np.argmin(amps[i])] + fcenter[i]
