@@ -52,7 +52,7 @@ readout_cfg={
     "mixer_freq": 6000,  # [MHz]
     "res_freq_ge": [6191.479, 6216.060, 6292.301, 6405.83, 6433.059, 6468.901], #MHz
     # "res_gain_ge": [1] + [0]*5,
-    "res_gain_ge": set_res_gain_ge(QUBIT_INDEX), #utomatically sets all gains to zero except for the qubit you are observing
+    "res_gain_ge": [1, 1, 1, 1, 1, 1], #set_res_gain_ge(QUBIT_INDEX), #utomatically sets all gains to zero except for the qubit you are observing
     # "res_gain_ge": [1,1,0.7,0.7,0.7,1], #[0.4287450656184295, 0.4903077560386716, 0.4903077560386716, 0.3941941738241592, 0.3941941738241592, 0.4903077560386716],  # DAC units
     # "res_freq_ef": [7149.44, 0, 0, 0, 0, 0], # [MHz]
     # "res_gain_ef": [0.6, 0, 0, 0, 0, 0], # [DAC units]

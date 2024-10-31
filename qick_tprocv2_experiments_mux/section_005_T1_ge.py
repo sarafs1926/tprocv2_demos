@@ -49,19 +49,32 @@ class T1Program(AveragerProgramV2):
 
 
 class T1Measurement:
-    def __init__(self, QubitIndex, outerFolder, config):
+    def __init__(self, QubitIndex, outerFolder, round_num):
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
         self.expt_name = "T1_ge"
+        self.Qubit = 'Q' + str(self.QubitIndex)
+        self.exp_cfg = expt_cfg[self.expt_name]
+        self.q_config = all_qubit_state(system_config)
+        self.round_num = round_num
+
         self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
-        self.config = config
-        print('Rabi configuration: ', self.config)
+        self.config_orig = {**self.q_config[self.Qubit], **self.exp_cfg}
+
+        import copy
+        self.config = copy.deepcopy(self.config_orig)
+
+        print(f'Q {self.QubitIndex + 1} Round {round_num} T1 configuration: ', self.config)
 
         self.q1_t1 = []
         self.q1_t1_err = []
         self.dates = []
 
     def run(self, soccfg, soc):
+        # defaults to 5, just make it to only look at this qubit
+        res_gains = self.set_res_gain_ge(self.QubitIndex)
+        self.config.update([('res_gain_ge', res_gains)])
+
         now = datetime.datetime.now()
         self.dates.append(now)
 
@@ -71,7 +84,12 @@ class T1Measurement:
 
         self.plot_results(iq_list, delay_times, now, self.config, self.QubitIndex)
 
-        return self.config
+    def set_res_gain_ge(self, QUBIT_INDEX, num_qubits=6):
+        """Sets the gain for the selected qubit to 1, others to 0."""
+        res_gain_ge = [0] * num_qubits  # Initialize all gains to 0
+        if 0 <= QUBIT_INDEX < num_qubits:  # makes sure you are within the range of options
+            res_gain_ge[QUBIT_INDEX] = 1  # Set the gain for the selected qubit
+        return res_gain_ge
 
     def exponential(self, x, a, b, c, d):
         return a * np.exp(-(x - b) / c) + d
@@ -80,6 +98,7 @@ class T1Measurement:
         import os
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
+
     def plot_results(self, iq_list, delay_times, now, config, QubitIndex):
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
         plt.rcParams.update({'font.size': 18})
@@ -132,7 +151,7 @@ class T1Measurement:
         outerFolder_expt = outerFolder + "/" + self.expt_name + "/"
         self.create_folder_if_not_exists(outerFolder_expt)
         formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-        file_name = outerFolder_expt + f"{formatted_datetime}_" + self.expt_name + f"_q{QubitIndex + 1}.png"
+        file_name = outerFolder_expt + f"R_{self.round_num}" + f"Q_{self.QubitIndex+1}" + f"{formatted_datetime}_" + self.expt_name + f"_q{QubitIndex + 1}.png"
         fig.savefig(file_name, dpi=300, bbox_inches='tight')  # , facecolor='white'
         plt.close(fig)
 
@@ -141,7 +160,7 @@ class T1Measurement:
 
 
         # Create the HDF5 file and save data
-        h5_filename = outerFolder_expt + f"{formatted_datetime}_" + self.expt_name + f"_q{QubitIndex + 1}.h5"
+        h5_filename = outerFolder_expt + f"R_{self.round_num}" + f"{formatted_datetime}_" + self.expt_name + f"_q{QubitIndex + 1}.h5"
         with h5py.File(h5_filename, 'w') as f:
             # Save T1 and error
             f.create_dataset("T1_estimates", data=np.array(self.q1_t1))

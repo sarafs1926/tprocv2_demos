@@ -8,16 +8,31 @@ from scipy.optimize import curve_fit
 import datetime
 
 class QubitSpectroscopy:
-    def __init__(self, QubitIndex, outerFolder, config):
+    def __init__(self, QubitIndex, outerFolder, res_freqs, round_num):
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
         self.expt_name = "qubit_spec_ge"
 
+        self.Qubit = 'Q' + str(self.QubitIndex)
+        self.exp_cfg = expt_cfg[self.expt_name]
+        self.q_config = all_qubit_state(system_config)
+        self.round_num = round_num
+
         self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
-        self.config = config
-        print('Qubit Spec configuration: ', self.config)
+
+        self.config_orig = {**self.q_config[self.Qubit], **self.exp_cfg}
+        self.config_orig.update([('res_freq_ge', res_freqs)])
+
+        import copy
+        self.config = copy.deepcopy(self.config_orig)
+
+        print(f'Q {self.QubitIndex + 1} Round {round_num} Qubit Spec configuration: ', self.config)
 
     def run(self, soccfg, soc):
+        # defaults to 5, just make it to only look at this qubit
+        res_gains = self.set_res_gain_ge(self.QubitIndex)
+        self.config.update([('res_gain_ge', res_gains)])
+
         qspec = PulseProbeSpectroscopyProgram(soccfg, reps=self.config['reps'], final_delay=0.5, cfg=self.config)
         iq_list = qspec.acquire(soc, soft_avgs=self.exp_cfg["rounds"], progress=True)
         freqs = qspec.get_pulse_param('qubit_pulse', "freq", as_array=True)
@@ -25,16 +40,27 @@ class QubitSpectroscopy:
         self.plot_results(iq_list, freqs)
         return self.config
 
+    def set_res_gain_ge(self, QUBIT_INDEX, num_qubits=6):
+        """Sets the gain for the selected qubit to 1, others to 0."""
+        res_gain_ge = [0] * num_qubits  # Initialize all gains to 0
+        if 0 <= QUBIT_INDEX < num_qubits:  # makes sure you are within the range of options
+            res_gain_ge[QUBIT_INDEX] = 1  # Set the gain for the selected qubit
+        return res_gain_ge
+
     def plot_results(self, iq_list, freqs):
+
+        # Prepare your data
         I = iq_list[self.QubitIndex][0, :, 0]
         Q = iq_list[self.QubitIndex][0, :, 1]
 
+        print(freqs)
         freqs = np.array(freqs)
         freq_q = freqs[np.argmax(I)]
 
+
         mean_I, mean_Q, I_fit, Q_fit, widest_curve_mean, widest_fwhm = self.fit_lorenzian(I, Q, freqs, freq_q)
 
-        # Plotting and saving
+        # Plot the data and fits
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
         plt.rcParams.update({'font.size': 18})
 
@@ -74,7 +100,7 @@ class QubitSpectroscopy:
         create_folder_if_not_exists(outerFolder_expt)
         now = datetime.datetime.now()
         formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-        file_name = outerFolder_expt + f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png"
+        file_name = outerFolder_expt + f"R_{self.round_num}" + f"Q_{self.QubitIndex+1}" + f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png"
 
         fig.savefig(file_name, dpi=300, bbox_inches='tight')  # , facecolor='white'
         plt.close(fig)
@@ -145,7 +171,7 @@ class QubitSpectroscopy:
             widest_fwhm = fwhm_Q
 
         # Print the FWHM for the fit with the widest curve
-        print(f"The widest FWHM is for the {widest_fit} data: {widest_fwhm}")
+        #print(f"The widest FWHM is for the {widest_fit} data: {widest_fwhm}")
 
         return mean_I, mean_Q, I_fit, Q_fit, widest_curve_mean, widest_fwhm
 

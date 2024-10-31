@@ -8,22 +8,41 @@ from expt_config import *
 from system_config import *
 
 class AmplitudeRabiExperiment:
-    def __init__(self, QubitIndex, outerFolder, config):
+    def __init__(self, QubitIndex, outerFolder, round_num):
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
         self.expt_name = "power_rabi_ge"
+        self.Qubit = 'Q' + str(self.QubitIndex)
+        self.exp_cfg = expt_cfg[self.expt_name]
+        self.q_config = all_qubit_state(system_config)
+        self.round_num = round_num
 
         self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
-        self.config = config
-        print('Rabi configuration: ',self.config)
+        self.config_orig = {**self.q_config[self.Qubit], **self.exp_cfg}
+
+        import copy
+        self.config = copy.deepcopy(self.config_orig)
+
+        print(f'Q {self.QubitIndex + 1} Round {round_num} Rabi configuration: ',self.config)
 
     def run(self, soccfg, soc):
+        # defaults to 5, just make it to only look at this qubit
+        res_gains = self.set_res_gain_ge(self.QubitIndex)
+        self.config.update([('res_gain_ge', res_gains)])
+
         amp_rabi = AmplitudeRabiProgram(soccfg, reps=self.exp_cfg['reps'], final_delay=self.exp_cfg['relax_delay'], cfg=self.config)
         iq_list = amp_rabi.acquire(soc, soft_avgs=self.exp_cfg["rounds"], progress=True)
         gains = amp_rabi.get_pulse_param('qubit_pulse', "gain", as_array=True)
 
         self.plot_results( iq_list, gains)
-        return self.config
+        return
+
+    def set_res_gain_ge(self, QUBIT_INDEX, num_qubits=6):
+        """Sets the gain for the selected qubit to 1, others to 0."""
+        res_gain_ge = [0] * num_qubits  # Initialize all gains to 0
+        if 0 <= QUBIT_INDEX < num_qubits:  # makes sure you are within the range of options
+            res_gain_ge[QUBIT_INDEX] = 1  # Set the gain for the selected qubit
+        return res_gain_ge
 
     def cosine(self, x, a, b, c, d):
         return a * np.cos(2. * np.pi * b * x - c * 2 * np.pi) + d
@@ -81,7 +100,7 @@ class AmplitudeRabiExperiment:
         self.create_folder_if_not_exists(outerFolder_expt)
         now = datetime.datetime.now()
         formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-        file_name = outerFolder_expt + f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex+1}.png"
+        file_name = outerFolder_expt + f"R_{self.round_num}" + f"Q_{self.QubitIndex+1}" + f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex+1}.png"
 
         fig.savefig(file_name, dpi=300, bbox_inches='tight')
         plt.close(fig)
@@ -92,7 +111,6 @@ class AmplitudeRabiProgram(AveragerProgramV2):
         ro_ch = cfg['ro_ch']
         res_ch = cfg['res_ch']
         qubit_ch = cfg['qubit_ch']
-
         self.declare_gen(ch=res_ch, nqz=cfg['nqz_res'], ro_ch=ro_ch[0],
                          mux_freqs=cfg['res_freq_ge'],
                          mux_gains=cfg['res_gain_ge'],

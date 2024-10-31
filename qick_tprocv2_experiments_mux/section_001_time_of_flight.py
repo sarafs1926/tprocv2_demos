@@ -5,7 +5,7 @@ from expt_config import *
 from system_config import *
 
 class TOFExperiment:
-    def __init__(self, QubitIndex, outerFolder, trigger_time=0):
+    def __init__(self, QubitIndex, outerFolder, round_num, trigger_time=0):
         # every time a class instance is created, these definitions are set
         self.expt_name = "tof"
         self.QubitIndex = QubitIndex
@@ -15,10 +15,11 @@ class TOFExperiment:
         self.exp_cfg = expt_cfg[self.expt_name]
         self.q_config = all_qubit_state(system_config)
         self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
+        self.round_num = round_num
 
         # Update parameters to see TOF pulse with your setup
         self.config.update([('trig_time', trigger_time)])  #starting off with TOF = 0, we will change this later to be the found TOF
-        print('TOF configuration: ',self.config)
+        print(f'Q {self.QubitIndex + 1} Round {round_num} TOF configuration: ',self.config)
 
 
     def run(self, soccfg, soc):
@@ -73,7 +74,7 @@ class TOFExperiment:
         create_folder_if_not_exists(outerFolder_expt)
         now = datetime.datetime.now()
         formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-        file_name = outerFolder_expt + f"{formatted_datetime}_" + self.expt_name + ".png"
+        file_name = outerFolder_expt + f"R_{self.round_num}" + f"Q_{self.QubitIndex+1}" + f"{formatted_datetime}_" + self.expt_name + ".png"
         plt.savefig(file_name, dpi=300)
         plt.close(fig)
 

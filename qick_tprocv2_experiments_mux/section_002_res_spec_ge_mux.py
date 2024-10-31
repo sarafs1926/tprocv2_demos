@@ -19,7 +19,7 @@ class SingleToneSpectroscopyProgram(AveragerProgramV2):
 
         self.add_pulse(ch=res_ch, name="mymux",
                        style="const",
-                       length=self.config["res_length"],
+                       length=cfg["res_length"],
                        mask=[0, 1, 2, 3, 4, 5],
                        )
 
@@ -28,18 +28,28 @@ class SingleToneSpectroscopyProgram(AveragerProgramV2):
         self.pulse(ch=cfg['res_ch'], name="mymux", t=0)
 
 class ResonanceSpectroscopy:
-    def __init__(self, QubitIndex, outerFolder):
+    def __init__(self, QubitIndex, outerFolder, round_num):
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
         self.expt_name = "res_spec"
         self.Qubit = 'Q' + str(self.QubitIndex)
+        self.round_num = round_num
 
         self.exp_cfg = expt_cfg[self.expt_name]
         self.q_config = all_qubit_state(system_config)
-        self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
-        print('Res Spec configuration: ',self.config)
+        self.config_orig = {**self.q_config[self.Qubit], **self.exp_cfg}
+
+        import copy
+        self.config = copy.deepcopy(self.config_orig)
+
+        print(f'Q {self.QubitIndex + 1} Round {round_num} Res Spec configuration: ',self.config)
 
     def run(self, soccfg, soc):
+        #defaults to 5, just make it to only look at this qubit
+        res_gains = self.set_res_gain_ge(self.QubitIndex)
+        self.config.update([('res_gain_ge', res_gains)])
+
+
         fpts = self.exp_cfg["start"] + self.exp_cfg["step_size"] * np.arange(self.exp_cfg["steps"])
         fcenter = self.config['res_freq_ge']
         amps = np.zeros((len(fcenter), len(fpts)))
@@ -52,9 +62,15 @@ class ResonanceSpectroscopy:
                 amps[i][index] = np.abs(iq_list[i][:, 0] + 1j * iq_list[i][:, 1])
         amps = np.array(amps)
         res_freqs = self.plot_results(fpts, fcenter, amps) #return freqs from plotting loop
-        self.save_res_freqs_config(res_freqs) # save them
-        return self.config # return the config
 
+        return res_freqs
+
+    def set_res_gain_ge(self, QUBIT_INDEX, num_qubits=6):
+        """Sets the gain for the selected qubit to 1, others to 0."""
+        res_gain_ge = [0] * num_qubits  # Initialize all gains to 0
+        if 0 <= QUBIT_INDEX < num_qubits:  # makes sure you are within the range of options
+            res_gain_ge[QUBIT_INDEX] = 1  # Set the gain for the selected qubit
+        return res_gain_ge
 
     def plot_results(self, fpts, fcenter, amps):
         res_freqs = []
@@ -86,19 +102,14 @@ class ResonanceSpectroscopy:
         create_folder_if_not_exists(outerFolder_expt)
         now = datetime.datetime.now()
         formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-        file_name = outerFolder_expt + f"{formatted_datetime}_" + self.expt_name + ".png"
+        file_name = outerFolder_expt + f"R_{self.round_num}" + f"Q_{self.QubitIndex+1}" + f"{formatted_datetime}_" + self.expt_name + ".png"
         plt.savefig(file_name, dpi=300)
         plt.close()
 
-        # save resonator gains and frequencies
-        res_gains = self.config["res_gain_ge"]
+
         res_freqs = [round(x, 3) for x in res_freqs]
-        print("Resonator gains:", res_gains)
         print("Resonator freqs:", res_freqs)
 
         return res_freqs
-
-    def save_res_freqs_config(self, res_freqs):
-        self.config.update([('res_freq_ge', res_freqs)])
 
 
