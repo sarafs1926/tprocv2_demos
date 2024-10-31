@@ -151,5 +151,16 @@ expt_cfg = {
         "freq_steps" : 30,
         "relax_delay": 1000, # [us]
     },
-    
+
+    "Readout_Optimization_gef":{
+        "steps": 10000, # shots
+        "py_avg": 1,
+        "gain_start" : [0.01, 0.01, 0.01, 0.01, 0.01, 0.01],
+        "gain_step_size" : [0.01, 0.01, 0.01, 0.01, 0.01, 0.01],
+        "gain_steps" : 10,
+        "freq_start" : [7147.8, 7171.2, 7204.0, 7228.6, 7264.1, 7287.2],
+        "freq_step_size" : [0.05, 0.025, 0.025, 0.025, 0.025, 0.025],
+        "freq_steps" : 30,
+        "relax_delay": 1000, # [us]
+    },
 }

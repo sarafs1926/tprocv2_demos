@@ -50,7 +50,7 @@ def add_single_qubit_experiment(expt_cfg, expt_name, QubitIndex):
         expt_cfg.update([('qubit_freq_ef', QickSweep1D('freqloop', start, stop))])
     elif expt_name == 'power_rabi_ef':
         expt_cfg.update([('qubit_gain_ef', QickSweep1D('gainloop', start, stop))])
-    elif expt_name == "Readout_Optimization_ge": # for readout optimization experiments
+    elif expt_name == "Readout_Optimization_ge" or expt_name == "Readout_Optimization_gef": # for readout optimization experiments
         freq_start = expt_cfg["freq_start"][QubitIndex]
         freq_step_size = expt_cfg['freq_step_size'][QubitIndex]
         gain_start = expt_cfg["gain_start"][QubitIndex]
