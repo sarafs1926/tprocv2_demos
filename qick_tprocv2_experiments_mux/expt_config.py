@@ -126,16 +126,16 @@ expt_cfg = {
 #         "SS_ONLY": False,
 #     },
 #
-#     "Readout_Optimization":{
-#         "steps": 20000, # shots
-#         "py_avg": 1,
-#         "gain_start" : [0, 0, 0, 0],
-#         "gain_stop" : [1, 0, 0, 0],
-#         "gain_step" : 0.1,
-#         "freq_start" : [6176.0, 0, 0, 0],
-#         "freq_stop" : [6178.0, 0, 0, 0],
-#         "freq_step" : 0.1,
-#         "relax_delay": 1000, # [us]
-#     },
-#
+    "Readout_Optimization":{
+        "steps": 3000, # shots
+        "py_avg": 1,
+        "gain_start" : [0, 0, 0, 0],
+        "gain_stop" : [1, 0, 0, 0],
+        "gain_step" : 0.1,
+        "freq_start" : [6176.0, 0, 0, 0],
+        "freq_stop" : [6178.0, 0, 0, 0],
+        "freq_step" : 0.1,
+        "relax_delay": 1000, # [us]
+    },
+
 }

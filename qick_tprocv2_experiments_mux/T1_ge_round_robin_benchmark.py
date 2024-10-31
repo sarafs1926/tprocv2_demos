@@ -2,22 +2,22 @@ from section_001_time_of_flight import TOFExperiment
 from section_002_res_spec_ge_mux import ResonanceSpectroscopy
 from section_003_qubit_spec_ge import QubitSpectroscopy
 from section_004_amp_rabi_ge import AmplitudeRabiExperiment
-from section_005_T1_ge import T1Measurement
+from section_006_T1_ge import T1Measurement
 from system_config import *
 
 
 # N benchmark
-n = 1 #change to 100K later to get this to run until we stop it
+n = 100000
 j = 0
-Qs=[0]#1,2,3,4,5]
+Qs=[0,1,2,3,4,5]
 
 while j < n:
     j += 1
     for QubitIndex in Qs:
 
         # ---------------------TOF---------------------
-        tof = TOFExperiment(QubitIndex, outerFolder, j)
-        tof.run(soccfg, soc)
+        #tof = TOFExperiment(QubitIndex, outerFolder, j)
+        #tof.run(soccfg, soc)
 
         #---------------------Res spec---------------------
         res_spec = ResonanceSpectroscopy(QubitIndex, outerFolder, j)
