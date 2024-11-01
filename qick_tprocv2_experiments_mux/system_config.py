@@ -1,4 +1,7 @@
 from qick import *
+import sys
+import os
+sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos"))
 from tprocv2_demos.qick_tprocv2_experiments_mux.socProxy import makeProxy
 import os
 import datetime

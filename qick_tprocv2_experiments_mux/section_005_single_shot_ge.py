@@ -181,7 +181,7 @@ class SingleShot:
         ssp_e = SingleShotProgram_e(soccfg, reps=1, final_delay=self.config['relax_delay'], cfg=self.config)
         iq_list_e = ssp_e.acquire(soc, soft_avgs=1, progress=True)
 
-        fid = self.plot_results(iq_list_g, iq_list_e)
+        fid = self.plot_results(iq_list_g, iq_list_e, self.QubitIndex)
         return fid
 
     def set_res_gain_ge(self, QUBIT_INDEX, num_qubits=6):
@@ -196,24 +196,25 @@ class SingleShot:
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
 
-    def plot_results(self, iq_list_g, iq_list_e):
-        I_g = iq_list_g[0][0].T[0]
-        Q_g = iq_list_g[0][0].T[1]
-        I_e = iq_list_e[0][0].T[0]
-        Q_e = iq_list_e[0][0].T[1]
+    def plot_results(self, iq_list_g, iq_list_e, QubitIndex):
+        I_g = iq_list_g[QubitIndex][0].T[0]
+        Q_g = iq_list_g[QubitIndex][0].T[1]
+        I_e = iq_list_e[QubitIndex][0].T[0]
+        Q_e = iq_list_e[QubitIndex][0].T[1]
+        print(QubitIndex)
 
         fid, threshold, angle = self.hist_ssf(data=[I_g, Q_g, I_e, Q_e], plot=True, ran=10)
         print('Optimal fidelity after rotation = %.3f' % fid)
         return fid
 
-    def hist_ssf(self, data=None, plot=True, ran=1.0):
+    def hist_ssf(self, data=None, plot=True, ran=1.0): #we need to work on fixing the ran (range)
 
         ig = data[0]
         qg = data[1]
         ie = data[2]
         qe = data[3]
 
-        numbins = 200
+        numbins = 200 #Wrk on this, this value is not right and it's hardcoded in
 
         xg, yg = np.median(ig), np.median(qg)
         xe, ye = np.median(ie), np.median(qe)
@@ -273,7 +274,16 @@ class SingleShot:
         threshold = binsg[tind]
         fid = contrast[tind]
         axs[2].set_title(f"Fidelity = {fid * 100:.2f}%")
-        plt.close()
+
+
+        outerFolder_expt = self.outerFolder + "/" + self.expt_name + "/"
+        self.create_folder_if_not_exists(outerFolder_expt)
+        now = datetime.datetime.now()
+        formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
+        file_name = outerFolder_expt + f"R_{self.round_num}" + f"Q_{self.QubitIndex + 1}" + f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png"
+
+        fig.savefig(file_name, dpi=300, bbox_inches='tight')
+        plt.close(fig)
 
         return fid, threshold, theta
 
