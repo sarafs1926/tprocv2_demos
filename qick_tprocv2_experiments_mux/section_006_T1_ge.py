@@ -160,7 +160,7 @@ class T1Measurement:
 
 
         # Create the HDF5 file and save data
-        h5_filename = outerFolder_expt + f"R_{self.round_num}" + f"{formatted_datetime}_" + self.expt_name + f"_q{QubitIndex + 1}.h5"
+        h5_filename = outerFolder_expt + f"{formatted_datetime}_" + self.expt_name + f"_q{QubitIndex + 1}.h5"
         with h5py.File(h5_filename, 'w') as f:
             # Save T1 and error
             f.create_dataset("T1_estimates", data=np.array(self.q1_t1))
