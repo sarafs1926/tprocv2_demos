@@ -6,9 +6,11 @@ from build_task import *
 from build_state import *
 from expt_config import *
 from system_config import *
+import copy
+
 
 class AmplitudeRabiExperiment:
-    def __init__(self, QubitIndex, outerFolder, round_num):
+    def __init__(self, QubitIndex, outerFolder, round_num, qubit_freq, signal):
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
         self.expt_name = "power_rabi_ge"
@@ -16,19 +18,26 @@ class AmplitudeRabiExperiment:
         self.exp_cfg = expt_cfg[self.expt_name]
         self.q_config = all_qubit_state(system_config)
         self.round_num = round_num
+        self.qubit_freq = qubit_freq
+        self.signal = signal
 
         self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
         self.config_orig = {**self.q_config[self.Qubit], **self.exp_cfg}
 
-        import copy
         self.config = copy.deepcopy(self.config_orig)
-
-        print(f'Q {self.QubitIndex + 1} Round {round_num} Rabi configuration: ',self.config)
 
     def run(self, soccfg, soc):
         # defaults to 5, just make it to only look at this qubit
         res_gains = self.set_res_gain_ge(self.QubitIndex)
         self.config.update([('res_gain_ge', res_gains)])
+
+        # now update for qubit frequency
+        #current_freqs = self.config['qubit_freq_ge']
+        #current_freqs[self.QubitIndex] = self.qubit_freq   #update with found freq from Qubit Spec
+        self.config.update([('qubit_freq_ge', self.qubit_freq)])
+
+        #look at the config before we do the experiment
+        print(f'Q {self.QubitIndex + 1} Round {self.round_num} Rabi configuration: ', self.config)
 
         amp_rabi = AmplitudeRabiProgram(soccfg, reps=self.exp_cfg['reps'], final_delay=self.exp_cfg['relax_delay'], cfg=self.config)
         iq_list = amp_rabi.acquire(soc, soft_avgs=self.exp_cfg["rounds"], progress=True)
@@ -60,7 +69,10 @@ class AmplitudeRabiExperiment:
         I = iq_list[self.QubitIndex][0, :, 0]
         Q = iq_list[self.QubitIndex][0, :, 1]
 
-        q1_amp = I
+        if 'Q' in self.signal:
+            q1_amp = Q
+        else:
+            q1_amp = I
         q1_a_guess = (np.max(q1_amp) - np.min(q1_amp)) / 2
         q1_b_guess = 1 / gains[-1]
         q1_c_guess = 0
@@ -80,13 +92,18 @@ class AmplitudeRabiExperiment:
 
         ax1.plot(gains, I, label="Gain (a.u.)", linewidth=2)
         ax1.set_ylabel("I Amplitude (a.u.)", fontsize=20)
-        ax1.plot(gains, q1_fit_cosine, '-', color='red', linewidth=3, label="Fit")
         ax1.tick_params(axis='both', which='major', labelsize=16)
 
         ax2.plot(gains, Q, label="Q", linewidth=2)
         ax2.set_xlabel("Gain (a.u.)", fontsize=20)
         ax2.set_ylabel("Q Amplitude (a.u.)", fontsize=20)
         ax2.tick_params(axis='both', which='major', labelsize=16)
+
+        if 'Q' in self.signal:
+            ax2.plot(gains, q1_fit_cosine, '-', color='red', linewidth=3, label="Fit")
+        else:
+            ax1.plot(gains, q1_fit_cosine, '-', color='red', linewidth=3, label="Fit")
+
 
         plt.tight_layout()
 
@@ -100,7 +117,7 @@ class AmplitudeRabiExperiment:
         self.create_folder_if_not_exists(outerFolder_expt)
         now = datetime.datetime.now()
         formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-        file_name = outerFolder_expt + f"R_{self.round_num}" + f"Q_{self.QubitIndex+1}" + f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex+1}.png"
+        file_name = outerFolder_expt + f"R_{self.round_num}_" + f"Q_{self.QubitIndex+1}_" + f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex+1}.png"
 
         fig.savefig(file_name, dpi=300, bbox_inches='tight')
         plt.close(fig)

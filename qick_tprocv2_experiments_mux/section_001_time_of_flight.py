@@ -79,8 +79,8 @@ class TOFExperiment:
             phase_offset = np.angle(iq_list[i].dot([1, 1j]).sum(), deg=True)
             # print("measured phase %f degrees" % (phase_offset))
             phase_offsets.append(phase_offset)
-        #
-        print(phase_offsets)
+
+        #print(phase_offsets)
         # Save
         outerFolder_expt = self.outerFolder + "/" + self.expt_name + "/"
         create_folder_if_not_exists(outerFolder_expt)

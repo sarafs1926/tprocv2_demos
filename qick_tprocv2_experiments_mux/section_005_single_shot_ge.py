@@ -9,8 +9,7 @@ from build_task import *
 from build_state import *
 from expt_config import *
 from system_config import *
-#from tprocv2_demos.time_sweep.trabi_example import iq_list
-
+import copy
 
 # Both g and e during the same experiment.
 class SingleShotProgram(AveragerProgramV2):
@@ -156,10 +155,7 @@ class SingleShot:
         self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
         self.config_orig = {**self.q_config[self.Qubit], **self.exp_cfg}
 
-        import copy
         self.config = copy.deepcopy(self.config_orig)
-
-        #print(f'Q {self.QubitIndex + 1} Round {round_num} Single Shot configuration: ', self.config)
 
         self.q1_t1 = []
         self.q1_t1_err = []
@@ -173,6 +169,7 @@ class SingleShot:
         self.config.update([('res_length', self.leng)])
         self.config.update([('ro_length', self.leng)])
 
+        # look at the config before we do the experiment
         print(f'Q {self.QubitIndex + 1} Round {self.round_num} Single Shot configuration: ', self.config)
 
         ssp_g = SingleShotProgram_g(soccfg, reps=1, final_delay=self.config['relax_delay'], cfg=self.config)
@@ -181,8 +178,8 @@ class SingleShot:
         ssp_e = SingleShotProgram_e(soccfg, reps=1, final_delay=self.config['relax_delay'], cfg=self.config)
         iq_list_e = ssp_e.acquire(soc, soft_avgs=1, progress=True)
 
-        fid = self.plot_results(iq_list_g, iq_list_e, self.QubitIndex)
-        return fid
+        fid, angle = self.plot_results(iq_list_g, iq_list_e, self.QubitIndex)
+        return fid, angle
 
     def set_res_gain_ge(self, QUBIT_INDEX, num_qubits=6):
         """Sets the gain for the selected qubit to 1, others to 0."""
@@ -207,7 +204,7 @@ class SingleShot:
         print('Optimal fidelity after rotation = %.3f' % fid)
         print('Optimal angle after rotation = %f' % angle)
 
-        return fid
+        return fid, angle
 
     def hist_ssf(self, data=None, plot=True):
 
@@ -281,7 +278,7 @@ class SingleShot:
         self.create_folder_if_not_exists(outerFolder_expt)
         now = datetime.datetime.now()
         formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-        file_name = outerFolder_expt + f"R_{self.round_num}" + f"Q_{self.QubitIndex + 1}" + f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png"
+        file_name = outerFolder_expt + f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png"
 
         fig.savefig(file_name, dpi=300, bbox_inches='tight')
         plt.close(fig)

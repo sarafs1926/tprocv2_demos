@@ -4,7 +4,7 @@ import h5py
 
 class Save:
     def __init__(self, outerFolder, t1_data, batch_num, save_r):
-        self.outerFolder = outerFolder
+        self.outerFolder_expt = outerFolder
         self.t1_data = t1_data
         self.batch_num = batch_num
         self.save_r = save_r

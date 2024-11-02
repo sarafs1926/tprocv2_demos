@@ -4,6 +4,8 @@ from tqdm import tqdm
 from build_state import *
 from expt_config import *
 from system_config import *
+import copy
+
 class SingleToneSpectroscopyProgram(AveragerProgramV2):
     def _initialize(self, cfg):
         ro_chs = cfg['ro_ch']
@@ -39,16 +41,16 @@ class ResonanceSpectroscopy:
         self.q_config = all_qubit_state(system_config)
         self.config_orig = {**self.q_config[self.Qubit], **self.exp_cfg}
 
-        import copy
         self.config = copy.deepcopy(self.config_orig)
 
-        print(f'Q {self.QubitIndex + 1} Round {round_num} Res Spec configuration: ',self.config)
+
 
     def run(self, soccfg, soc):
         #defaults to 5, just make it to only look at this qubit
         res_gains = self.set_res_gain_ge(self.QubitIndex)
         self.config.update([('res_gain_ge', res_gains)])
 
+        print(f'Q {self.QubitIndex + 1} Round {self.round_num} Res Spec configuration: ', self.config)
 
         fpts = self.exp_cfg["start"] + self.exp_cfg["step_size"] * np.arange(self.exp_cfg["steps"])
         fcenter = self.config['res_freq_ge']
@@ -102,7 +104,7 @@ class ResonanceSpectroscopy:
         create_folder_if_not_exists(outerFolder_expt)
         now = datetime.datetime.now()
         formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-        file_name = outerFolder_expt + f"R_{self.round_num}" + f"Q_{self.QubitIndex+1}" + f"{formatted_datetime}_" + self.expt_name + ".png"
+        file_name = outerFolder_expt + f"R_{self.round_num}_" + f"Q_{self.QubitIndex+1}_" + f"{formatted_datetime}_" + self.expt_name + ".png"
         plt.savefig(file_name, dpi=300)
         plt.close()
 

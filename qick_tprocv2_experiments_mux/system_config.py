@@ -61,8 +61,7 @@ readout_cfg={
     # "res_freq_ef": [7149.44, 0, 0, 0, 0, 0], # [MHz]
     # "res_gain_ef": [0.6, 0, 0, 0, 0, 0], # [DAC units]
     "res_length": 4.0, # [us] (1.0 for res spec)
-    ### For qubit 4
-    "res_phase": [0, 0, 0,-1.804540*180/np.pi, 0, 0], # Rotation Angle From QICK Function
+    "res_phase": [-0.1006 *360/np.pi, -2.412527*360/np.pi, -1.821284*360/np.pi, -1.90962*360/np.pi, -0.566479*360/np.pi, -0.5941687*360/np.pi], # Rotation Angle From QICK Function, is the ang of 10 ss angles per qubit
     "ro_phase": [0, 0, 0, 0, 0, 0],  # Rotation Angle From QICK Function
     # "threshold": [0, 0, 0, 0, 0, 0], # Threshold for Distinguish g/e, from QICK Function
     }

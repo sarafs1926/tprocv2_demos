@@ -6,12 +6,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.optimize import curve_fit
 import datetime
+import copy
 
 class QubitSpectroscopy:
-    def __init__(self, QubitIndex, outerFolder, res_freqs, round_num):
+    def __init__(self, QubitIndex, outerFolder, res_freqs, round_num, signal):
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
         self.expt_name = "qubit_spec_ge"
+        self.signal = signal
 
         self.Qubit = 'Q' + str(self.QubitIndex)
         self.exp_cfg = expt_cfg[self.expt_name]
@@ -23,22 +25,23 @@ class QubitSpectroscopy:
         self.config_orig = {**self.q_config[self.Qubit], **self.exp_cfg}
         self.config_orig.update([('res_freq_ge', res_freqs)])
 
-        import copy
         self.config = copy.deepcopy(self.config_orig)
 
-        print(f'Q {self.QubitIndex + 1} Round {round_num} Qubit Spec configuration: ', self.config)
+
 
     def run(self, soccfg, soc):
         # defaults to 5, just make it to only look at this qubit
         res_gains = self.set_res_gain_ge(self.QubitIndex)
         self.config.update([('res_gain_ge', res_gains)])
 
+        print(f'Q {self.QubitIndex + 1} Round {self.round_num} Qubit Spec configuration: ', self.config)
+
         qspec = PulseProbeSpectroscopyProgram(soccfg, reps=self.config['reps'], final_delay=0.5, cfg=self.config)
         iq_list = qspec.acquire(soc, soft_avgs=self.exp_cfg["rounds"], progress=True)
         freqs = qspec.get_pulse_param('qubit_pulse', "freq", as_array=True)
 
-        self.plot_results(iq_list, freqs)
-        return self.config
+        widest_curve_mean = self.plot_results(iq_list, freqs)
+        return widest_curve_mean
 
     def set_res_gain_ge(self, QUBIT_INDEX, num_qubits=6):
         """Sets the gain for the selected qubit to 1, others to 0."""
@@ -53,7 +56,6 @@ class QubitSpectroscopy:
         I = iq_list[self.QubitIndex][0, :, 0]
         Q = iq_list[self.QubitIndex][0, :, 1]
 
-        print(freqs)
         freqs = np.array(freqs)
         freq_q = freqs[np.argmax(I)]
 
@@ -100,10 +102,11 @@ class QubitSpectroscopy:
         create_folder_if_not_exists(outerFolder_expt)
         now = datetime.datetime.now()
         formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-        file_name = outerFolder_expt + f"R_{self.round_num}" + f"Q_{self.QubitIndex+1}" + f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png"
+        file_name = outerFolder_expt + f"R_{self.round_num}_" + f"Q_{self.QubitIndex+1}_" + f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png"
 
         fig.savefig(file_name, dpi=300, bbox_inches='tight')  # , facecolor='white'
         plt.close(fig)
+        return widest_curve_mean
 
     def lorentzian(self, f, f0, gamma, A, B):
         return A * gamma ** 2 / ((f - f0) ** 2 + gamma ** 2) + B
@@ -160,15 +163,27 @@ class QubitSpectroscopy:
         fwhm_I = 2 * params_I[1]
         fwhm_Q = 2 * params_Q[1]
 
-        # Determine which fit has the widest curve
-        if fwhm_I > fwhm_Q:
-            widest_fit = "I"
+        # Calculate maximum amplitudes and use this to determine which has best signal
+        amp_I_fit = abs(np.max(I_fit) - np.min(I_fit))
+        amp_Q_fit = abs(np.max(Q_fit) - np.min(Q_fit))
+
+        # Determine which fit has the widest curve if signal is not specified
+        if 'None' in self.signal:
+            if amp_I_fit > amp_Q_fit:
+                widest_fit = "I"
+                widest_curve_mean = mean_I
+                widest_fwhm = fwhm_I
+            else:
+                widest_fit = "Q"
+                widest_curve_mean = mean_Q
+                widest_fwhm = fwhm_Q
+        elif 'I' in self.signal:
             widest_curve_mean = mean_I
             widest_fwhm = fwhm_I
-        else:
-            widest_fit = "Q"
+        else: #'Q' probably in self.signal
             widest_curve_mean = mean_Q
             widest_fwhm = fwhm_Q
+
 
         # Print the FWHM for the fit with the widest curve
         #print(f"The widest FWHM is for the {widest_fit} data: {widest_fwhm}")
