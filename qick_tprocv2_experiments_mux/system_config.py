@@ -5,6 +5,7 @@ sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos"
 from tprocv2_demos.qick_tprocv2_experiments_mux.socProxy import makeProxy
 import os
 import datetime
+import numpy as np
 
 def create_folder_if_not_exists(folder_path):
     """Creates a folder at the given path if it doesn't already exist."""
@@ -60,7 +61,8 @@ readout_cfg={
     # "res_freq_ef": [7149.44, 0, 0, 0, 0, 0], # [MHz]
     # "res_gain_ef": [0.6, 0, 0, 0, 0, 0], # [DAC units]
     "res_length": 4.0, # [us] (1.0 for res spec)
-    "res_phase": [0, 0, 0, 0, 0, 0], # Rotation Angle From QICK Function
+    ### For qubit 4
+    "res_phase": [0, 0, 0,-1.804540*180/np.pi, 0, 0], # Rotation Angle From QICK Function
     "ro_phase": [0, 0, 0, 0, 0, 0],  # Rotation Angle From QICK Function
     # "threshold": [0, 0, 0, 0, 0, 0], # Threshold for Distinguish g/e, from QICK Function
     }

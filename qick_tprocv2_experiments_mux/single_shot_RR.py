@@ -19,20 +19,25 @@ create_folder_if_not_exists(output_folder)
 
 n = 2
 j = 0
-Qs=[0,1,2,3,4,5]
-lengs = np.linspace(0.5,50,100)
+Qs=[1,2,3,4,5]
+#Qs=[0]
+#lengs = np.linspace(0.5,50,100)
+lengs = np.linspace(0.5,50,50)
 max_fid = {i: [] for i in range(0, 6)}
 while j < n:
     j += 1
     for QubitIndex in Qs:
         #QubitIndex = 0
         fids = []
+        fids2 = []
         for leng in lengs:
             # ------------------------Single Shot-------------------------
             ss = SingleShot(QubitIndex, outerFolder, j, round(leng, 3))
             fid = ss.run(soccfg, soc)
             fids.append(fid)
-            print(fids)
+            fid2 = ss.run(soccfg, soc)
+            fids2.append(fid2)
+            print(f'FID1 = {fid}, FID2 = {fid2}')
         plt.figure()
         maximum_index = np.argmax(fids)  # Find the index of the maximum value
         maximum_value = fids[maximum_index]  # Get the maximum value
@@ -41,9 +46,10 @@ while j < n:
         max_fid[QubitIndex].append(maximum_value)  # Store the maximum value if needed
         plt.axvline(max_length, color='orange', linestyle='--', linewidth=2)  # Vertical line at max length
         plt.plot(lengs, fids)
+        plt.plot(lengs,fids2,color='red')
         plt.xlabel('Readout and Pulse Length')
         plt.ylabel('Fidelity')
         plt.title(f'Maximum Fidelity at Length {max_length}: {maximum_value}')  # Update title
-        plt.savefig(os.path.join(output_folder, 'fidelity' + f"{QubitIndex}" + '.png'), dpi=300)
+        plt.savefig(os.path.join(output_folder, 'fidelity' + f"{QubitIndex+1}" + '.png'), dpi=300)
         #plt.show()
         plt.close()

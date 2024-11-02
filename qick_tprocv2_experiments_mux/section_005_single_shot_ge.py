@@ -203,18 +203,20 @@ class SingleShot:
         Q_e = iq_list_e[QubitIndex][0].T[1]
         print(QubitIndex)
 
-        fid, threshold, angle = self.hist_ssf(data=[I_g, Q_g, I_e, Q_e], plot=True, ran=10)
+        fid, threshold, angle = self.hist_ssf(data=[I_g, Q_g, I_e, Q_e], plot=True)
         print('Optimal fidelity after rotation = %.3f' % fid)
+        print('Optimal angle after rotation = %f' % angle)
+
         return fid
 
-    def hist_ssf(self, data=None, plot=True, ran=1.0): #we need to work on fixing the ran (range)
+    def hist_ssf(self, data=None, plot=True):
 
         ig = data[0]
         qg = data[1]
         ie = data[2]
         qe = data[3]
 
-        numbins = 200 #Wrk on this, this value is not right and it's hardcoded in
+        numbins = 60
 
         xg, yg = np.median(ig), np.median(qg)
         xe, ye = np.median(ie), np.median(qe)
@@ -245,9 +247,8 @@ class SingleShot:
         xe, ye = np.median(ie_new), np.median(qe_new)
 
         # print(xg, xe)
-
-        xlims = [xg - ran, xg + ran]
-        ylims = [yg - ran, yg + ran]
+        #xlims = [xg - ran, xg + ran]
+        xlims = [np.min(ig_new), np.max(ie_new)]
 
         if plot == True:
             axs[1].scatter(ig_new, qg_new, label='g', color='b', marker='*')
@@ -260,9 +261,9 @@ class SingleShot:
             axs[1].axis('equal')
 
             """X and Y ranges for histogram"""
-
             ng, binsg, pg = axs[2].hist(ig_new, bins=numbins, range=xlims, color='b', label='g', alpha=0.5)
             ne, binse, pe = axs[2].hist(ie_new, bins=numbins, range=xlims, color='r', label='e', alpha=0.5)
+
             axs[2].set_xlabel('I(a.u.)')
         else:
             ng, binsg = np.histogram(ig_new, bins=numbins, range=xlims)

@@ -1,14 +1,10 @@
-
-import datetime
-import numpy as np
 from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
-import h5py
-# Assuming these are defined elsewhere and importable
 from build_task import *
 from build_state import *
 from expt_config import *
 from system_config import *
+
 class T1Program(AveragerProgramV2):
     def _initialize(self, cfg):
         ro_ch = cfg['ro_ch']
@@ -66,10 +62,6 @@ class T1Measurement:
 
         print(f'Q {self.QubitIndex + 1} Round {round_num} T1 configuration: ', self.config)
 
-        self.q1_t1 = []
-        self.q1_t1_err = []
-        self.dates = []
-
     def run(self, soccfg, soc):
         # defaults to 5, just make it to only look at this qubit
         res_gains = self.set_res_gain_ge(self.QubitIndex)
@@ -82,7 +74,9 @@ class T1Measurement:
         iq_list = t1.acquire(soc, soft_avgs=self.exp_cfg['rounds'], progress=True)
         delay_times = t1.get_time_param('wait', "t", as_array=True)
 
-        self.plot_results(iq_list, delay_times, now, self.config, self.QubitIndex)
+        T1_est, T1_err, I, Q, q1_fit_exponential = self.plot_results(iq_list, delay_times, now, self.config, self.QubitIndex)
+        return  T1_est, T1_err, I, Q, delay_times, q1_fit_exponential
+
 
     def set_res_gain_ge(self, QUBIT_INDEX, num_qubits=6):
         """Sets the gain for the selected qubit to 1, others to 0."""
@@ -154,39 +148,5 @@ class T1Measurement:
         file_name = outerFolder_expt + f"R_{self.round_num}" + f"Q_{self.QubitIndex+1}" + f"{formatted_datetime}_" + self.expt_name + f"_q{QubitIndex + 1}.png"
         fig.savefig(file_name, dpi=300, bbox_inches='tight')  # , facecolor='white'
         plt.close(fig)
+        return T1_est, T1_err, I, Q, q1_fit_exponential
 
-        self.q1_t1.append(T1_est)
-        self.q1_t1_err.append(T1_err)
-
-
-        # Create the HDF5 file and save data
-        h5_filename = outerFolder_expt + f"{formatted_datetime}_" + self.expt_name + f"_q{QubitIndex + 1}.h5"
-        with h5py.File(h5_filename, 'w') as f:
-            # Save T1 and error
-            f.create_dataset("T1_estimates", data=np.array(self.q1_t1))
-            f.create_dataset("T1_errors", data=np.array(self.q1_t1_err))
-
-            # Save dates
-            f.create_dataset("dates", data=np.array(self.dates, dtype='S'))
-
-            # Save I, Q, and delay times
-            f.create_dataset("I", data=I)
-            f.create_dataset("Q", data=Q)
-            f.create_dataset("delay_times", data=delay_times)
-
-            # Save q1_fit_exponential so we can plot it later
-            f.create_dataset("q1_fit_exponential", data=q1_fit_exponential)
-
-            # Save the parameters needed for plotting the text
-            f.create_dataset("pi_amp", data=np.array([config['pi_amp']]))
-            f.create_dataset("sigma", data=np.array([config['sigma']]))
-            f.create_dataset("reps", data=np.array([config['reps']]))
-            f.create_dataset("rounds", data=np.array([config['rounds']]))
-            f.create_dataset("T1_est", data=np.array([T1_est]))
-            f.create_dataset("T1_err", data=np.array([T1_err]))
-
-            # Save plot_middle value
-            f.create_dataset("plot_middle", data=np.array([plot_middle]))
-
-            # Save Qubit_num as QubitIndex + 1
-            f.create_dataset("Qubit_num", data=np.array([QubitIndex + 1]))

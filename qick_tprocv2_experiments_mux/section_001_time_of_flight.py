@@ -18,7 +18,13 @@ class TOFExperiment:
         self.round_num = round_num
 
         # Update parameters to see TOF pulse with your setup
-        self.config.update([('trig_time', trigger_time)])  #starting off with TOF = 0, we will change this later to be the found TOF
+        # self.config.update([('trig_time', trigger_time)])  #starting off with TOF = 0, we will change this later to be the found TOF
+        # print("initial readout phase is")
+        # print(self.config['ro_phase'])
+        # new_phases = [np.float64(70.40572044377751), np.float64(-162.07287664422063), np.float64(-91.29642515281115), np.float64(-53.58106709833659), np.float64(13.776008961640695), np.float64(-7.341398813031154)]
+        # self.config.update([('ro_phase', new_phases)])  #starting off with TOF = 0, we will change this later to be the found TOF
+        # print("new readout phase is")
+        print(self.config['ro_phase'])
         print(f'Q {self.QubitIndex + 1} Round {round_num} TOF configuration: ',self.config)
 
 
@@ -59,6 +65,7 @@ class TOFExperiment:
     def plot_results(self, prog, iq_list):
         t = prog.get_time_axis(ro_index=0)
         fig, axes = plt.subplots(len(self.config['ro_ch']), 1, figsize=(12, 12))
+        phase_offsets=[]
         for i, ch in enumerate(self.config['ro_ch']):
             plot = axes[i]
             plot.plot(t, iq_list[i][:, 0], label="I value")
@@ -69,6 +76,11 @@ class TOFExperiment:
             plot.set_xlabel("us")
             plot.axvline(0.75, c='r')
 
+            phase_offset = np.angle(iq_list[i].dot([1, 1j]).sum(), deg=True)
+            # print("measured phase %f degrees" % (phase_offset))
+            phase_offsets.append(phase_offset)
+        #
+        print(phase_offsets)
         # Save
         outerFolder_expt = self.outerFolder + "/" + self.expt_name + "/"
         create_folder_if_not_exists(outerFolder_expt)
@@ -77,5 +89,4 @@ class TOFExperiment:
         file_name = outerFolder_expt + f"R_{self.round_num}" + f"Q_{self.QubitIndex+1}" + f"{formatted_datetime}_" + self.expt_name + ".png"
         plt.savefig(file_name, dpi=300)
         plt.close(fig)
-
 
