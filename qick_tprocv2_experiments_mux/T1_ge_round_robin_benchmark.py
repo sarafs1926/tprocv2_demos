@@ -1,8 +1,6 @@
 import sys
 import os
-
 import numpy as np
-
 sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
 from section_001_time_of_flight import TOFExperiment
 from section_002_res_spec_ge_mux import ResonanceSpectroscopy
@@ -11,13 +9,11 @@ from section_004_amp_rabi_ge import AmplitudeRabiExperiment
 from section_006_T1_ge import T1Measurement
 from section_005_single_shot_ge import SingleShot
 from section_007_save_T1 import Save
-
 from system_config import *
 
 
 # N benchmark
 n = 10
-#Qs=[1]
 Qs = [0,1,2,3,4,5]
 save_r = 2 #how many rounds to save after
 signal = 'None' # where the signal is (after ss/angle optimization). Put 'None' if no optimization has happened
