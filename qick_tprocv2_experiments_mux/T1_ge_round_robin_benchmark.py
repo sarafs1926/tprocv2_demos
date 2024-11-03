@@ -13,7 +13,7 @@ from system_config import *
 
 
 # N benchmark
-n = 10
+n = 1000
 Qs = [0,1,2,3,4,5]
 save_r = 2 #how many rounds to save after
 signal = 'None' # where the signal is (after ss/angle optimization). Put 'None' if no optimization has happened
