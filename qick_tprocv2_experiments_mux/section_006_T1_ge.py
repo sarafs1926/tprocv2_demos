@@ -1,3 +1,4 @@
+from prompt_toolkit.key_binding.bindings.named_commands import self_insert
 from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
 from build_task import *
@@ -46,21 +47,24 @@ class T1Program(AveragerProgramV2):
 
 
 class T1Measurement:
-    def __init__(self, QubitIndex, outerFolder, round_num, qubit_freq, signal):
+    def __init__(self, QubitIndex, outerFolder, round_num, qubit_freq, signal, save_figs, experiment):
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
         self.expt_name = "T1_ge"
         self.Qubit = 'Q' + str(self.QubitIndex)
+        self.experiment = experiment
         self.exp_cfg = expt_cfg[self.expt_name]
-        self.q_config = all_qubit_state(system_config)
+        self.q_config = all_qubit_state(self.experiment)
         self.round_num = round_num
         self.qubit_freq = qubit_freq
         self.signal = signal
+        self.save_figs = save_figs
+
 
         self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
-        self.config_orig = {**self.q_config[self.Qubit], **self.exp_cfg}
+        self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
 
-        self.config = copy.deepcopy(self.config_orig)
+        #self.config = copy.deepcopy(self.config_orig)
 
     def run(self, soccfg, soc):
         # defaults to 5, just make it to only look at this qubit
@@ -181,11 +185,12 @@ class T1Measurement:
 
         # Adjust the top margin to make room for the title
         plt.subplots_adjust(top=0.93)
-        outerFolder_expt = outerFolder + "/" + self.expt_name + "/"
-        self.create_folder_if_not_exists(outerFolder_expt)
+        self.experiment.outerFolder_expt = self.outerFolder + "/" + self.expt_name + "/"
+        self.create_folder_if_not_exists(self.experiment.outerFolder_expt)
         formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-        file_name = outerFolder_expt + f"R_{self.round_num}_" + f"Q_{self.QubitIndex+1}_" + f"{formatted_datetime}_" + self.expt_name + f"_q{QubitIndex + 1}.png"
-        fig.savefig(file_name, dpi=300, bbox_inches='tight')  # , facecolor='white'
+        file_name = self.experiment.outerFolder_expt + f"R_{self.round_num}_" + f"Q_{self.QubitIndex+1}_" + f"{formatted_datetime}_" + self.expt_name + f"_q{QubitIndex + 1}.png"
+        if self.save_figs:
+            fig.savefig(file_name, dpi=300, bbox_inches='tight')  # , facecolor='white'
         plt.close(fig)
         return T1_est, T1_err, I, Q, q1_fit_exponential
 

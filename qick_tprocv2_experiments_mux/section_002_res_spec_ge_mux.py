@@ -3,8 +3,8 @@ from qick.asm_v2 import AveragerProgramV2
 from tqdm import tqdm
 from build_state import *
 from expt_config import *
-from system_config import *
 import copy
+import datetime
 
 class SingleToneSpectroscopyProgram(AveragerProgramV2):
     def _initialize(self, cfg):
@@ -30,18 +30,20 @@ class SingleToneSpectroscopyProgram(AveragerProgramV2):
         self.pulse(ch=cfg['res_ch'], name="mymux", t=0)
 
 class ResonanceSpectroscopy:
-    def __init__(self, QubitIndex, outerFolder, round_num):
+    def __init__(self, QubitIndex, outerFolder, round_num, save_figs, experiment):
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
         self.expt_name = "res_spec"
         self.Qubit = 'Q' + str(self.QubitIndex)
         self.round_num = round_num
+        self.save_figs = save_figs
+        self.experiment = experiment
 
         self.exp_cfg = expt_cfg[self.expt_name]
-        self.q_config = all_qubit_state(system_config)
-        self.config_orig = {**self.q_config[self.Qubit], **self.exp_cfg}
+        self.q_config = all_qubit_state(self.experiment)
+        self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
 
-        self.config = copy.deepcopy(self.config_orig)
+        #self.config = copy.deepcopy(self.config_orig)
 
 
 
@@ -101,13 +103,13 @@ class ResonanceSpectroscopy:
         plt.tight_layout(pad=2.0)
 
         outerFolder_expt = self.outerFolder + "/" + self.expt_name + "/"
-        create_folder_if_not_exists(outerFolder_expt)
+        self.experiment.create_folder_if_not_exists(outerFolder_expt)
         now = datetime.datetime.now()
         formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
         file_name = outerFolder_expt + f"R_{self.round_num}_" + f"Q_{self.QubitIndex+1}_" + f"{formatted_datetime}_" + self.expt_name + ".png"
-        plt.savefig(file_name, dpi=300)
+        if self.save_figs:
+            plt.savefig(file_name, dpi=300)
         plt.close()
-
 
         res_freqs = [round(x, 3) for x in res_freqs]
         print("Resonator freqs:", res_freqs)

@@ -9,23 +9,25 @@ import datetime
 import copy
 
 class QubitSpectroscopy:
-    def __init__(self, QubitIndex, outerFolder, res_freqs, round_num, signal):
+    def __init__(self, QubitIndex, outerFolder, res_freqs, round_num, signal, save_figs, experiment):
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
         self.expt_name = "qubit_spec_ge"
         self.signal = signal
+        self.save_figs = save_figs
+        self.experiment = experiment
 
         self.Qubit = 'Q' + str(self.QubitIndex)
         self.exp_cfg = expt_cfg[self.expt_name]
-        self.q_config = all_qubit_state(system_config)
+        self.q_config = all_qubit_state(self.experiment)
         self.round_num = round_num
 
         self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
 
-        self.config_orig = {**self.q_config[self.Qubit], **self.exp_cfg}
-        self.config_orig.update([('res_freq_ge', res_freqs)])
+        self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
+        self.config.update([('res_freq_ge', res_freqs)])
 
-        self.config = copy.deepcopy(self.config_orig)
+        #self.config = copy.deepcopy(config_orig)
 
 
 
@@ -99,12 +101,13 @@ class QubitSpectroscopy:
 
         ### Save figure
         outerFolder_expt = self.outerFolder + "/" + self.expt_name + "/"
-        create_folder_if_not_exists(outerFolder_expt)
+        self.experiment.create_folder_if_not_exists(outerFolder_expt)
         now = datetime.datetime.now()
         formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
         file_name = outerFolder_expt + f"R_{self.round_num}_" + f"Q_{self.QubitIndex+1}_" + f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png"
 
-        fig.savefig(file_name, dpi=300, bbox_inches='tight')  # , facecolor='white'
+        if self.save_figs:
+            fig.savefig(file_name, dpi=300, bbox_inches='tight')  # , facecolor='white'
         plt.close(fig)
         return widest_curve_mean
 

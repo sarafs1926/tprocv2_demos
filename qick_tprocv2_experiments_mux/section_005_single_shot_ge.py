@@ -3,6 +3,7 @@ import datetime
 import numpy as np
 from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
+import math
 import h5py
 # Assuming these are defined elsewhere and importable
 from build_task import *
@@ -179,7 +180,8 @@ class SingleShot:
         iq_list_e = ssp_e.acquire(soc, soft_avgs=1, progress=True)
 
         fid, angle = self.plot_results(iq_list_g, iq_list_e, self.QubitIndex)
-        return fid, angle
+
+        return fid, angle, iq_list_g, iq_list_e
 
     def set_res_gain_ge(self, QUBIT_INDEX, num_qubits=6):
         """Sets the gain for the selected qubit to 1, others to 0."""
@@ -200,20 +202,20 @@ class SingleShot:
         Q_e = iq_list_e[QubitIndex][0].T[1]
         print(QubitIndex)
 
-        fid, threshold, angle = self.hist_ssf(data=[I_g, Q_g, I_e, Q_e], plot=True)
+        fid, threshold, angle = self.hist_ssf(data=[I_g, Q_g, I_e, Q_e], cfg=self.config, plot=True)
         print('Optimal fidelity after rotation = %.3f' % fid)
         print('Optimal angle after rotation = %f' % angle)
 
         return fid, angle
 
-    def hist_ssf(self, data=None, plot=True):
+    def hist_ssf(self, data=None, cfg=None, plot=True):
 
         ig = data[0]
         qg = data[1]
         ie = data[2]
         qe = data[3]
 
-        numbins = 60
+        numbins = round(math.sqrt(cfg["steps"]))
 
         xg, yg = np.median(ig), np.median(qg)
         xe, ye = np.median(ie), np.median(qe)
@@ -254,7 +256,7 @@ class SingleShot:
             axs[1].scatter(xe, ye, color='k', marker='o')
             axs[1].set_xlabel('I (a.u.)')
             axs[1].legend(loc='lower right')
-            axs[1].set_title('Rotated')
+            axs[1].set_title(f'Rotated Theta:{round(theta, 5)}')
             axs[1].axis('equal')
 
             """X and Y ranges for histogram"""
@@ -274,13 +276,14 @@ class SingleShot:
         axs[2].set_title(f"Fidelity = {fid * 100:.2f}%")
 
 
-        outerFolder_expt = self.outerFolder + "/" + self.expt_name + "/"
+        outerFolder_expt = self.outerFolder + "/ss_repeat_meas/Q" + str(self.QubitIndex + 1) + '/'
         self.create_folder_if_not_exists(outerFolder_expt)
         now = datetime.datetime.now()
         formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
         file_name = outerFolder_expt + f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png"
 
-        fig.savefig(file_name, dpi=300, bbox_inches='tight')
+        if self.round_num == 0:
+            fig.savefig(file_name, dpi=300, bbox_inches='tight')
         plt.close(fig)
 
         return fid, threshold, theta
