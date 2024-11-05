@@ -26,17 +26,12 @@ class AmplitudeRabiExperiment:
         self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
         self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
 
-
-        #self.config = copy.deepcopy(self.config_orig)
-
     def run(self, soccfg, soc):
         # defaults to 5, just make it to only look at this qubit
         res_gains = self.set_res_gain_ge(self.QubitIndex)
         self.config.update([('res_gain_ge', res_gains)])
 
         # now update for qubit frequency
-        #current_freqs = self.config['qubit_freq_ge']
-        #current_freqs[self.QubitIndex] = self.qubit_freq   #update with found freq from Qubit Spec
         self.config.update([('qubit_freq_ge', self.qubit_freq)])
 
         #look at the config before we do the experiment

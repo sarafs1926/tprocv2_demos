@@ -27,9 +27,6 @@ class QubitSpectroscopy:
         self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
         self.config.update([('res_freq_ge', res_freqs)])
 
-        #self.config = copy.deepcopy(config_orig)
-
-
 
     def run(self, soccfg, soc):
         # defaults to 5, just make it to only look at this qubit
@@ -60,7 +57,6 @@ class QubitSpectroscopy:
 
         freqs = np.array(freqs)
         freq_q = freqs[np.argmax(I)]
-
 
         mean_I, mean_Q, I_fit, Q_fit, widest_curve_mean, widest_fwhm = self.fit_lorenzian(I, Q, freqs, freq_q)
 

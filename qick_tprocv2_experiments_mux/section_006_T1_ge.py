@@ -60,11 +60,8 @@ class T1Measurement:
         self.signal = signal
         self.save_figs = save_figs
 
-
         self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
         self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
-
-        #self.config = copy.deepcopy(self.config_orig)
 
     def run(self, soccfg, soc):
         # defaults to 5, just make it to only look at this qubit

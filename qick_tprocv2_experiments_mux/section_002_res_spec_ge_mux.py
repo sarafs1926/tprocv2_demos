@@ -43,9 +43,6 @@ class ResonanceSpectroscopy:
         self.q_config = all_qubit_state(self.experiment)
         self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
 
-        #self.config = copy.deepcopy(self.config_orig)
-
-
 
     def run(self, soccfg, soc):
         #defaults to 5, just make it to only look at this qubit
