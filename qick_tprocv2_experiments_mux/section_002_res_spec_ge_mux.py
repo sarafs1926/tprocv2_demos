@@ -16,9 +16,10 @@ class SingleToneSpectroscopyProgram(AveragerProgramV2):
                          mux_gains=cfg['res_gain_ge'],
                          mux_phases=cfg['res_phase'],
                          mixer_freq=cfg['mixer_freq'])
+        
         for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ge'], cfg['ro_phase']):
             self.declare_readout(ch=ch, length=cfg['res_length'], freq=f, phase=ph, gen_ch=res_ch)
-
+        
         self.add_pulse(ch=res_ch, name="mymux",
                        style="const",
                        length=cfg["res_length"],
@@ -57,7 +58,9 @@ class ResonanceSpectroscopy:
 
         for index, f in enumerate(tqdm(fpts)):
             self.config["res_freq_ge"] = fcenter + f
+
             prog = SingleToneSpectroscopyProgram(soccfg, reps=self.exp_cfg["reps"], final_delay=0.5, cfg=self.config)
+
             iq_list = prog.acquire(soc, soft_avgs=self.exp_cfg["rounds"], progress=False)
             for i in range(len(self.config['res_freq_ge'])):
                 amps[i][index] = np.abs(iq_list[i][:, 0] + 1j * iq_list[i][:, 1])

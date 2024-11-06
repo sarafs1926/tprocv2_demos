@@ -19,10 +19,8 @@ Qs = [0,1,2,3,4,5]
 save_r = int(1) #how many rounds to save after
 signal = 'None' # where the signal is (after ss/angle optimization). Put 'None' if no optimization has happened
 
-#t1_data = {Q: {'T1': np.empty(save_r), 'Errors': np.empty(save_r), 'Dates': np.empty(save_r),
-#               'I': np.empty(save_r), 'Q':np.empty(save_r), 'Delay Times': np.empty(save_r), 'Fit': np.empty(save_r)} for Q in range(len(Qs))}
 t1_data = {Q: {'T1': [None]*save_r, 'Errors': [None]*save_r, 'Dates': [None]*save_r,
-               'I': [None]*save_r, 'Q':[None]*save_r, 'Delay Times': [None]*save_r, 'Fit': [None]*save_r} for Q in range(6)}
+               'I': [None]*save_r, 'Q':[None]*save_r, 'Delay Times': [None]*save_r, 'Fit': [None]*save_r} for Q in range(len(Qs))}
 
 save_figs=False
 batch_num=0

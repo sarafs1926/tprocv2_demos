@@ -15,7 +15,7 @@ class QICK_experiment:
 
         # Make proxy to the QICK
         self.soc, self.soccfg = makeProxy()
-        print(self.soccfg)
+        #print(self.soccfg)
 
         self.FSGEN_CH = 0
         self.MIXMUXGEN_CH = 4

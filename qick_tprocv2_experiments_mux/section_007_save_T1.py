@@ -21,6 +21,6 @@ class Save:
                 group = f.create_group(f'Q{QubitIndex + 1}')
 
                 # Save T1 estimates, errors, and dates
-                group.create_dataset("T1", data=data['T1'])
-                group.create_dataset("Errors", data=data['Errors'])
-                group.create_dataset("Dates", data=data['Dates'], dtype='S')
+                group.create_dataset("T1", data=np.array(data['T1'], dtype=np.float32))
+                group.create_dataset("Errors", data=np.array(data['Errors']))
+                group.create_dataset("Dates", data=np.array(data['Dates'], dtype='S'))
