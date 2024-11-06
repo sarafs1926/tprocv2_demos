@@ -311,7 +311,7 @@ class GainFrequencySweep:
         print('readout_length for this qubit: ',readout_length)
         for freq_step in range(freq_steps):
             freq = freq_range[0] + freq_step * freq_step_size
-            print('Running for res_freq: ', freq, '...')
+            #print('Running for res_freq: ', freq, '...')
             fid_results = []
             for gain_step in range(gain_steps):
                 experiment = QICK_experiment(self.output_folder)

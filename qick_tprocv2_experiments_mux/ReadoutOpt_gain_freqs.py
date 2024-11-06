@@ -17,7 +17,7 @@ optimal_lengths = [5.59, 9.66, 7.62, 9.66, 5.59, 9.66]
 
 # Define sweeping parameters
 gain_range = [0.5, 1.0]  # Gain range in a.u.
-freq_steps = 40
+freq_steps = 45
 gain_steps = 10
 
 for QubitIndex in range(6):
@@ -41,7 +41,7 @@ for QubitIndex in range(6):
     #plt.show()
     # Save the plot
     file= f"{outerFolder}Gain_Freq_Sweep_Qubit_{QubitIndex + 1}.png"
-    plt.savefig(file, dpi=300, bbox_inches='tight')
+    plt.savefig(file, dpi=600, bbox_inches='tight')
     plt.close()  # Close the plot to free up memory
 
     print(f"Saved plot for Qubit {QubitIndex + 1} to {file}")
