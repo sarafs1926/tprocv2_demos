@@ -6,6 +6,7 @@ from build_state import *
 from expt_config import *
 from system_config import *
 import copy
+import visdom
 
 class T1Program(AveragerProgramV2):
     def _initialize(self, cfg):
@@ -47,7 +48,7 @@ class T1Program(AveragerProgramV2):
 
 
 class T1Measurement:
-    def __init__(self, QubitIndex, outerFolder, round_num, qubit_freq, signal, save_figs, experiment):
+    def __init__(self, QubitIndex, outerFolder, round_num, signal, save_figs, experiment, live_plot):
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
         self.expt_name = "T1_ge"
@@ -56,42 +57,67 @@ class T1Measurement:
         self.exp_cfg = expt_cfg[self.expt_name]
         self.q_config = all_qubit_state(self.experiment)
         self.round_num = round_num
-        self.qubit_freq = qubit_freq
+        self.live_plot = live_plot
         self.signal = signal
         self.save_figs = save_figs
 
         self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
         self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
-
-    def run(self, soccfg, soc):
-        # defaults to 5, just make it to only look at this qubit
-        res_gains = self.set_res_gain_ge(self.QubitIndex)
-        self.config.update([('res_gain_ge', res_gains)])
-
-        # now update for qubit frequency
-        #current_freqs = self.config['qubit_freq_ge']
-        #current_freqs[self.QubitIndex] = self.qubit_freq  # update with found freq from Qubit Spec
-        self.config.update([('qubit_freq_ge', self.qubit_freq)])
-
-        # look at the config before we do the experiment
         print(f'Q {self.QubitIndex + 1} Round {self.round_num} T1 configuration: ', self.config)
 
+    def run(self, soccfg, soc):
         now = datetime.datetime.now()
-
         t1 = T1Program(soccfg, reps=self.exp_cfg['reps'], final_delay=self.exp_cfg['relax_delay'], cfg=self.config)
-        iq_list = t1.acquire(soc, soft_avgs=self.exp_cfg['rounds'], progress=True)
-        delay_times = t1.get_time_param('wait', "t", as_array=True)
 
-        T1_est, T1_err, I, Q, q1_fit_exponential = self.plot_results(iq_list, delay_times, now, self.config, self.QubitIndex)
+        if self.live_plot:
+            I, Q, delay_times = self.live_plotting(t1, soc)
+        else:
+            iq_list = t1.acquire(soc, soft_avgs=self.exp_cfg['rounds'], progress=True)
+            I = iq_list[self.QubitIndex][0, :, 0]
+            Q = iq_list[self.QubitIndex][0, :, 1]
+            delay_times = t1.get_time_param('wait', "t", as_array=True)
+
+        T1_est, T1_err, I, Q, q1_fit_exponential = self.plot_results(I, Q, delay_times, now, self.config, self.QubitIndex)
         return  T1_est, T1_err, I, Q, delay_times, q1_fit_exponential
 
+    def live_plotting(self, t1, soc):
+        I = Q = expt_mags = expt_phases = expt_pop = None
+        viz = visdom.Visdom()
+        assert viz.check_connection(timeout_seconds=5), "Visdom server not connected!"
+        viz.close(win=None)  # close previous plots
+        win1 = viz.line(X=np.arange(0, 1), Y=np.arange(0, 1),
+                        opts=dict(height=400, width=700, title='T2 Ramsey Experiment', showlegend=True,
+                                  xlabel='expt_pts'))
 
-    def set_res_gain_ge(self, QUBIT_INDEX, num_qubits=6):
-        """Sets the gain for the selected qubit to 1, others to 0."""
-        res_gain_ge = [0] * num_qubits  # Initialize all gains to 0
-        if 0 <= QUBIT_INDEX < num_qubits:  # makes sure you are within the range of options
-            res_gain_ge[QUBIT_INDEX] = 1  # Set the gain for the selected qubit
-        return res_gain_ge
+        for ii in range(self.config["rounds"]):
+            iq_list = t1.acquire(soc, soft_avgs=1, progress=True)
+            delay_times = t1.get_time_param('wait', "t", as_array=True)
+
+            this_I = iq_list[self.QubitIndex][0, :, 0]
+            this_Q = iq_list[self.QubitIndex][0, :, 1]
+
+            if I is None:  # ii == 0
+                I, Q = this_I, this_Q
+            else:
+                I = (I * ii + this_I) / (ii + 1.0)
+                Q = (Q * ii + this_Q) / (ii + 1.0)
+
+            if 'I' in self.signal:
+                signal = I
+                plot_sig = 'I'
+            elif 'Q' in self.signal:
+                signal = Q
+                plot_sig = 'Q'
+            else:
+                if abs(I[-1] - I[0]) > abs(Q[-1] - Q[0]):
+                    signal = I
+                    plot_sig = 'I'
+                else:
+                    signal = Q
+                    plot_sig = 'Q'
+
+            viz.line(X=delay_times, Y=signal, win=win1, name=plot_sig)
+        return I, Q, delay_times
 
     def exponential(self, x, a, b, c, d):
         return a * np.exp(-(x - b) / c) + d
@@ -104,12 +130,9 @@ class T1Measurement:
     def exponential(self, x, a, b, c, d):
         return a * np.exp(- (x - b) / c) + d
 
-    def plot_results(self, iq_list, delay_times, now, config, QubitIndex):
+    def plot_results(self, I, Q, delay_times, now, config, QubitIndex):
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
         plt.rcParams.update({'font.size': 18})
-
-        I = iq_list[self.QubitIndex][0, :, 0]
-        Q = iq_list[self.QubitIndex][0, :, 1]
 
         if 'I' in self.signal:
             signal = I

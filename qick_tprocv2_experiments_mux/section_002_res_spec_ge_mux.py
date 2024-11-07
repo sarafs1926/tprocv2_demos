@@ -39,42 +39,26 @@ class ResonanceSpectroscopy:
         self.round_num = round_num
         self.save_figs = save_figs
         self.experiment = experiment
-
         self.exp_cfg = expt_cfg[self.expt_name]
-        self.q_config = all_qubit_state(self.experiment)
+        self.q_config = all_qubit_state(experiment)
         self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
-
-
-    def run(self, soccfg, soc):
-        #defaults to 5, just make it to only look at this qubit
-        res_gains = self.set_res_gain_ge(self.QubitIndex)
-        self.config.update([('res_gain_ge', res_gains)])
-
         print(f'Q {self.QubitIndex + 1} Round {self.round_num} Res Spec configuration: ', self.config)
 
+    def run(self, soccfg, soc):
         fpts = self.exp_cfg["start"] + self.exp_cfg["step_size"] * np.arange(self.exp_cfg["steps"])
         fcenter = self.config['res_freq_ge']
         amps = np.zeros((len(fcenter), len(fpts)))
 
         for index, f in enumerate(tqdm(fpts)):
             self.config["res_freq_ge"] = fcenter + f
-
             prog = SingleToneSpectroscopyProgram(soccfg, reps=self.exp_cfg["reps"], final_delay=0.5, cfg=self.config)
-
             iq_list = prog.acquire(soc, soft_avgs=self.exp_cfg["rounds"], progress=False)
             for i in range(len(self.config['res_freq_ge'])):
                 amps[i][index] = np.abs(iq_list[i][:, 0] + 1j * iq_list[i][:, 1])
         amps = np.array(amps)
-        res_freqs = self.plot_results(fpts, fcenter, amps) #return freqs from plotting loop
+        res_freqs = self.plot_results(fpts, fcenter, amps) #return freqs from plotting loop so we can use to update experiment
 
         return res_freqs
-
-    def set_res_gain_ge(self, QUBIT_INDEX, num_qubits=6):
-        """Sets the gain for the selected qubit to 1, others to 0."""
-        res_gain_ge = [0] * num_qubits  # Initialize all gains to 0
-        if 0 <= QUBIT_INDEX < num_qubits:  # makes sure you are within the range of options
-            res_gain_ge[QUBIT_INDEX] = 1  # Set the gain for the selected qubit
-        return res_gain_ge
 
     def plot_results(self, fpts, fcenter, amps):
         res_freqs = []
@@ -112,8 +96,6 @@ class ResonanceSpectroscopy:
         plt.close()
 
         res_freqs = [round(x, 3) for x in res_freqs]
-        print("Resonator freqs:", res_freqs)
-
         return res_freqs
 
 

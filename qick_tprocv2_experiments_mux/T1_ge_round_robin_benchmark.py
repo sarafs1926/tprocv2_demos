@@ -10,19 +10,26 @@ from section_004_amp_rabi_ge import AmplitudeRabiExperiment
 from section_006_T1_ge import T1Measurement
 from section_005_single_shot_ge import SingleShot
 from section_007_save_T1 import Save
+from section_008_T2R_ge import T2RMeasurement
 from system_config import QICK_experiment
+from expt_config import *
 
 
 # N benchmark
-n = 1000
-Qs = [0,1,2,3,4,5]
+n = 1
+Q#s = [0,1,2,3,4,5]
+Qs =[1]
 save_r = int(1) #how many rounds to save after
 signal = 'None' # where the signal is (after ss/angle optimization). Put 'None' if no optimization has happened
 
 t1_data = {Q: {'T1': [None]*save_r, 'Errors': [None]*save_r, 'Dates': [None]*save_r,
-               'I': [None]*save_r, 'Q':[None]*save_r, 'Delay Times': [None]*save_r, 'Fit': [None]*save_r} for Q in range(len(Qs))}
+               'I': [None]*save_r, 'Q':[None]*save_r, 'Delay Times': [None]*save_r, 'Fit': [None]*save_r} for Q in range(6)}
 
-save_figs=False
+t2r_data = {Q: {'T2': [None]*save_r, 'Errors': [None]*save_r, 'Dates': [None]*save_r,
+                'I': [None]*save_r, 'Q':[None]*save_r, 'Delay Times': [None]*save_r, 'Fit': [None]*save_r} for Q in range(6)}
+
+save_figs = True
+live_plot = True
 batch_num=0
 j = 0
 angles=[]
@@ -33,42 +40,48 @@ while j < n:
         #Get the config for this qubit
         experiment = QICK_experiment(outerFolder)
 
-        # ---------------------TOF------------------------
-        #tof = TOFExperiment(QubitIndex, outerFolder, j)
-        #tof.run(soccfg, soc)
+        #Mask out all other resonators except this one
+        res_gains = experiment.set_gain_filter_ge(QubitIndex, IndexGain=1)
+        experiment.readout_cfg['res_gain_ge'] = res_gains
 
-        #---------------------Res spec---------------------
-        res_spec = ResonanceSpectroscopy(QubitIndex, outerFolder, j, save_figs, experiment)
-        res_freqs = res_spec.run(experiment.soccfg, experiment.soc)
-        del res_spec
+        # # ---------------------TOF------------------------
+        # tof        = TOFExperiment(QubitIndex, outerFolder, j, save_figs, experiment)
+        # tof.run(experiment.soccfg, experiment.soc)
+        # del tof
+        #
+        # #---------------------Res spec---------------------
+        # res_spec   = ResonanceSpectroscopy(QubitIndex, outerFolder, j, save_figs, experiment)
+        # res_freqs = res_spec.run(experiment.soccfg, experiment.soc)
+        # experiment.readout_cfg['res_freq_ge'] = res_freqs
+        # del res_spec
 
         #-----------------Roll Signal into I---------------
         #get the average theta value, then use that to rotate the signal. Plug that value into system_config res_phase
-        # ss = SingleShot(QubitIndex, outerFolder, j, round(4, 3))
-        # fid, angle = ss.run(soccfg, soc)
+        # leng=4
+        # ss = SingleShot(QubitIndex, outerFolder, experiment, j, leng, save_figs)
+        # fid, angle, iq_list_g, iq_list_e = ss.run(experiment.soccfg, experiment.soc)
         # angles.append(angle)
         # print(angles)
         # print('avg theta: ', np.average(angles))
+        # del ss
 
         #--------------------Qubit spec--------------------
-        # Right now this does not return qubit frequency or update the config with the found values, do we want to change that?
-        #only need to update the res_freqs here, it will update the imported config and will change all following classes
-        q_spec = QubitSpectroscopy(QubitIndex, outerFolder, res_freqs, j, signal, save_figs, experiment)
-        qubit_freq = q_spec.run(experiment.soccfg, experiment.soc)
-        del q_spec
+        # q_spec = QubitSpectroscopy(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot)
+        # qubit_freq = q_spec.run(experiment.soccfg, experiment.soc)
+        # experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = float(qubit_freq)
+        # del q_spec
 
-        #-----------------------Rabi-----------------------
-        # Right now this does not have updated fitting, we need to make sure this fit works every time
-        rabi = AmplitudeRabiExperiment(QubitIndex, outerFolder, j, qubit_freq, signal, save_figs, experiment)
-        rabi.run(experiment.soccfg, experiment.soc)
-        del rabi
+        # #-----------------------Rabi-----------------------
+        # rabi = AmplitudeRabiExperiment(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot)
+        # rabi.run(experiment.soccfg, experiment.soc)
+        # del rabi
 
         #------------------------T1-------------------------
-        # Also need to update the fit here. Maybe do custom fits for all three of these classes (QSpec/Rabi/T1)
-        t1 = T1Measurement(QubitIndex, outerFolder, j, qubit_freq, signal, save_figs, experiment)
+        t1 = T1Measurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot)
         t1_est, t1_err, I, Q, delay_times, q1_fit_exponential = t1.run(experiment.soccfg, experiment.soc)
 
-        #---------------------Collect Results----------------
+        #---------------------Collect T1 Results----------------
+
         t1_data[QubitIndex]['T1'][j - batch_num*save_r - 1] = t1_est
         t1_data[QubitIndex]['Errors'][j - batch_num*save_r - 1] = t1_err
         t1_data[QubitIndex]['Dates'][j - batch_num*save_r - 1] = datetime.datetime.now()
@@ -77,15 +90,32 @@ while j < n:
         t1_data[QubitIndex]['Delay Times'][j - batch_num*save_r - 1] = delay_times
         t1_data[QubitIndex]['Fit'][j - batch_num*save_r - 1] = q1_fit_exponential
 
+        #------------------------T2R-------------------------
+        t2r = T2RMeasurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot=True)
+        t2r_est, t2r_err, I, Q, delay_times, fit_ramsey = t2r.run(experiment.soccfg, experiment.soc)
+
+        #---------------------Collect T2 Results----------------
+        t2r_data[QubitIndex]['T2'][j - batch_num*save_r - 1] = t2r_est
+        t2r_data[QubitIndex]['Errors'][j - batch_num*save_r - 1] = t2r_err
+        t2r_data[QubitIndex]['Dates'][j - batch_num*save_r - 1] = datetime.datetime.now()
+        t2r_data[QubitIndex]['I'][j - batch_num*save_r - 1] = I
+        t2r_data[QubitIndex]['Q'][j - batch_num*save_r - 1] = Q
+        t2r_data[QubitIndex]['Delay Times'][j - batch_num*save_r - 1] = delay_times
+        t2r_data[QubitIndex]['Fit'][j - batch_num*save_r - 1] = q1_fit_exponential
+
+
         del experiment
 
     #-----------------------Potentially Save---------------
-    # Check if you are at the right round number. If so, then save all of the data and change the round num so you rereplace data starting next round
+    # Check if you are at the right round number. If so, then save all of the data and change the round num so you replace data starting next round
     if j % save_r == 0:
         batch_num+=1
-        saver = Save(outerFolder,t1_data, batch_num, save_r)
-        saver.save_to_h5()
-        del saver
+        saver_t1 = Save(outerFolder,t1_data, batch_num, save_r)
+        saver_t1.save_to_h5('T1')
+        del saver_t1
+        saver_t2r = Save(outerFolder, t2r_data, batch_num, save_r)
+        saver_t2r.save_to_h5('T2')
+        del saver_t2r
 
 
 

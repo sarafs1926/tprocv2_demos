@@ -11,6 +11,7 @@ from build_state import *
 from expt_config import *
 from system_config import QICK_experiment
 import copy
+import os
 
 # Both g and e during the same experiment.
 class SingleShotProgram(AveragerProgramV2):
@@ -55,7 +56,6 @@ class SingleShotProgram(AveragerProgramV2):
 
 
 # Separate g and e per each experiment defined.
-
 class SingleShotProgram_g(AveragerProgramV2):
     def _initialize(self, cfg):
 
@@ -115,7 +115,6 @@ class SingleShotProgram_e(AveragerProgramV2):
         for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ge'], cfg['ro_phase']):
             self.declare_readout(ch=ch, length=cfg['res_length'], freq=f, phase=ph, gen_ch=gen_ch)
 
-
         self.add_pulse(ch=gen_ch, name="res_pulse",
                        style="const",
                        length=cfg["res_length"],
@@ -160,18 +159,9 @@ class SingleShot:
         self.q1_t1 = []
         self.q1_t1_err = []
         self.dates = []
+        print(f'Q {self.QubitIndex + 1} Round {self.round_num} Single Shot configuration: ', self.config)
 
     def run(self, soccfg, soc):
-        # defaults to 5, just make it to only look at this qubit
-        res_gains = self.set_res_gain_ge(self.QubitIndex)
-        self.config.update([('res_gain_ge', res_gains)])
-
-        self.config.update([('res_length', self.leng)])
-        self.config.update([('ro_length', self.leng)])
-
-        # look at the config before we do the experiment
-        #print(f'Q {self.QubitIndex + 1} Round {self.round_num} Single Shot configuration: ', self.config)
-
         ssp_g = SingleShotProgram_g(soccfg, reps=1, final_delay=self.config['relax_delay'], cfg=self.config)
         iq_list_g = ssp_g.acquire(soc, soft_avgs=1, progress=True)
 
@@ -179,20 +169,7 @@ class SingleShot:
         iq_list_e = ssp_e.acquire(soc, soft_avgs=1, progress=True)
 
         fid, angle = self.plot_results(iq_list_g, iq_list_e, self.QubitIndex)
-
         return fid, angle, iq_list_g, iq_list_e
-
-    def set_res_gain_ge(self, QUBIT_INDEX, num_qubits=6):
-        """Sets the gain for the selected qubit to 1, others to 0."""
-        res_gain_ge = [0] * num_qubits  # Initialize all gains to 0
-        if 0 <= QUBIT_INDEX < num_qubits:  # makes sure you are within the range of options
-            res_gain_ge[QUBIT_INDEX] = 1  # Set the gain for the selected qubit
-        return res_gain_ge
-
-    def create_folder_if_not_exists(self, folder_path):
-        import os
-        if not os.path.exists(folder_path):
-            os.makedirs(folder_path)
 
     def plot_results(self, iq_list_g, iq_list_e, QubitIndex):
         I_g = iq_list_g[QubitIndex][0].T[0]
@@ -272,6 +249,7 @@ class SingleShot:
         tind = contrast.argmax()
         threshold = binsg[tind]
         fid = contrast[tind]
+        axs[2].set_title(f"Fidelity = {fid * 100:.2f}%")
 
         outerFolder_expt = self.outerFolder + "/ss_repeat_meas/Q" + str(self.QubitIndex + 1) + '/'
         self.create_folder_if_not_exists(outerFolder_expt)
@@ -285,6 +263,11 @@ class SingleShot:
             plt.close(fig)
 
         return fid, threshold, theta
+
+    def create_folder_if_not_exists(self, folder):
+        """Creates a folder at the given path if it doesn't already exist."""
+        if not os.path.exists(folder):
+            os.makedirs(folder)
 
 
 class GainFrequencySweep:
@@ -345,7 +328,7 @@ class GainFrequencySweep:
                 fidelity, _, _ = single_shot.hist_ssf(
                     data=[iq_list_g[self.qubit_index][0].T[0], iq_list_g[self.qubit_index][0].T[1],
                           iq_list_e[self.qubit_index][0].T[0], iq_list_e[self.qubit_index][0].T[1]],
-                    cfg=config, plot=False)
+                    cfg=config, plot=True)
 
                 fid_results.append(fidelity)
                 del experiment

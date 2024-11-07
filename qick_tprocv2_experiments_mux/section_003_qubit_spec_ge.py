@@ -1,15 +1,15 @@
 from build_task import *
 from build_state import *
 from expt_config import *
-from system_config import *
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.optimize import curve_fit
 import datetime
 import copy
+import visdom
 
 class QubitSpectroscopy:
-    def __init__(self, QubitIndex, outerFolder, res_freqs, round_num, signal, save_figs, experiment):
+    def __init__(self, QubitIndex, outerFolder,  round_num, signal, save_figs, experiment, live_plot):
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
         self.expt_name = "qubit_spec_ge"
@@ -21,40 +21,70 @@ class QubitSpectroscopy:
         self.exp_cfg = expt_cfg[self.expt_name]
         self.q_config = all_qubit_state(self.experiment)
         self.round_num = round_num
-
+        self.live_plot = live_plot
         self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
-
         self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
-        self.config.update([('res_freq_ge', res_freqs)])
-
-
-    def run(self, soccfg, soc):
-        # defaults to 5, just make it to only look at this qubit
-        res_gains = self.set_res_gain_ge(self.QubitIndex)
-        self.config.update([('res_gain_ge', res_gains)])
 
         print(f'Q {self.QubitIndex + 1} Round {self.round_num} Qubit Spec configuration: ', self.config)
 
+    def run(self, soccfg, soc):
         qspec = PulseProbeSpectroscopyProgram(soccfg, reps=self.config['reps'], final_delay=0.5, cfg=self.config)
-        iq_list = qspec.acquire(soc, soft_avgs=self.exp_cfg["rounds"], progress=True)
-        freqs = qspec.get_pulse_param('qubit_pulse', "freq", as_array=True)
 
-        widest_curve_mean = self.plot_results(iq_list, freqs)
+        # iq_lists= []
+        if self.live_plot:
+            I, Q, freqs = self.live_plotting(qspec, soc)
+        else:
+            iq_list = qspec.acquire(soc, soft_avgs=self.exp_cfg["rounds"], progress=True)
+            I = iq_list[self.QubitIndex][0, :, 0]
+            Q = iq_list[self.QubitIndex][0, :, 1]
+            freqs = qspec.get_pulse_param('qubit_pulse', "freq", as_array=True)
+
+        widest_curve_mean = self.plot_results(I, Q, freqs)
         return widest_curve_mean
 
-    def set_res_gain_ge(self, QUBIT_INDEX, num_qubits=6):
-        """Sets the gain for the selected qubit to 1, others to 0."""
-        res_gain_ge = [0] * num_qubits  # Initialize all gains to 0
-        if 0 <= QUBIT_INDEX < num_qubits:  # makes sure you are within the range of options
-            res_gain_ge[QUBIT_INDEX] = 1  # Set the gain for the selected qubit
-        return res_gain_ge
+    def live_plotting(self, qspec, soc):
+        I = Q = expt_mags = expt_phases = expt_pop = None
+        viz = visdom.Visdom()
+        assert viz.check_connection(timeout_seconds=5), "Visdom server not connected!"
+        viz.close(win=None)  # close previous plots
+        win1 = viz.line(X=np.arange(0, 1), Y=np.arange(0, 1),
+                        opts=dict(height=400, width=700, title='T2 Ramsey Experiment', showlegend=True,
+                                  xlabel='expt_pts'))
 
-    def plot_results(self, iq_list, freqs):
+        for ii in range(self.config["rounds"]):
+            iq_list = qspec.acquire(soc, soft_avgs=1, progress=True)
+            freqs = qspec.get_pulse_param('qubit_pulse', "freq", as_array=True)
 
-        # Prepare your data
-        I = iq_list[self.QubitIndex][0, :, 0]
-        Q = iq_list[self.QubitIndex][0, :, 1]
+            this_I = iq_list[self.QubitIndex][0, :, 0]
+            this_Q = iq_list[self.QubitIndex][0, :, 1]
 
+            if I is None:  # ii == 0
+                I, Q = this_I, this_Q
+            else:
+                I = (I * ii + this_I) / (ii + 1.0)
+                Q = (Q * ii + this_Q) / (ii + 1.0)
+
+            if 'I' in self.signal:
+                signal = I
+                plot_sig = 'I'
+            elif 'Q' in self.signal:
+                signal = Q
+                plot_sig = 'Q'
+            else:
+                if abs(I[-1] - I[0]) > abs(Q[-1] - Q[0]):
+                    signal = I
+                    plot_sig = 'I'
+                else:
+                    signal = Q
+                    plot_sig = 'Q'
+
+            viz.line(X=freqs, Y=signal, win=win1, name=plot_sig)
+        return I, Q, freqs
+
+
+
+
+    def plot_results(self, I, Q, freqs):
         freqs = np.array(freqs)
         freq_q = freqs[np.argmax(I)]
 
