@@ -17,7 +17,7 @@ from expt_config import *
 
 # N benchmark
 n = 1
-Q#s = [0,1,2,3,4,5]
+#Qs = [0,1,2,3,4,5]
 Qs =[1]
 save_r = int(1) #how many rounds to save after
 signal = 'None' # where the signal is (after ss/angle optimization). Put 'None' if no optimization has happened
@@ -44,37 +44,37 @@ while j < n:
         res_gains = experiment.set_gain_filter_ge(QubitIndex, IndexGain=1)
         experiment.readout_cfg['res_gain_ge'] = res_gains
 
-        # # ---------------------TOF------------------------
-        # tof        = TOFExperiment(QubitIndex, outerFolder, j, save_figs, experiment)
-        # tof.run(experiment.soccfg, experiment.soc)
-        # del tof
-        #
-        # #---------------------Res spec---------------------
-        # res_spec   = ResonanceSpectroscopy(QubitIndex, outerFolder, j, save_figs, experiment)
-        # res_freqs = res_spec.run(experiment.soccfg, experiment.soc)
-        # experiment.readout_cfg['res_freq_ge'] = res_freqs
-        # del res_spec
+        # ---------------------TOF------------------------
+        tof        = TOFExperiment(QubitIndex, outerFolder, j, save_figs, experiment)
+        tof.run(experiment.soccfg, experiment.soc)
+        del tof
+
+        #---------------------Res spec---------------------
+        res_spec   = ResonanceSpectroscopy(QubitIndex, outerFolder, j, save_figs, experiment)
+        res_freqs = res_spec.run(experiment.soccfg, experiment.soc)
+        experiment.readout_cfg['res_freq_ge'] = res_freqs
+        del res_spec
 
         #-----------------Roll Signal into I---------------
         #get the average theta value, then use that to rotate the signal. Plug that value into system_config res_phase
-        # leng=4
-        # ss = SingleShot(QubitIndex, outerFolder, experiment, j, leng, save_figs)
-        # fid, angle, iq_list_g, iq_list_e = ss.run(experiment.soccfg, experiment.soc)
-        # angles.append(angle)
-        # print(angles)
-        # print('avg theta: ', np.average(angles))
-        # del ss
+        leng=4
+        ss = SingleShot(QubitIndex, outerFolder, experiment, j, leng, save_figs)
+        fid, angle, iq_list_g, iq_list_e = ss.run(experiment.soccfg, experiment.soc)
+        angles.append(angle)
+        print(angles)
+        print('avg theta: ', np.average(angles))
+        del ss
 
         #--------------------Qubit spec--------------------
-        # q_spec = QubitSpectroscopy(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot)
-        # qubit_freq = q_spec.run(experiment.soccfg, experiment.soc)
-        # experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = float(qubit_freq)
-        # del q_spec
+        q_spec = QubitSpectroscopy(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot)
+        qubit_freq = q_spec.run(experiment.soccfg, experiment.soc)
+        experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = float(qubit_freq)
+        del q_spec
 
-        # #-----------------------Rabi-----------------------
-        # rabi = AmplitudeRabiExperiment(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot)
-        # rabi.run(experiment.soccfg, experiment.soc)
-        # del rabi
+        #-----------------------Rabi-----------------------
+        rabi = AmplitudeRabiExperiment(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot)
+        rabi.run(experiment.soccfg, experiment.soc)
+        del rabi
 
         #------------------------T1-------------------------
         t1 = T1Measurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot)
