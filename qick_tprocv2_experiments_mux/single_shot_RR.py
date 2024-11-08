@@ -1,10 +1,16 @@
 from section_005_single_shot_ge import SingleShot
-from system_config import *
+#from system_config import *
+from system_config import QICK_experiment
 import numpy as np
 import matplotlib.pyplot as plt
 import os
 import h5py
 import datetime
+from expt_config import *
+from qick.asm_v2 import AveragerProgramV2
+from tqdm import tqdm
+from build_state import *
+from expt_config import *
 
 def create_folder_if_not_exists(folder_path):
     """Creates a folder at the given path if it doesn't already exist."""
@@ -20,16 +26,20 @@ n = 1  # Number of rounds
 n_loops = 5  # Number of repetitions per length to average
 
 # List of qubits and pulse lengths to measure
-Qs = [0,1,2,3,4,5]  # already ran the first qubit, doing the other 5 now
+Qs = [0]
 
 lengs = np.linspace(0.5, 30, 30)  # Range of pulse lengths to measure
 
 for QubitIndex in Qs:
+    QubitIndex = int(QubitIndex)  # Ensure QubitIndex is an integer
+
     avg_fids = []
     rms_fids = []
 
     # Create a single HDF5 file for each qubit
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    #print("Output folder:", output_folder)
+    #print("Type of output_folder:", type(output_folder))
     h5_filename = os.path.join(output_folder, f"qubit_{QubitIndex + 1}_data_{timestamp}.h5")
     with h5py.File(h5_filename, 'w') as h5_file:
         # Top-level group for the qubit
@@ -50,8 +60,29 @@ for QubitIndex in Qs:
 
             for k in range(n_loops): #loops for each read out length
                 # ------------------------Single Shot-------------------------
-                ss = SingleShot(QubitIndex, output_folder, k, round(leng, 3))
-                fid, angle, iq_list_g, iq_list_e = ss.run(soccfg, soc)
+                # Initialize experiment for each loop iteration
+                experiment = QICK_experiment(output_folder)
+                # Set specific configuration values for each iteration
+                experiment.readout_cfg['res_length'] = leng  # Set the current readout pulse length
+
+                # Set gain for the current qubit
+                gain = 1
+                res_gains = experiment.set_gain_filter_ge(QubitIndex, gain)  # Set gain for current qubit only
+
+                experiment.readout_cfg['res_gain_ge'] = res_gains
+
+                """
+                exp_cfg = expt_cfg["Readout_Optimization"]
+                q_config = all_qubit_state(experiment)
+                Qubit = 'Q' + str(QubitIndex)
+                
+                # Combine specific qubit configuration with experiment-specific settings
+                config = {**q_config[Qubit], **exp_cfg}"""
+                #print(f"Single Shot configuration:", config)
+
+                #ss = SingleShot(QubitIndex, output_folder, k, round(leng, 3)) #Old way
+                ss = SingleShot(QubitIndex, output_folder, experiment, round_num=k, leng=round(leng, 3), save_figs=True)#New way
+                fid, angle, iq_list_g, iq_list_e = ss.run(experiment.soccfg, experiment.soc)
                 fids.append(fid)
                 print(f'FID (round {k}) = {fid}')
 
@@ -64,6 +95,8 @@ for QubitIndex in Qs:
                 loop_group.create_dataset("fidelity", data=fid)
                 loop_group.create_dataset("ground_iq_data", data=iq_list_g)
                 loop_group.create_dataset("excited_iq_data", data=iq_list_e)
+
+                del experiment
 
             # Calculate average and RMS for fidelities across loops
             avg_fid = np.mean(fids)
@@ -94,7 +127,7 @@ for QubitIndex in Qs:
     plt.figure()
     plt.errorbar(lengs, avg_fids, yerr=rms_fids, fmt='-o', color='black')
     plt.axvline(x=max_len, linestyle="--", color="red")
-    plt.text(max_len + 1, avg_fids[0], f'max length {max_len}')
+    plt.text(max_len + 1, avg_fids[0], f'max length {max_len:.4f}', color='red')
     plt.xlabel('Readout and Pulse Length')
     plt.ylabel('Fidelity')
     plt.title(f'Avg Fidelity vs. Readout and Pulse Length for Qubit {QubitIndex + 1}, ({n_loops} repetitions)')

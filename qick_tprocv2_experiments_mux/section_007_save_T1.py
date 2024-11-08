@@ -16,7 +16,7 @@ class Save:
             os.makedirs(folder)
 
     def save_to_h5(self, t_type):
-        self.outerFolder_expt = self.outerFolder_expt + "/" + "{t_type}_ge" + "/"
+        self.outerFolder_expt = self.outerFolder_expt + "/" + f"{t_type}_ge" + "/"
         self.create_folder_if_not_exists(self.outerFolder_expt)
         formatted_datetime =  datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         h5_filename = self.outerFolder_expt + f"{formatted_datetime}_" + f"{t_type}_results_batch_{self.batch_num}_" + f"Num_per_batch{self.save_r}.h5"

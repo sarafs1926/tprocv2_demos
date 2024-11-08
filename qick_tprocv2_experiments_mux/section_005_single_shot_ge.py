@@ -62,7 +62,7 @@ class SingleShotProgram_g(AveragerProgramV2):
         ro_chs = cfg['ro_ch']
         gen_ch = cfg['res_ch']
         qubit_ch = cfg['qubit_ch']
-
+        print(cfg["res_freq_ge"], cfg["res_gain_ge"])
         self.declare_gen(ch=gen_ch, nqz=cfg['nqz_res'], ro_ch=ro_chs[0],
                          mux_freqs=cfg['res_freq_ge'],
                          mux_gains=cfg['res_gain_ge'],
@@ -142,7 +142,7 @@ class SingleShotProgram_e(AveragerProgramV2):
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
 
 class SingleShot:
-    def __init__(self, QubitIndex, outerFolder, experiment, round_num, leng, save_figs):
+    def __init__(self, QubitIndex, outerFolder, experiment, round_num, save_figs):
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
         self.expt_name = "Readout_Optimization"
@@ -154,12 +154,30 @@ class SingleShot:
         self.exp_cfg = expt_cfg[self.expt_name]
         self.q_config = all_qubit_state(self.experiment)
         self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
-        self.leng = leng
 
         self.q1_t1 = []
         self.q1_t1_err = []
         self.dates = []
-        print(f'Q {self.QubitIndex + 1} Round {self.round_num} Single Shot configuration: ', self.config)
+
+        print(self.config)
+
+    def fidelity_test(self, soccfg, soc):
+        # Run the single shot programs (g and e)
+        ssp_g = SingleShotProgram_g(soccfg, reps=1, final_delay=self.config['relax_delay'],
+                                    cfg=self.config)
+        iq_list_g = ssp_g.acquire(soc, soft_avgs=1, progress=False)
+
+        ssp_e = SingleShotProgram_e(soccfg, reps=1, final_delay=self.config['relax_delay'],
+                                    cfg=self.config)
+        iq_list_e = ssp_e.acquire(soc, soft_avgs=1, progress=False)
+
+        # Use the fidelity calculation from SingleShot
+        fidelity, _, _ = self.hist_ssf(
+            data=[iq_list_g[self.QubitIndex][0].T[0], iq_list_g[self.QubitIndex][0].T[1],
+                  iq_list_e[self.QubitIndex][0].T[0], iq_list_e[self.QubitIndex][0].T[1]],
+            cfg=self.config, plot=True)
+
+        return fidelity
 
     def run(self, soccfg, soc):
         ssp_g = SingleShotProgram_g(soccfg, reps=1, final_delay=self.config['relax_delay'], cfg=self.config)
@@ -181,6 +199,7 @@ class SingleShot:
         fid, threshold, angle = self.hist_ssf(data=[I_g, Q_g, I_e, Q_e], cfg=self.config, plot=True)
         print('Optimal fidelity after rotation = %.3f' % fid)
         print('Optimal angle after rotation = %f' % angle)
+        print(self.config)
 
         return fid, angle
 
@@ -298,40 +317,23 @@ class GainFrequencySweep:
             fid_results = []
             for gain_step in range(gain_steps):
                 experiment = QICK_experiment(self.output_folder)
-                exp_cfg = expt_cfg[self.expt_name]
-                q_config = all_qubit_state(experiment)
-                config = {**q_config[self.Qubit], **exp_cfg}
 
                 gain = gain_range[0] + gain_step * gain_step_size
+                print('gain', gain)
 
                 # Update config with current gain and frequency values
-                config['res_freq_ge'][self.qubit_index] = freq
-                config['res_length'] = readout_length  # Set the optimal readout length for the qubit
+                experiment.readout_cfg['res_freq_ge'][self.qubit_index]= freq
+                experiment.readout_cfg['res_length'] = readout_length  # Set the optimal readout length for the qubit
 
-                res_gains = self.set_res_gain_ge(self.qubit_index, gain)
-                config.update([('res_gain_ge', res_gains)])
+                res_gains = experiment.set_gain_filter_ge(self.qubit_index, gain)
+                experiment.readout_cfg['res_gain_ge'] = res_gains
 
                 # Initialize SingleShot instance for fidelity calculation
-                single_shot = SingleShot(self.qubit_index, self.output_folder, experiment, round_num=0,
-                                         leng=config["res_length"], save_figs = True)
-
-                # Run the single shot programs (g and e)
-                ssp_g = SingleShotProgram_g(experiment.soccfg, reps=1, final_delay=config['relax_delay'],
-                                            cfg=config)
-                iq_list_g = ssp_g.acquire(experiment.soc, soft_avgs=1, progress=False)
-
-                ssp_e = SingleShotProgram_e(experiment.soccfg, reps=1, final_delay=config['relax_delay'],
-                                            cfg=config)
-                iq_list_e = ssp_e.acquire(experiment.soc, soft_avgs=1, progress=False)
-
-                # Use the fidelity calculation from SingleShot
-                fidelity, _, _ = single_shot.hist_ssf(
-                    data=[iq_list_g[self.qubit_index][0].T[0], iq_list_g[self.qubit_index][0].T[1],
-                          iq_list_e[self.qubit_index][0].T[0], iq_list_e[self.qubit_index][0].T[1]],
-                    cfg=config, plot=True)
-
+                single_shot = SingleShot(self.qubit_index, self.output_folder, experiment, round_num=0, save_figs = True)
+                fidelity = single_shot.fidelity_test(experiment.soccfg, experiment.soc)
                 fid_results.append(fidelity)
                 del experiment
+                del single_shot
 
             results.append(fid_results)
 

@@ -208,6 +208,7 @@ class T2RMeasurement:
         self.live_plot = live_plot
         self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
         self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
+        print(f'Q {self.QubitIndex + 1} Round {self.round_num} T2R configuration: ', self.config)
 
     def t2_fit(self, x_data, y_data, verbose = False, guess=None, plot=False):
         #convert us to ns
@@ -349,18 +350,6 @@ class T2RMeasurement:
         return fit_type(x, popt) * y_normal, t2r_est, t2r_err
 
     def run(self, soccfg, soc):
-        # defaults to 5, just make it to only look at this qubit
-        res_gains = self.set_res_gain_ge(self.QubitIndex)
-        self.config.update([('res_gain_ge', res_gains)])
-
-        # now update for qubit frequency
-        #current_freqs = self.config['qubit_freq_ge']
-        #current_freqs[self.QubitIndex] = self.qubit_freq  # update with found freq from Qubit Spec
-        # self.config.update([('qubit_freq_ge', self.qubit_freq)])
-
-        # look at the config before we do the experiment
-        print(f'Q {self.QubitIndex + 1} Round {self.round_num} T2R configuration: ', self.config)
-
         now = datetime.datetime.now()
 
         ramsey = T2RProgram(soccfg, reps=self.exp_cfg['reps'], final_delay=self.exp_cfg['relax_delay'],
@@ -410,7 +399,7 @@ class T2RMeasurement:
             Q = iq_list[self.QubitIndex][0, :, 1]
             delay_times = ramsey.get_time_param('wait', "t", as_array=True)
 
-        fit,t2r_est, t2r_err = self.t2_fit(delay_times, I)
+        fit, t2r_est, t2r_err = self.t2_fit(delay_times, I)
         I, Q = self.plot_results(I, Q, delay_times, now, self.config, self.QubitIndex, fit, t2r_est, t2r_err)
         return  t2r_est, t2r_err, I, Q, delay_times, fit
 
@@ -440,13 +429,7 @@ class T2RMeasurement:
         elif 'Q' in self.signal:
             signal = Q
             plot_sig = 'Q'
-        else:
-            if abs(I[-1]-I[0]) > abs(Q[-1]-Q[0]):
-                signal = I
-                plot_sig = 'I'
-            else:
-                signal = Q
-                plot_sig = 'Q'
+
 
 
         # I subplot
@@ -475,8 +458,8 @@ class T2RMeasurement:
 
         # Add title, centered on the plot area
         fig.text(plot_middle, 0.98,
-                 f"T1 Q{QubitIndex + 1}, pi gain %.2f" % config[
-                     'pi_amp'] + f", {config['sigma'] * 1000} ns sigma" + f", {config['reps']}*{config['rounds']} avgs," + f" T1 = {t2r_est:.3f} ± {t2r_err:.3f} µs",
+                 f"T2 Q{QubitIndex + 1}, pi gain %.2f" % config[
+                     'pi_amp'] + f", {config['sigma'] * 1000} ns sigma" + f", {config['reps']}*{config['rounds']} avgs," + f" T2 = {t2r_est:.3f} ± {t2r_err:.3f} us",
                  fontsize=24, ha='center', va='top')
 
         # Adjust the top margin to make room for the title
