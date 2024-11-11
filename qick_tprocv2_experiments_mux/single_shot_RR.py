@@ -26,7 +26,7 @@ n = 1  # Number of rounds
 n_loops = 5  # Number of repetitions per length to average
 
 # List of qubits and pulse lengths to measure
-Qs = [0]
+Qs = [5]
 
 lengs = np.linspace(0.5, 30, 30)  # Range of pulse lengths to measure
 
@@ -81,7 +81,7 @@ for QubitIndex in Qs:
                 #print(f"Single Shot configuration:", config)
 
                 #ss = SingleShot(QubitIndex, output_folder, k, round(leng, 3)) #Old way
-                ss = SingleShot(QubitIndex, output_folder, experiment, round_num=k, leng=round(leng, 3), save_figs=True)#New way
+                ss = SingleShot(QubitIndex, output_folder, experiment, round_num=k, save_figs=True)#New way
                 fid, angle, iq_list_g, iq_list_e = ss.run(experiment.soccfg, experiment.soc)
                 fids.append(fid)
                 print(f'FID (round {k}) = {fid}')

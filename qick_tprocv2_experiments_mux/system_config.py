@@ -42,7 +42,8 @@ class QICK_experiment:
 
             # Changes related to the resonator output channel
             "mixer_freq": 6000,  # [MHz]
-            "res_freq_ge": [6191.479, 6216.040, 6292.301, 6405.83, 6433.059, 6468.901],  # MHz
+            "res_freq_ge": [6191.459, 6216.02, 6292.281, 6405.81, 6432.799, 6468.281],  # MHz, latest
+            #"res_freq_ge": [6191.479, 6216.040, 6292.301, 6405.83, 6433.059, 6468.901],  # MHz, old
             # "res_gain_ge": [1] + [0]*5,
             "res_gain_ge": [1, 1, 1, 0.7, 1, 1],
             # set_res_gain_ge(QUBIT_INDEX), #utomatically sets all gains to zero except for the qubit you are observing
@@ -59,7 +60,9 @@ class QICK_experiment:
 
         # Qubit Configuration
         self.qubit_cfg = {
-            "qubit_freq_ge": [4184.15, 3821.156, 4156.88, 4459.12, 4471.18, 4998.04],  # Freqs of Qubit g/e Transition
+            "qubit_freq_ge": [4184.13, 3821.142, 4156.58, 4459.19, 4471.10, 4997.87], #new
+            #"qubit_freq_ge": [4184.15, 3821.156, 4156.88, 4459.12, 4471.18, 4998.04],  # Freqs of Qubit g/e Transition, old
+            # 4184.131522750292, 3821.142737167706, 4156.57897361413, 4459.1949814835025, 4471.099595815802, 4997.870725348132 new (full values)
             "qubit_gain_ge": [0.05] * 6,
             # [0.4287450656184295, 0.4287450656184295, 0.4903077560386716, 0.6, 0.4903077560386716, 0.4287450656184295], # For spec pulse
             "qubit_length_ge": 15,  # [us] for spec Pulse

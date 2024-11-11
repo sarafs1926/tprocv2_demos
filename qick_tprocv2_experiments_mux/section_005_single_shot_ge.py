@@ -142,7 +142,7 @@ class SingleShotProgram_e(AveragerProgramV2):
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
 
 class SingleShot:
-    def __init__(self, QubitIndex, outerFolder, experiment, round_num, save_figs):
+    def __init__(self, QubitIndex, outerFolder, experiment, round_num, save_figs=False):
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
         self.expt_name = "Readout_Optimization"
@@ -175,7 +175,7 @@ class SingleShot:
         fidelity, _, _ = self.hist_ssf(
             data=[iq_list_g[self.QubitIndex][0].T[0], iq_list_g[self.QubitIndex][0].T[1],
                   iq_list_e[self.QubitIndex][0].T[0], iq_list_e[self.QubitIndex][0].T[1]],
-            cfg=self.config, plot=True)
+            cfg=self.config, plot=False)
 
         return fidelity
 
@@ -196,7 +196,7 @@ class SingleShot:
         Q_e = iq_list_e[QubitIndex][0].T[1]
         print(QubitIndex)
 
-        fid, threshold, angle = self.hist_ssf(data=[I_g, Q_g, I_e, Q_e], cfg=self.config, plot=True)
+        fid, threshold, angle = self.hist_ssf(data=[I_g, Q_g, I_e, Q_e], cfg=self.config, plot=False)
         print('Optimal fidelity after rotation = %.3f' % fid)
         print('Optimal angle after rotation = %f' % angle)
         print(self.config)
@@ -268,7 +268,7 @@ class SingleShot:
         tind = contrast.argmax()
         threshold = binsg[tind]
         fid = contrast[tind]
-        axs[2].set_title(f"Fidelity = {fid * 100:.2f}%")
+        #axs[2].set_title(f"Fidelity = {fid * 100:.2f}%")
 
         outerFolder_expt = self.outerFolder + "/ss_repeat_meas/Q" + str(self.QubitIndex + 1) + '/'
         self.create_folder_if_not_exists(outerFolder_expt)
@@ -329,7 +329,7 @@ class GainFrequencySweep:
                 experiment.readout_cfg['res_gain_ge'] = res_gains
 
                 # Initialize SingleShot instance for fidelity calculation
-                single_shot = SingleShot(self.qubit_index, self.output_folder, experiment, round_num=0, save_figs = True)
+                single_shot = SingleShot(self.qubit_index, self.output_folder, experiment, round_num=0, save_figs = False)
                 fidelity = single_shot.fidelity_test(experiment.soccfg, experiment.soc)
                 fid_results.append(fidelity)
                 del experiment

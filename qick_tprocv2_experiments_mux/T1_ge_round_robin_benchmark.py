@@ -16,7 +16,8 @@ from expt_config import *
 
 
 # N benchmark
-n = 1000
+#n = 1000
+n= 1
 Qs = [0,1,2,3,4,5]
 
 save_r = 2 #how many rounds to save after
@@ -25,8 +26,8 @@ signal = 'None' # where the signal is (after ss/angle optimization). Put 'None' 
 t1_data = {Q: {'T1': [None]*save_r, 'Errors': [None]*save_r, 'Dates': [None]*save_r,
                'I': [None]*save_r, 'Q':[None]*save_r, 'Delay Times': [None]*save_r, 'Fit': [None]*save_r} for Q in range(6)}
 
-t2r_data = {Q: {'T2': [None]*save_r, 'Errors': [None]*save_r, 'Dates': [None]*save_r,
-                'I': [None]*save_r, 'Q':[None]*save_r, 'Delay Times': [None]*save_r, 'Fit': [None]*save_r} for Q in range(6)}
+#t2r_data = {Q: {'T2': [None]*save_r, 'Errors': [None]*save_r, 'Dates': [None]*save_r,
+                #'I': [None]*save_r, 'Q':[None]*save_r, 'Delay Times': [None]*save_r, 'Fit': [None]*save_r} for Q in range(6)}
 
 save_figs = True
 live_plot = True
@@ -50,32 +51,34 @@ while j < n:
         # # tof.run(experiment.soccfg, experiment.soc)
         # # del tof
         #
-        # #---------------------Res spec---------------------
-         res_spec   = ResonanceSpectroscopy(QubitIndex, outerFolder, j, save_figs, experiment)
-        # res_freqs = res_spec.run(experiment.soccfg, experiment.soc)
-        # experiment.readout_cfg['res_freq_ge'] = res_freqs #change after optimization, add offset value to each of the freqs in this list [r + offset for r in res_freqs]
-        # del res_spec
+         #---------------------Res spec---------------------
+        res_spec   = ResonanceSpectroscopy(QubitIndex, outerFolder, j, save_figs, experiment)
+        res_freqs = res_spec.run(experiment.soccfg, experiment.soc)
+        experiment.readout_cfg['res_freq_ge'] = res_freqs #change after optimization, add offset value to each of the freqs in this list [r + offset for r in res_freqs]
+        print("res_freqs: ",res_freqs)
+        del res_spec
         #
         # #-----------------Roll Signal into I---------------
         # #get the average theta value, then use that to rotate the signal. Plug that value into system_config res_phase
-        # # leng=4
-        # # ss = SingleShot(QubitIndex, outerFolder, experiment, j, leng, save_figs)
-        # # fid, angle, iq_list_g, iq_list_e = ss.run(experiment.soccfg, experiment.soc)
-        # # angles.append(angle)
-        # # print(angles)
-        # # print('avg theta: ', np.average(angles))
-        # # del ss
+        leng=4
+        ss = SingleShot(QubitIndex, outerFolder, experiment, j, save_figs)
+        fid, angle, iq_list_g, iq_list_e = ss.run(experiment.soccfg, experiment.soc)
+        angles.append(angle)
+        #print(angles)
+        #print('avg theta: ', np.average(angles))
+        del ss
         #
         # #--------------------Qubit spec--------------------
-        # q_spec = QubitSpectroscopy(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot)
-        # qubit_freq = q_spec.run(experiment.soccfg, experiment.soc)
-        # experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = float(qubit_freq)
-        # del q_spec
+        q_spec = QubitSpectroscopy(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot)
+        qubit_freq = q_spec.run(experiment.soccfg, experiment.soc)
+        experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = float(qubit_freq)
+        print('qubit freq: for qubit ', Qs,' is: ',float(qubit_freq))
+        del q_spec
         #
         # #-----------------------Rabi-----------------------
-        # rabi = AmplitudeRabiExperiment(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot)
-        # rabi.run(experiment.soccfg, experiment.soc)
-        # del rabi
+        #rabi = AmplitudeRabiExperiment(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot)
+        #rabi.run(experiment.soccfg, experiment.soc)
+        #del rabi
         #
         # #------------------------T1-------------------------
         # t1 = T1Measurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot)
@@ -92,18 +95,18 @@ while j < n:
         # t1_data[QubitIndex]['Fit'][j - batch_num*save_r - 1] = q1_fit_exponential
 
         #------------------------T2R-------------------------
-        signal = 'I'
-        t2r = T2RMeasurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot=True)
-        t2r_est, t2r_err, I, Q, delay_times, fit_ramsey = t2r.run(experiment.soccfg, experiment.soc)
+        # signal = 'I'
+        # t2r = T2RMeasurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot=True)
+        # t2r_est, t2r_err, I, Q, delay_times, fit_ramsey = t2r.run(experiment.soccfg, experiment.soc)
 
         #---------------------Collect T2 Results----------------
-        t2r_data[QubitIndex]['T2'][j - batch_num*save_r - 1] = t2r_est
-        t2r_data[QubitIndex]['Errors'][j - batch_num*save_r - 1] = t2r_err
-        t2r_data[QubitIndex]['Dates'][j - batch_num*save_r - 1] = datetime.datetime.now()
-        t2r_data[QubitIndex]['I'][j - batch_num*save_r - 1] = I
-        t2r_data[QubitIndex]['Q'][j - batch_num*save_r - 1] = Q
-        t2r_data[QubitIndex]['Delay Times'][j - batch_num*save_r - 1] = delay_times
-        t2r_data[QubitIndex]['Fit'][j - batch_num*save_r - 1] = fit_ramsey
+        # t2r_data[QubitIndex]['T2'][j - batch_num*save_r - 1] = t2r_est
+        # t2r_data[QubitIndex]['Errors'][j - batch_num*save_r - 1] = t2r_err
+        # t2r_data[QubitIndex]['Dates'][j - batch_num*save_r - 1] = datetime.datetime.now()
+        # t2r_data[QubitIndex]['I'][j - batch_num*save_r - 1] = I
+        # t2r_data[QubitIndex]['Q'][j - batch_num*save_r - 1] = Q
+        # t2r_data[QubitIndex]['Delay Times'][j - batch_num*save_r - 1] = delay_times
+        # t2r_data[QubitIndex]['Fit'][j - batch_num*save_r - 1] = fit_ramsey
 
 
         del experiment
@@ -115,9 +118,9 @@ while j < n:
         saver_t1 = Save(outerFolder,t1_data, batch_num, save_r)
         saver_t1.save_to_h5('T1')
         del saver_t1
-        saver_t2r = Save(outerFolder, t2r_data, batch_num, save_r)
-        saver_t2r.save_to_h5('T2')
-        del saver_t2r
+        #saver_t2r = Save(outerFolder, t2r_data, batch_num, save_r)
+        #saver_t2r.save_to_h5('T2')
+        #del saver_t2r
 
 
 
