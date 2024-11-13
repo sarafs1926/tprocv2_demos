@@ -26,9 +26,9 @@ n = 1  # Number of rounds
 n_loops = 5  # Number of repetitions per length to average
 
 # List of qubits and pulse lengths to measure
-Qs = [5]
+Qs = [2,3]
 
-lengs = np.linspace(0.5, 30, 30)  # Range of pulse lengths to measure
+lengs = np.linspace(0.5, 5, 19) # increments of 0.25
 
 for QubitIndex in Qs:
     QubitIndex = int(QubitIndex)  # Ensure QubitIndex is an integer
@@ -119,7 +119,8 @@ for QubitIndex in Qs:
             excited_iq_data.clear()
 
 
-    avg_max = max(avg_fids[:10])
+    #avg_max = max(avg_fids[:10])
+    avg_max = max(avg_fids)
     avg_max_index = avg_fids.index(avg_max)
     max_len = lengs[avg_max_index]
 
@@ -127,7 +128,7 @@ for QubitIndex in Qs:
     plt.figure()
     plt.errorbar(lengs, avg_fids, yerr=rms_fids, fmt='-o', color='black')
     plt.axvline(x=max_len, linestyle="--", color="red")
-    plt.text(max_len + 1, avg_fids[0], f'max length {max_len:.4f}', color='red')
+    plt.text(max_len + 0.5, avg_fids[0], f'max length {max_len:.4f}', color='red')
     plt.xlabel('Readout and Pulse Length')
     plt.ylabel('Fidelity')
     plt.title(f'Avg Fidelity vs. Readout and Pulse Length for Qubit {QubitIndex + 1}, ({n_loops} repetitions)')

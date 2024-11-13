@@ -13,16 +13,17 @@ outerFolder = f"/data/QICK_data/6transmon_run4a/{date_str}/readout_opt/Gain_Freq
 os.makedirs(outerFolder, exist_ok=True)
 
 # Reference frequencies for each resonator in MHz
-res_freq_ge = [6191.459, 6216.02, 6292.281, 6405.81, 6432.799, 6468.281]
+res_freq_ge = [6191.439, 6216.0, 6292.261, 6405.79, 6432.899, 6468.501]
 
-optimal_lengths = [2.53, 9.66, 3.55, 3.55, 4.57, 6.60]
+optimal_lengths = [2.53, 9.66, 3.50, 4.75, 4.57, 6.60]
 
 # Define sweeping parameters
 gain_range = [0.5,1]  # Gain range in a.u.
-freq_steps = 30
-gain_steps = 10
+freq_steps = 40
+gain_steps = 26
 
-for QubitIndex in range(6):
+Qs = [2,3]
+for QubitIndex in Qs:
 #QubitIndex= 0
     print(f'Starting Qubit {QubitIndex + 1} measurements.')
     # Select the reference frequency for the current qubit

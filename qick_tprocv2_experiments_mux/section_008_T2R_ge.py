@@ -354,7 +354,7 @@ class T2RMeasurement:
 
         ramsey = T2RProgram(soccfg, reps=self.exp_cfg['reps'], final_delay=self.exp_cfg['relax_delay'],
                          cfg=self.config)
-        # for live plotting
+        # for live plotting open http://localhost:8097/ on firefox
         if self.live_plot:
             I = Q = expt_mags = expt_phases = expt_pop = None
             viz = visdom.Visdom()
