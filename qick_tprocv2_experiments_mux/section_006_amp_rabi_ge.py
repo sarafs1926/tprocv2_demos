@@ -9,9 +9,10 @@ import copy
 import visdom
 
 class AmplitudeRabiExperiment:
-    def __init__(self, QubitIndex, outerFolder, round_num, signal, save_figs, experiment, live_plot):
+    def __init__(self, QubitIndex, outerFolder, round_num, signal, save_figs, experiment, live_plot, fit_data):
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
+        self.fit_data = fit_data
         self.expt_name = "power_rabi_ge"
         self.Qubit = 'Q' + str(self.QubitIndex)
         self.exp_cfg = expt_cfg[self.expt_name]
@@ -91,26 +92,44 @@ class AmplitudeRabiExperiment:
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
         plt.rcParams.update({'font.size': 18})
 
-        if 'Q' in self.signal:
-            q1_amp = Q
+        plot_middle = (ax1.get_position().x0 + ax1.get_position().x1) / 2
+
+        if self.fit_data:
+            if 'Q' in self.signal:
+                q1_amp = Q
+            else:
+                q1_amp = I
+
+            q1_a_guess = (np.max(q1_amp) - np.min(q1_amp)) / 2
+            q1_b_guess = 1 / gains[-1]
+            q1_c_guess = 0
+            q1_d_guess = np.mean(q1_amp)
+
+            q1_guess = [q1_a_guess, q1_b_guess, q1_c_guess, q1_d_guess]
+            q1_popt, q1_pcov = curve_fit(self.cosine, gains, q1_amp, maxfev=100000, p0=q1_guess)
+            q1_fit_cosine = self.cosine(gains, *q1_popt)
+
+            first_three_avg = np.mean(q1_fit_cosine[:3])
+            last_three_avg = np.mean(q1_fit_cosine[-3:])
+
+            if last_three_avg > first_three_avg:
+                pi_amp = gains[np.argmax(q1_fit_cosine)]
+            else:
+                pi_amp = gains[np.argmin(q1_fit_cosine)]
+
+            if 'Q' in self.signal:
+                ax2.plot(gains, q1_fit_cosine, '-', color='red', linewidth=3, label="Fit")
+            else:
+                ax1.plot(gains, q1_fit_cosine, '-', color='red', linewidth=3, label="Fit")
+
+            fig.text(plot_middle, 0.98,
+                     f"Rabi Q{self.QubitIndex + 1}, pi gain %.2f" % pi_amp + f", {self.config['sigma'] * 1000} ns sigma" + f", {self.config['reps']} avgs",
+                     fontsize=24, ha='center', va='top')
         else:
-            q1_amp = I
-        q1_a_guess = (np.max(q1_amp) - np.min(q1_amp)) / 2
-        q1_b_guess = 1 / gains[-1]
-        q1_c_guess = 0
-        q1_d_guess = np.mean(q1_amp)
+            fig.text(plot_middle, 0.98,
+                     f"Rabi Q{self.QubitIndex + 1}_" f", {self.config['sigma'] * 1000} ns sigma" + f", {self.config['reps']} avgs",
+                     fontsize=24, ha='center', va='top')
 
-        q1_guess = [q1_a_guess, q1_b_guess, q1_c_guess, q1_d_guess]
-        q1_popt, q1_pcov = curve_fit(self.cosine, gains, q1_amp, maxfev=100000, p0=q1_guess)
-        q1_fit_cosine = self.cosine(gains, *q1_popt)
-
-        first_three_avg = np.mean(q1_fit_cosine[:3])
-        last_three_avg = np.mean(q1_fit_cosine[-3:])
-
-        if last_three_avg > first_three_avg:
-            pi_amp = gains[np.argmax(q1_fit_cosine)]
-        else:
-            pi_amp = gains[np.argmin(q1_fit_cosine)]
 
         ax1.plot(gains, I, label="Gain (a.u.)", linewidth=2)
         ax1.set_ylabel("I Amplitude (a.u.)", fontsize=20)
@@ -121,18 +140,8 @@ class AmplitudeRabiExperiment:
         ax2.set_ylabel("Q Amplitude (a.u.)", fontsize=20)
         ax2.tick_params(axis='both', which='major', labelsize=16)
 
-        if 'Q' in self.signal:
-            ax2.plot(gains, q1_fit_cosine, '-', color='red', linewidth=3, label="Fit")
-        else:
-            ax1.plot(gains, q1_fit_cosine, '-', color='red', linewidth=3, label="Fit")
-
-
         plt.tight_layout()
 
-        plot_middle = (ax1.get_position().x0 + ax1.get_position().x1) / 2
-        fig.text(plot_middle, 0.98,
-                 f"Rabi Q{self.QubitIndex + 1}, pi gain %.2f" % pi_amp + f", {self.config['sigma'] * 1000} ns sigma" + f", {self.config['reps']} avgs",
-                 fontsize=24, ha='center', va='top')
         plt.subplots_adjust(top=0.93)
         self.experiment.outerFolder_expt = self.outerFolder + "/" + self.expt_name + "/"
         self.experiment.create_folder_if_not_exists = self.outerFolder + "/" + self.expt_name + "/"
@@ -165,7 +174,7 @@ class AmplitudeRabiProgram(AveragerProgramV2):
                        mask=[0, 1, 2, 3, 4, 5],
                        )
 
-        self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'])
+        self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=4000)
         self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma'], length=cfg['sigma'] * 5, even_length=True)
         self.add_pulse(ch=qubit_ch, name="qubit_pulse",
                        style="arb",

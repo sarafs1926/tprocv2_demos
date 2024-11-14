@@ -16,7 +16,6 @@ class QubitSpectroscopy:
         self.signal = signal
         self.save_figs = save_figs
         self.experiment = experiment
-
         self.Qubit = 'Q' + str(self.QubitIndex)
         self.exp_cfg = expt_cfg[self.expt_name]
         self.q_config = all_qubit_state(self.experiment)
@@ -81,14 +80,9 @@ class QubitSpectroscopy:
             viz.line(X=freqs, Y=signal, win=win1, name=plot_sig)
         return I, Q, freqs
 
-
-
-
     def plot_results(self, I, Q, freqs):
         freqs = np.array(freqs)
         freq_q = freqs[np.argmax(I)]
-
-        mean_I, mean_Q, I_fit, Q_fit, widest_curve_mean, widest_fwhm = self.fit_lorenzian(I, Q, freqs, freq_q)
 
         # Plot the data and fits
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
@@ -96,31 +90,35 @@ class QubitSpectroscopy:
 
         # I subplot
         ax1.plot(freqs, I, label='I', linewidth=2)
-        ax1.plot(freqs, I_fit, 'r--', label='Lorentzian Fit')
         ax1.set_ylabel("I Amplitude (a.u.)", fontsize=20)
         ax1.tick_params(axis='both', which='major', labelsize=16)
-        ax1.axvline(widest_curve_mean, color='orange', linestyle='--', linewidth=2)
         ax1.legend()
 
         # Q subplot
         ax2.plot(freqs, Q, label='Q', linewidth=2)
-        ax2.plot(freqs, Q_fit, 'r--', label='Lorentzian Fit')
         ax2.set_xlabel("Qubit Frequency (MHz)", fontsize=20)
         ax2.set_ylabel("Q Amplitude (a.u.)", fontsize=20)
         ax2.tick_params(axis='both', which='major', labelsize=16)
-        ax2.axvline(widest_curve_mean, color='orange', linestyle='--', linewidth=2)
         ax2.legend()
-
-        # Adjust spacing
-        plt.tight_layout()
 
         # Calculate the middle of the plot area
         plot_middle = (ax1.get_position().x0 + ax1.get_position().x1) / 2
+
+        mean_I, mean_Q, I_fit, Q_fit, widest_curve_mean, widest_fwhm = self.fit_lorenzian(I, Q, freqs, freq_q)
+
+        ax1.plot(freqs, I_fit, 'r--', label='Lorentzian Fit')
+        ax1.axvline(widest_curve_mean, color='orange', linestyle='--', linewidth=2)
+
+        ax2.plot(freqs, Q_fit, 'r--', label='Lorentzian Fit')
+        ax2.axvline(widest_curve_mean, color='orange', linestyle='--', linewidth=2)
 
         # Add title, centered on the plot area
         fig.text(plot_middle, 0.98,
                  f"Qubit Spectroscopy Q{self.QubitIndex + 1}, %.2f MHz" % widest_curve_mean + f" FWHM: {round(widest_fwhm, 1)}" + f", {self.config['reps']} avgs",
                  fontsize=24, ha='center', va='top')
+
+        # Adjust spacing
+        plt.tight_layout()
 
         # Adjust the top margin to make room for the title
         plt.subplots_adjust(top=0.93)
@@ -245,7 +243,7 @@ class PulseProbeSpectroscopyProgram(AveragerProgramV2):
                        mask=[0, 1, 2, 3, 4, 5],
                        )
 
-        self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'])
+        self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=4000)
         self.add_pulse(ch=qubit_ch, name="qubit_pulse", ro_ch=ro_ch[0],
                        style="const",
                        length=cfg['qubit_length_ge'],

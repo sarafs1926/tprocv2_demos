@@ -8,18 +8,33 @@ import datetime
 import numpy as np
 
 class QICK_experiment:
-    def __init__(self, folder):
+    def __init__(self, folder, DAC_attenuator1 = 5, DAC_attenuator2 = 15):
         # Where do you want to save data
         self.outerFolder = folder
         self.create_folder_if_not_exists(self.outerFolder)
 
         # Make proxy to the QICK
         self.soc, self.soccfg = makeProxy()
-        #print(self.soccfg)
+        print(self.soccfg)
 
-        self.FSGEN_CH = 0
-        self.MIXMUXGEN_CH = 4
+        self.FSGEN_CH = 6 # 0 for "old QICK", 6 for RF board
+        self.MIXMUXGEN_CH = 4 # Readout resonator DAC channel
         self.MUXRO_CH = [2, 3, 4, 5, 6, 7]
+        self.MUXRO_CH_RF = 5  # New variable that we need for QICK box
+
+        ### NEW for the RF board
+        self.qubit_center_freq = 4400  # To be in the middle of the qubit freqs.
+        self.res_center_freq = 6300  # To be in the middle of the res freqs. 3000-5000 see nothing,6000 and 7000 see something, 8000+ see nothing
+        self.soc.rfb_set_gen_filter(self.MIXMUXGEN_CH, fc=self.res_center_freq / 1000, ftype='bandpass', bw=1.0)
+        self.soc.rfb_set_gen_filter(self.FSGEN_CH, fc=self.qubit_center_freq / 1000, ftype='bandpass', bw=1.0)
+        self.soc.rfb_set_ro_filter(self.MUXRO_CH_RF, fc=self.res_center_freq / 1000, ftype='bandpass', bw=1.0)
+        # Set attenuator on DAC.
+        self.soc.rfb_set_gen_rf(self.MIXMUXGEN_CH, DAC_attenuator1, DAC_attenuator2)  # Verified 30->25 see increased gain in loopback
+        self.soc.rfb_set_gen_rf(self.FSGEN_CH, 5, 10)  # Verified 30->25 see increased gain in loopback
+        # Set attenuator on ADC.
+        ### IMPORTANT: set this to 30 and you get 60 dB of warm gain. Set to 0 and you get 90 dB of warm gain
+        self.soc.rfb_set_ro_rf(self.MUXRO_CH_RF, 15)  # Verified 30->25 see increased gain in loopback
+
 
         # Qubit you want to work with
         self.QUBIT_INDEX = 5
@@ -69,7 +84,7 @@ class QICK_experiment:
             # [0.4287450656184295, 0.4287450656184295, 0.4903077560386716, 0.6, 0.4903077560386716, 0.4287450656184295], # For spec pulse
             "qubit_length_ge": 15,  # [us] for spec Pulse
             "qubit_phase": 0,  # [deg]
-            "sigma": [0.08, 0.15, 0.1, 0.08, 0.12, 0.13],  # [us] for Gaussian Pulse
+            "sigma": [0.08, 0.1, 0.1, 0.08, 0.12, 0.13],  # [us] for Gaussian Pulse
             "pi_amp": [0.8, 0.78, 0.8, 0.8, 0.8, 0.8],
         }
 

@@ -121,7 +121,7 @@ class SingleShotProgram_e(AveragerProgramV2):
                        mask=[0, 1, 2, 3, 4, 5],
                        )
 
-        self.declare_gen(ch=qubit_ch, nqz=1)
+        self.declare_gen(ch=qubit_ch, nqz=1, mixer_freq=4000)
 
         self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma'], length=cfg['sigma'] * 5, even_length=True)
 
@@ -142,7 +142,7 @@ class SingleShotProgram_e(AveragerProgramV2):
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
 
 class SingleShot:
-    def __init__(self, QubitIndex, outerFolder, experiment, round_num, save_figs=True):
+    def __init__(self, QubitIndex, outerFolder, experiment, round_num, save_figs=False):
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
         self.expt_name = "Readout_Optimization"
@@ -175,7 +175,7 @@ class SingleShot:
         fidelity, _, _ = self.hist_ssf(
             data=[iq_list_g[self.QubitIndex][0].T[0], iq_list_g[self.QubitIndex][0].T[1],
                   iq_list_e[self.QubitIndex][0].T[0], iq_list_e[self.QubitIndex][0].T[1]],
-            cfg=self.config, plot=True)
+            cfg=self.config, plot=False)
 
         return fidelity
 
@@ -196,7 +196,7 @@ class SingleShot:
         Q_e = iq_list_e[QubitIndex][0].T[1]
         print(QubitIndex)
 
-        fid, threshold, angle, ig_new, ie_new = self.hist_ssf(data=[I_g, Q_g, I_e, Q_e], cfg=self.config, plot=True)
+        fid, threshold, angle, ig_new, ie_new = self.hist_ssf(data=[I_g, Q_g, I_e, Q_e], cfg=self.config, plot=False)
         print('Optimal fidelity after rotation = %.3f' % fid)
         print('Optimal angle after rotation = %f' % angle)
         print(self.config)
@@ -268,7 +268,7 @@ class SingleShot:
         tind = contrast.argmax()
         threshold = binsg[tind]
         fid = contrast[tind]
-        axs[2].set_title(f"Fidelity = {fid * 100:.2f}%")
+        #axs[2].set_title(f"Fidelity = {fid * 100:.2f}%")
 
         outerFolder_expt = self.outerFolder + "/ss_repeat_meas/Q" + str(self.QubitIndex + 1) + '/'
         self.create_folder_if_not_exists(outerFolder_expt)
@@ -277,8 +277,8 @@ class SingleShot:
         file_name = outerFolder_expt + f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png"
 
         if plot == True and self.round_num == 0:
-            fig.savefig(file_name, dpi=300, bbox_inches='tight')
             axs[2].set_title(f"Fidelity = {fid * 100:.2f}%")
+            fig.savefig(file_name, dpi=300, bbox_inches='tight')
             plt.close(fig)
 
         return fid, threshold, theta, ig_new, ie_new

@@ -12,8 +12,8 @@ expt_cfg = {
     },
 
     "res_spec": {
-        "reps": 300,
-        "rounds": 10,
+        "reps": 100,
+        "rounds": 1,
         "start": -3.5,  # [MHz]
         "step_size": 0.12,  # [MHz]
         "steps": 101,
@@ -21,7 +21,7 @@ expt_cfg = {
     },
 
     "qubit_spec_ge": {
-        "reps": 300,
+        "reps": 200,
         "rounds": 10,
         "start": list(VNA_qubit-5), # [MHz]
         "stop":  list(VNA_qubit+5), # [MHz]
@@ -30,7 +30,7 @@ expt_cfg = {
     },
 
     "power_rabi_ge": {
-        "reps": 300,
+        "reps": 100,
         "rounds": 10,
         "start": [0.0] * 6, # [DAC units]
         "stop":  [1.0] * 6, # [DAC units]

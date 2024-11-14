@@ -28,7 +28,7 @@ class T1Program(AveragerProgramV2):
                        mask=[0, 1, 2, 3, 4, 5],
                        )
 
-        self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'])
+        self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=4000)
         self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma'], length=cfg['sigma'] * 5, even_length=True)
         self.add_pulse(ch=qubit_ch, name="qubit_pulse",
                        style="arb",
