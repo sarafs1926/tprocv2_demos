@@ -163,7 +163,7 @@ class T2RProgram(AveragerProgramV2):
                        mask=[0, 1, 2, 3, 4, 5],
                        )
 
-        self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=4000)
+        self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=4200)
         self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma'], length=cfg['sigma'] * 5, even_length=True)
         self.add_pulse(ch=qubit_ch, name="qubit_pulse1",
                        style="arb",
@@ -193,9 +193,10 @@ class T2RProgram(AveragerProgramV2):
 
 
 class T2RMeasurement:
-    def __init__(self, QubitIndex, outerFolder, round_num, signal, save_figs, experiment, live_plot):
+    def __init__(self, QubitIndex, outerFolder, round_num, signal, save_figs, experiment, live_plot, fit_data):
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
+        self.fit_data = fit_data
         self.expt_name = "Ramsey_ge"
         self.Qubit = 'Q' + str(self.QubitIndex)
         self.experiment = experiment
@@ -399,7 +400,10 @@ class T2RMeasurement:
             Q = iq_list[self.QubitIndex][0, :, 1]
             delay_times = ramsey.get_time_param('wait', "t", as_array=True)
 
-        fit, t2r_est, t2r_err = self.t2_fit(delay_times, I)
+        if self.fit_data:
+            fit, t2r_est, t2r_err = self.t2_fit(delay_times, I)
+        else:
+            fit, t2r_est, t2r_err = None, None, None
         I, Q = self.plot_results(I, Q, delay_times, now, self.config, self.QubitIndex, fit, t2r_est, t2r_err)
         return  t2r_est, t2r_err, I, Q, delay_times, fit
 
@@ -423,14 +427,33 @@ class T2RMeasurement:
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
         plt.rcParams.update({'font.size': 18})
 
-        if 'I' in self.signal:
-            signal = I
-            plot_sig='I'
-        elif 'Q' in self.signal:
-            signal = Q
-            plot_sig = 'Q'
+        # Calculate the middle of the plot area
+        plot_middle = (ax1.get_position().x0 + ax1.get_position().x1) / 2
 
+        if self.fit_data:
+            if 'I' in self.signal:
+                signal = I
+                plot_sig='I'
+            elif 'Q' in self.signal:
+                signal = Q
+                plot_sig = 'Q'
 
+            if 'I' in plot_sig:
+                ax1.plot(delay_times, fit, '-', color='red', linewidth=3, label="Fit")
+            else:
+                ax2.plot(delay_times, fit, '-', color='red', linewidth=3, label="Fit")
+
+            # Add title, centered on the plot area
+            fig.text(plot_middle, 0.98,
+                     f"T2 Q{QubitIndex + 1}, pi gain %.2f" % config[
+                         'pi_amp'] + f", {config['sigma'] * 1000} ns sigma" + f", {config['reps']}*{config['rounds']} avgs," + f" T2 = {t2r_est:.3f} ± {t2r_err:.3f} us",
+                     fontsize=24, ha='center', va='top')
+        else:
+            # Add title, centered on the plot area
+            fig.text(plot_middle, 0.98,
+                     f"T2 Q{QubitIndex + 1}, pi gain %.2f" % config[
+                         'pi_amp'] + f", {config['sigma'] * 1000} ns sigma" + f", {config['reps']}*{config['rounds']} avgs," ,
+                     fontsize=24, ha='center', va='top')
 
         # I subplot
         ax1.plot(delay_times, I, label="Gain (a.u.)", linewidth=2)
@@ -445,22 +468,8 @@ class T2RMeasurement:
         ax2.tick_params(axis='both', which='major', labelsize=16)
         # ax2.axvline(freq_q, color='orange', linestyle='--', linewidth=2)
 
-        if 'I' in plot_sig:
-            ax1.plot(delay_times, fit, '-', color='red', linewidth=3, label="Fit")
-        else:
-            ax2.plot(delay_times, fit, '-', color='red', linewidth=3, label="Fit")
-
         # Adjust spacing
         plt.tight_layout()
-
-        # Calculate the middle of the plot area
-        plot_middle = (ax1.get_position().x0 + ax1.get_position().x1) / 2
-
-        # Add title, centered on the plot area
-        fig.text(plot_middle, 0.98,
-                 f"T2 Q{QubitIndex + 1}, pi gain %.2f" % config[
-                     'pi_amp'] + f", {config['sigma'] * 1000} ns sigma" + f", {config['reps']}*{config['rounds']} avgs," + f" T2 = {t2r_est:.3f} ± {t2r_err:.3f} us",
-                 fontsize=24, ha='center', va='top')
 
         # Adjust the top margin to make room for the title
         plt.subplots_adjust(top=0.93)

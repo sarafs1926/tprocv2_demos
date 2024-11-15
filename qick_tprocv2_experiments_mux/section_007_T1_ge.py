@@ -28,7 +28,7 @@ class T1Program(AveragerProgramV2):
                        mask=[0, 1, 2, 3, 4, 5],
                        )
 
-        self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=4000)
+        self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=4200)
         self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma'], length=cfg['sigma'] * 5, even_length=True)
         self.add_pulse(ch=qubit_ch, name="qubit_pulse",
                        style="arb",
@@ -48,10 +48,11 @@ class T1Program(AveragerProgramV2):
 
 
 class T1Measurement:
-    def __init__(self, QubitIndex, outerFolder, round_num, signal, save_figs, experiment, live_plot):
+    def __init__(self, QubitIndex, outerFolder, round_num, signal, save_figs, experiment, live_plot, fit_data):
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
         self.expt_name = "T1_ge"
+        self.fit_data = fit_data
         self.Qubit = 'Q' + str(self.QubitIndex)
         self.experiment = experiment
         self.exp_cfg = expt_cfg[self.expt_name]
@@ -134,44 +135,68 @@ class T1Measurement:
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
         plt.rcParams.update({'font.size': 18})
 
-        if 'I' in self.signal:
-            signal = I
-            plot_sig='I'
-        elif 'Q' in self.signal:
-            signal = Q
-            plot_sig = 'Q'
-        else:
-            if abs(I[-1]-I[0]) > abs(Q[-1]-Q[0]):
+        # Calculate the middle of the plot area
+        plot_middle = (ax1.get_position().x0 + ax1.get_position().x1) / 2
+
+        if self.fit_data:
+            if 'I' in self.signal:
                 signal = I
-                plot_sig = 'I'
-            else:
+                plot_sig='I'
+            elif 'Q' in self.signal:
                 signal = Q
                 plot_sig = 'Q'
+            else:
+                if abs(I[-1]-I[0]) > abs(Q[-1]-Q[0]):
+                    signal = I
+                    plot_sig = 'I'
+                else:
+                    signal = Q
+                    plot_sig = 'Q'
 
-        # Initial guess for parameters
-        q1_a_guess = np.max(signal) - np.min(signal)  # Initial guess for amplitude (a)
-        q1_b_guess = 0  # Initial guess for time shift (b)
-        q1_c_guess = (delay_times[-1] - delay_times[0]) / 5  # Initial guess for decay constant (T1)
-        q1_d_guess = np.min(signal)  # Initial guess for baseline (d)
+            # Initial guess for parameters
+            q1_a_guess = np.max(signal) - np.min(signal)  # Initial guess for amplitude (a)
+            q1_b_guess = 0  # Initial guess for time shift (b)
+            q1_c_guess = (delay_times[-1] - delay_times[0]) / 5  # Initial guess for decay constant (T1)
+            q1_d_guess = np.min(signal)  # Initial guess for baseline (d)
 
-        # Form the guess array
-        q1_guess = [q1_a_guess, q1_b_guess, q1_c_guess, q1_d_guess]
+            # Form the guess array
+            q1_guess = [q1_a_guess, q1_b_guess, q1_c_guess, q1_d_guess]
 
-        # Define bounds to constrain T1 (c) to be positive, but allow amplitude (a) to be negative
-        lower_bounds = [-np.inf, -np.inf, 0, -np.inf]  # Amplitude (a) can be negative/positive, but T1 (c) > 0
-        upper_bounds = [np.inf, np.inf, np.inf, np.inf]  # No upper bound on parameters
+            # Define bounds to constrain T1 (c) to be positive, but allow amplitude (a) to be negative
+            lower_bounds = [-np.inf, -np.inf, 0, -np.inf]  # Amplitude (a) can be negative/positive, but T1 (c) > 0
+            upper_bounds = [np.inf, np.inf, np.inf, np.inf]  # No upper bound on parameters
 
-        # Perform the fit using the 'trf' method with bounds
-        q1_popt, q1_pcov = curve_fit(self.exponential, delay_times, signal,
-                                     p0=q1_guess, bounds=(lower_bounds, upper_bounds),
-                                     method='trf', maxfev=10000)
+            # Perform the fit using the 'trf' method with bounds
+            q1_popt, q1_pcov = curve_fit(self.exponential, delay_times, signal,
+                                         p0=q1_guess, bounds=(lower_bounds, upper_bounds),
+                                         method='trf', maxfev=10000)
 
-        # Generate the fitted exponential curve
-        q1_fit_exponential = self.exponential(delay_times, *q1_popt)
+            # Generate the fitted exponential curve
+            q1_fit_exponential = self.exponential(delay_times, *q1_popt)
 
-        # Extract T1 and its error
-        T1_est = q1_popt[2]  # Decay constant T1
-        T1_err = np.sqrt(q1_pcov[2][2]) if q1_pcov[2][2] >= 0 else float('inf')  # Ensure error is valid
+            # Extract T1 and its error
+            T1_est = q1_popt[2]  # Decay constant T1
+            T1_err = np.sqrt(q1_pcov[2][2]) if q1_pcov[2][2] >= 0 else float('inf')  # Ensure error is valid
+
+            if 'I' in plot_sig:
+                ax1.plot(delay_times, q1_fit_exponential, '-', color='red', linewidth=3, label="Fit")
+            else:
+                ax2.plot(delay_times, q1_fit_exponential, '-', color='red', linewidth=3, label="Fit")
+
+            # Add title, centered on the plot area
+            fig.text(plot_middle, 0.98,
+                     f"T1 Q{QubitIndex + 1}, pi gain %.2f" % config[
+                         'pi_amp'] + f", {config['sigma'] * 1000} ns sigma" + f", {config['reps']}*{config['rounds']} avgs," + f" T1 = {T1_est:.3f} ± {T1_err:.3f} µs",
+                     fontsize=24, ha='center', va='top')
+
+        else:
+            fig.text(plot_middle, 0.98,
+                     f"T1 Q{QubitIndex + 1}, pi gain %.2f" % config[
+                         'pi_amp'] + f", {config['sigma'] * 1000} ns sigma" + f", {config['reps']}*{config['rounds']} avgs,",
+                     fontsize=24, ha='center', va='top')
+            q1_fit_exponential = None
+            T1_est = None
+            T1_err = None
 
         # I subplot
         ax1.plot(delay_times, I, label="Gain (a.u.)", linewidth=2)
@@ -186,22 +211,8 @@ class T1Measurement:
         ax2.tick_params(axis='both', which='major', labelsize=16)
         # ax2.axvline(freq_q, color='orange', linestyle='--', linewidth=2)
 
-        if 'I' in plot_sig:
-            ax1.plot(delay_times, q1_fit_exponential, '-', color='red', linewidth=3, label="Fit")
-        else:
-            ax2.plot(delay_times, q1_fit_exponential, '-', color='red', linewidth=3, label="Fit")
-
         # Adjust spacing
         plt.tight_layout()
-
-        # Calculate the middle of the plot area
-        plot_middle = (ax1.get_position().x0 + ax1.get_position().x1) / 2
-
-        # Add title, centered on the plot area
-        fig.text(plot_middle, 0.98,
-                 f"T1 Q{QubitIndex + 1}, pi gain %.2f" % config[
-                     'pi_amp'] + f", {config['sigma'] * 1000} ns sigma" + f", {config['reps']}*{config['rounds']} avgs," + f" T1 = {T1_est:.3f} ± {T1_err:.3f} µs",
-                 fontsize=24, ha='center', va='top')
 
         # Adjust the top margin to make room for the title
         plt.subplots_adjust(top=0.93)

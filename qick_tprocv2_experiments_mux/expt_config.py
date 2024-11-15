@@ -21,7 +21,7 @@ expt_cfg = {
     },
 
     "qubit_spec_ge": {
-        "reps": 200,
+        "reps": 300,
         "rounds": 10,
         "start": list(VNA_qubit-5), # [MHz]
         "stop":  list(VNA_qubit+5), # [MHz]

@@ -38,8 +38,8 @@ class QubitSpectroscopy:
             Q = iq_list[self.QubitIndex][0, :, 1]
             freqs = qspec.get_pulse_param('qubit_pulse', "freq", as_array=True)
 
-        widest_curve_mean = self.plot_results(I, Q, freqs)
-        return widest_curve_mean
+        widest_curve_mean, I_fit, Q_fit = self.plot_results(I, Q, freqs)
+        return I, Q, freqs, I_fit, Q_fit, widest_curve_mean
 
     def live_plotting(self, qspec, soc):
         I = Q = expt_mags = expt_phases = expt_pop = None
@@ -133,7 +133,7 @@ class QubitSpectroscopy:
         if self.save_figs:
             fig.savefig(file_name, dpi=300, bbox_inches='tight')  # , facecolor='white'
         plt.close(fig)
-        return widest_curve_mean
+        return widest_curve_mean, I_fit, Q_fit
 
     def lorentzian(self, f, f0, gamma, A, B):
         return A * gamma ** 2 / ((f - f0) ** 2 + gamma ** 2) + B
@@ -243,7 +243,7 @@ class PulseProbeSpectroscopyProgram(AveragerProgramV2):
                        mask=[0, 1, 2, 3, 4, 5],
                        )
 
-        self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=4000)
+        self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=4200)
         self.add_pulse(ch=qubit_ch, name="qubit_pulse", ro_ch=ro_ch[0],
                        style="const",
                        length=cfg['qubit_length_ge'],

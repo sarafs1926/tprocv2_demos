@@ -58,7 +58,7 @@ class ResonanceSpectroscopy:
         amps = np.array(amps)
         res_freqs = self.plot_results(fpts, fcenter, amps) #return freqs from plotting loop so we can use to update experiment
 
-        return res_freqs
+        return res_freqs, fpts, fcenter, amps
 
     def plot_results(self, fpts, fcenter, amps):
         res_freqs = []

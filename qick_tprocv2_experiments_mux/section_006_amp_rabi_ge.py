@@ -37,8 +37,8 @@ class AmplitudeRabiExperiment:
             Q = iq_list[self.QubitIndex][0, :, 1]
             gains = amp_rabi.get_pulse_param('qubit_pulse', "gain", as_array=True)
 
-        self.plot_results( I, Q, gains)
-        return
+        q1_fit_cosine = self.plot_results( I, Q, gains)
+        return I, Q, gains, q1_fit_cosine
 
     def live_plotting(self, amp_rabi, soc):
         I = Q = expt_mags = expt_phases = expt_pop = None
@@ -129,6 +129,7 @@ class AmplitudeRabiExperiment:
             fig.text(plot_middle, 0.98,
                      f"Rabi Q{self.QubitIndex + 1}_" f", {self.config['sigma'] * 1000} ns sigma" + f", {self.config['reps']} avgs",
                      fontsize=24, ha='center', va='top')
+            q1_fit_cosine = None
 
 
         ax1.plot(gains, I, label="Gain (a.u.)", linewidth=2)
@@ -154,6 +155,8 @@ class AmplitudeRabiExperiment:
             fig.savefig(file_name, dpi=300, bbox_inches='tight')
         plt.close(fig)
 
+        return q1_fit_cosine
+
 
 class AmplitudeRabiProgram(AveragerProgramV2):
     def _initialize(self, cfg):
@@ -174,7 +177,7 @@ class AmplitudeRabiProgram(AveragerProgramV2):
                        mask=[0, 1, 2, 3, 4, 5],
                        )
 
-        self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=4000)
+        self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=4200)
         self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma'], length=cfg['sigma'] * 5, even_length=True)
         self.add_pulse(ch=qubit_ch, name="qubit_pulse",
                        style="arb",

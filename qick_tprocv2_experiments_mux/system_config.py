@@ -8,7 +8,7 @@ import datetime
 import numpy as np
 
 class QICK_experiment:
-    def __init__(self, folder, DAC_attenuator1 = 5, DAC_attenuator2 = 15):
+    def __init__(self, folder, DAC_attenuator1 = 5, DAC_attenuator2 = 15, ADC_attenuator = 15 ):
         # Where do you want to save data
         self.outerFolder = folder
         self.create_folder_if_not_exists(self.outerFolder)
@@ -33,7 +33,7 @@ class QICK_experiment:
         self.soc.rfb_set_gen_rf(self.FSGEN_CH, 5, 10)  # Verified 30->25 see increased gain in loopback
         # Set attenuator on ADC.
         ### IMPORTANT: set this to 30 and you get 60 dB of warm gain. Set to 0 and you get 90 dB of warm gain
-        self.soc.rfb_set_ro_rf(self.MUXRO_CH_RF, 15)  # Verified 30->25 see increased gain in loopback
+        self.soc.rfb_set_ro_rf(self.MUXRO_CH_RF, ADC_attenuator)  # Verified 30->25 see increased gain in loopback
 
 
         # Qubit you want to work with
@@ -84,8 +84,8 @@ class QICK_experiment:
             # [0.4287450656184295, 0.4287450656184295, 0.4903077560386716, 0.6, 0.4903077560386716, 0.4287450656184295], # For spec pulse
             "qubit_length_ge": 15,  # [us] for spec Pulse
             "qubit_phase": 0,  # [deg]
-            "sigma": [0.08, 0.1, 0.1, 0.08, 0.12, 0.13],  # [us] for Gaussian Pulse
-            "pi_amp": [0.8, 0.78, 0.8, 0.8, 0.8, 0.8],
+            "sigma": [0.08, 0.18, 0.14, 0.13, 0.18, 0.6],  # [us] for Gaussian Pulse
+            "pi_amp": [0.92, 0.87, 0.75, 0.73, 0.77, 0.78],
         }
 
     def create_folder_if_not_exists(self, folder):
