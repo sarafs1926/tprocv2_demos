@@ -21,8 +21,8 @@ expt_cfg = {
     },
 
     "qubit_spec_ge": {
-        "reps": 300,
-        "rounds": 10,
+        "reps": 300, #300
+        "rounds": 10, #10
         "start": list(VNA_qubit-5), # [MHz]
         "stop":  list(VNA_qubit+5), # [MHz]
         "steps": 300,
@@ -30,8 +30,8 @@ expt_cfg = {
     },
 
     "power_rabi_ge": {
-        "reps": 100,
-        "rounds": 10,
+        "reps": 100, #100
+        "rounds": 10, #10
         "start": [0.0] * 6, # [DAC units]
         "stop":  [1.0] * 6, # [DAC units]
         "steps": 100,
@@ -39,8 +39,8 @@ expt_cfg = {
     },
 
     "T1_ge": {
-        "reps": 300,
-        "rounds": 10,
+        "reps": 300, #300
+        "rounds": 10, #1
         "start": [0.0] * 6,  # [us]
         "stop": [500.0] * 6,  # [us] ### Should be ~10x T1! Should change this per qubit.
         "steps": 80,
@@ -49,8 +49,8 @@ expt_cfg = {
     },
 
     "Ramsey_ge": {
-        "reps": 300,
-        "rounds": 10,
+        "reps": 300, #300
+        "rounds": 10,#10
         "start": [0.0] * 6, # [us]
         "stop":  [60] * 6, # [us]
         "steps": 100,

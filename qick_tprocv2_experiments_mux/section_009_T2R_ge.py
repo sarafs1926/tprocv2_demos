@@ -193,7 +193,7 @@ class T2RProgram(AveragerProgramV2):
 
 
 class T2RMeasurement:
-    def __init__(self, QubitIndex, outerFolder, round_num, signal, save_figs, experiment, live_plot, fit_data):
+    def __init__(self, QubitIndex, outerFolder, round_num, signal, save_figs, experiment = None, live_plot = None, fit_data = None):
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
         self.fit_data = fit_data
@@ -201,15 +201,15 @@ class T2RMeasurement:
         self.Qubit = 'Q' + str(self.QubitIndex)
         self.experiment = experiment
         self.exp_cfg = expt_cfg[self.expt_name]
-        self.q_config = all_qubit_state(self.experiment)
         self.round_num = round_num
-        # self.qubit_freq = qubit_freq
         self.signal = signal
         self.save_figs = save_figs
         self.live_plot = live_plot
-        self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
-        self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
-        print(f'Q {self.QubitIndex + 1} Round {self.round_num} T2R configuration: ', self.config)
+        if experiment is not None:
+            self.q_config = all_qubit_state(self.experiment)
+            self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
+            self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
+            print(f'Q {self.QubitIndex + 1} Round {self.round_num} T2R configuration: ', self.config)
 
     def t2_fit(self, x_data, y_data, verbose = False, guess=None, plot=False):
         #convert us to ns
@@ -352,7 +352,6 @@ class T2RMeasurement:
 
     def run(self, soccfg, soc):
         now = datetime.datetime.now()
-
         ramsey = T2RProgram(soccfg, reps=self.exp_cfg['reps'], final_delay=self.exp_cfg['relax_delay'],
                          cfg=self.config)
         # for live plotting open http://localhost:8097/ on firefox
@@ -404,8 +403,8 @@ class T2RMeasurement:
             fit, t2r_est, t2r_err = self.t2_fit(delay_times, I)
         else:
             fit, t2r_est, t2r_err = None, None, None
-        I, Q = self.plot_results(I, Q, delay_times, now, self.config, self.QubitIndex, fit, t2r_est, t2r_err)
-        return  t2r_est, t2r_err, I, Q, delay_times, fit
+        I, Q = self.plot_results(I, Q, delay_times, now, fit, t2r_est, t2r_err)
+        return  t2r_est, t2r_err, I, Q, delay_times, fit, self.config
 
 
     def set_res_gain_ge(self, QUBIT_INDEX, num_qubits=6):
@@ -418,12 +417,12 @@ class T2RMeasurement:
     def exponential(self, x, a, b, c, d):
         return a * np.exp(-(x - b) / c) + d
 
-    def create_folder_if_not_exists(self, folder_path):
-        import os
-        if not os.path.exists(folder_path):
-            os.makedirs(folder_path)
+    def create_folder_if_not_exists(self, folder):
+        """Creates a folder at the given path if it doesn't already exist."""
+        if not os.path.exists(folder):
+            os.makedirs(folder)
 
-    def plot_results(self, I, Q, delay_times, now, config, QubitIndex, fit, t2r_est, t2r_err):
+    def plot_results(self, I, Q, delay_times, now, fit, t2r_est, t2r_err, config = None):
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
         plt.rcParams.update({'font.size': 18})
 
@@ -444,16 +443,29 @@ class T2RMeasurement:
                 ax2.plot(delay_times, fit, '-', color='red', linewidth=3, label="Fit")
 
             # Add title, centered on the plot area
-            fig.text(plot_middle, 0.98,
-                     f"T2 Q{QubitIndex + 1}, pi gain %.2f" % config[
-                         'pi_amp'] + f", {config['sigma'] * 1000} ns sigma" + f", {config['reps']}*{config['rounds']} avgs," + f" T2 = {t2r_est:.3f} ± {t2r_err:.3f} us",
-                     fontsize=24, ha='center', va='top')
+            if config is not None:
+                fig.text(plot_middle, 0.98,
+                         f"T2 Q{self.QubitIndex + 1}, pi gain %.2f" % float(config[
+                                                                                'pi_amp']) + f", {float(config['sigma']) * 1000} ns sigma" + f", {float(config['reps'])}*{float(config['rounds'])} avgs,",
+                         fontsize=24, ha='center', va='top')
+            else:
+                fig.text(plot_middle, 0.98,
+                         f"T2 Q{self.QubitIndex + 1}, pi gain %.2f" % float(self.config[
+                                                                                'pi_amp']) + f", {float(self.config['sigma']) * 1000} ns sigma" + f", {float(self.config['reps'])}*{float(self.config['rounds'])} avgs,",
+                         fontsize=24, ha='center', va='top')
+
         else:
             # Add title, centered on the plot area
-            fig.text(plot_middle, 0.98,
-                     f"T2 Q{QubitIndex + 1}, pi gain %.2f" % config[
-                         'pi_amp'] + f", {config['sigma'] * 1000} ns sigma" + f", {config['reps']}*{config['rounds']} avgs," ,
-                     fontsize=24, ha='center', va='top')
+            if config is not None:
+                fig.text(plot_middle, 0.98,
+                         f"T2 Q{self.QubitIndex + 1}, pi gain %.2f" % float(config[
+                             'pi_amp']) + f", {float(config['sigma']) * 1000} ns sigma" + f", {float(config['reps'])}*{float(config['rounds'])} avgs," ,
+                         fontsize=24, ha='center', va='top')
+            else:
+                fig.text(plot_middle, 0.98,
+                         f"T2 Q{self.QubitIndex + 1}, pi gain %.2f" % float(self.config[
+                                                                                'pi_amp']) + f", {float(self.config['sigma']) * 1000} ns sigma" + f", {float(self.config['reps'])}*{float(self.config['rounds'])} avgs,",
+                         fontsize=24, ha='center', va='top')
 
         # I subplot
         ax1.plot(delay_times, I, label="Gain (a.u.)", linewidth=2)
@@ -473,11 +485,12 @@ class T2RMeasurement:
 
         # Adjust the top margin to make room for the title
         plt.subplots_adjust(top=0.93)
-        self.experiment.outerFolder_expt = self.outerFolder + "/" + self.expt_name + "/"
-        self.create_folder_if_not_exists(self.experiment.outerFolder_expt)
-        formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-        file_name = self.experiment.outerFolder_expt + f"R_{self.round_num}_" + f"Q_{self.QubitIndex+1}_" + f"{formatted_datetime}_" + self.expt_name + f"_q{QubitIndex + 1}.png"
         if self.save_figs:
+            outerFolder_expt = self.outerFolder + "/" + self.expt_name + "/"
+            self.create_folder_if_not_exists(outerFolder_expt)
+            now = datetime.datetime.now()
+            formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
+            file_name = outerFolder_expt + f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png"
             fig.savefig(file_name, dpi=300, bbox_inches='tight')  # , facecolor='white'
         plt.close(fig)
         return I, Q

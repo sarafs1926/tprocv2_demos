@@ -48,7 +48,7 @@ class T1Program(AveragerProgramV2):
 
 
 class T1Measurement:
-    def __init__(self, QubitIndex, outerFolder, round_num, signal, save_figs, experiment, live_plot, fit_data):
+    def __init__(self, QubitIndex, outerFolder, round_num, signal, save_figs, experiment = None, live_plot = None, fit_data = None):
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
         self.expt_name = "T1_ge"
@@ -56,15 +56,15 @@ class T1Measurement:
         self.Qubit = 'Q' + str(self.QubitIndex)
         self.experiment = experiment
         self.exp_cfg = expt_cfg[self.expt_name]
-        self.q_config = all_qubit_state(self.experiment)
         self.round_num = round_num
         self.live_plot = live_plot
         self.signal = signal
         self.save_figs = save_figs
-
-        self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
-        self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
-        print(f'Q {self.QubitIndex + 1} Round {self.round_num} T1 configuration: ', self.config)
+        if experiment is not None:
+            self.q_config = all_qubit_state(self.experiment)
+            self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
+            self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
+            print(f'Q {self.QubitIndex + 1} Round {self.round_num} T1 configuration: ', self.config)
 
     def run(self, soccfg, soc):
         now = datetime.datetime.now()
@@ -78,7 +78,7 @@ class T1Measurement:
             Q = iq_list[self.QubitIndex][0, :, 1]
             delay_times = t1.get_time_param('wait', "t", as_array=True)
 
-        T1_est, T1_err, I, Q, q1_fit_exponential = self.plot_results(I, Q, delay_times, now, self.config, self.QubitIndex)
+        T1_est, T1_err, I, Q, q1_fit_exponential = self.plot_results(I, Q, delay_times, now)
         return  T1_est, T1_err, I, Q, delay_times, q1_fit_exponential
 
     def live_plotting(self, t1, soc):
@@ -123,15 +123,15 @@ class T1Measurement:
     def exponential(self, x, a, b, c, d):
         return a * np.exp(-(x - b) / c) + d
 
-    def create_folder_if_not_exists(self, folder_path):
-        import os
-        if not os.path.exists(folder_path):
-            os.makedirs(folder_path)
+    def create_folder_if_not_exists(self, folder):
+        """Creates a folder at the given path if it doesn't already exist."""
+        if not os.path.exists(folder):
+            os.makedirs(folder)
 
     def exponential(self, x, a, b, c, d):
         return a * np.exp(- (x - b) / c) + d
 
-    def plot_results(self, I, Q, delay_times, now, config, QubitIndex):
+    def plot_results(self, I, Q, delay_times, now, config = None):
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
         plt.rcParams.update({'font.size': 18})
 
@@ -184,16 +184,28 @@ class T1Measurement:
                 ax2.plot(delay_times, q1_fit_exponential, '-', color='red', linewidth=3, label="Fit")
 
             # Add title, centered on the plot area
-            fig.text(plot_middle, 0.98,
-                     f"T1 Q{QubitIndex + 1}, pi gain %.2f" % config[
-                         'pi_amp'] + f", {config['sigma'] * 1000} ns sigma" + f", {config['reps']}*{config['rounds']} avgs," + f" T1 = {T1_est:.3f} ± {T1_err:.3f} µs",
-                     fontsize=24, ha='center', va='top')
+            if config is not None:
+                fig.text(plot_middle, 0.98,
+                         f"T1 Q{self.QubitIndex + 1}, pi gain %.2f" % float(config[
+                                                                                'pi_amp']) + f", {float(config['sigma']) * 1000} ns sigma" + f", {float(config['reps'])}*{float(config['rounds'])} avgs,",
+                         fontsize=24, ha='center', va='top')
+            else:
+                fig.text(plot_middle, 0.98,
+                         f"T1 Q{self.QubitIndex + 1}, pi gain %.2f" % config[
+                             'pi_amp'] + f", {self.config['sigma'] * 1000} ns sigma" + f", {self.config['reps']}*{self.config['rounds']} avgs,",
+                         fontsize=24, ha='center', va='top')
 
         else:
-            fig.text(plot_middle, 0.98,
-                     f"T1 Q{QubitIndex + 1}, pi gain %.2f" % config[
-                         'pi_amp'] + f", {config['sigma'] * 1000} ns sigma" + f", {config['reps']}*{config['rounds']} avgs,",
-                     fontsize=24, ha='center', va='top')
+            if config is not None:
+                fig.text(plot_middle, 0.98,
+                         f"T1 Q{self.QubitIndex + 1}, pi gain %.2f" % float(config[
+                             'pi_amp']) + f", {float(config['sigma']) * 1000} ns sigma" + f", {float(config['reps'])}*{float(config['rounds'])} avgs,",
+                         fontsize=24, ha='center', va='top')
+            else:
+                fig.text(plot_middle, 0.98,
+                         f"T1 Q{self.QubitIndex + 1}, pi gain %.2f" % config[
+                             'pi_amp'] + f", {self.config['sigma'] * 1000} ns sigma" + f", {self.config['reps']}*{self.config['rounds']} avgs,",
+                         fontsize=24, ha='center', va='top')
             q1_fit_exponential = None
             T1_est = None
             T1_err = None
@@ -216,11 +228,12 @@ class T1Measurement:
 
         # Adjust the top margin to make room for the title
         plt.subplots_adjust(top=0.93)
-        self.experiment.outerFolder_expt = self.outerFolder + "/" + self.expt_name + "/"
-        self.create_folder_if_not_exists(self.experiment.outerFolder_expt)
-        formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-        file_name = self.experiment.outerFolder_expt + f"R_{self.round_num}_" + f"Q_{self.QubitIndex+1}_" + f"{formatted_datetime}_" + self.expt_name + f"_q{QubitIndex + 1}.png"
         if self.save_figs:
+            outerFolder_expt = self.outerFolder + "/" + self.expt_name + "/"
+            self.create_folder_if_not_exists(outerFolder_expt)
+            now = datetime.datetime.now()
+            formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
+            file_name = outerFolder_expt + f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png"
             fig.savefig(file_name, dpi=300, bbox_inches='tight')  # , facecolor='white'
         plt.close(fig)
         return T1_est, T1_err, I, Q, q1_fit_exponential

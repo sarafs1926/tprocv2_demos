@@ -9,22 +9,24 @@ import copy
 import visdom
 
 class AmplitudeRabiExperiment:
-    def __init__(self, QubitIndex, outerFolder, round_num, signal, save_figs, experiment, live_plot, fit_data):
+    def __init__(self, QubitIndex, outerFolder, round_num, signal, save_figs, experiment = None, live_plot = None, fit_data = None):
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
         self.fit_data = fit_data
         self.expt_name = "power_rabi_ge"
         self.Qubit = 'Q' + str(self.QubitIndex)
         self.exp_cfg = expt_cfg[self.expt_name]
-        self.experiment = experiment
-        self.q_config = all_qubit_state(self.experiment)
         self.round_num = round_num
         self.live_plot = live_plot
         self.signal = signal
         self.save_figs = save_figs
-        self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
-        self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
-        print(f'Q {self.QubitIndex + 1} Round {self.round_num} Rabi configuration: ', self.config)
+        self.experiment = experiment
+        if experiment is not None:
+            self.q_config = all_qubit_state(self.experiment)
+            self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
+            self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
+            print(f'Q {self.QubitIndex + 1} Round {self.round_num} Rabi configuration: ', self.config)
+
 
     def run(self, soccfg, soc):
         amp_rabi = AmplitudeRabiProgram(soccfg, reps=self.exp_cfg['reps'], final_delay=self.exp_cfg['relax_delay'], cfg=self.config)
@@ -82,12 +84,9 @@ class AmplitudeRabiExperiment:
     def cosine(self, x, a, b, c, d):
         return a * np.cos(2. * np.pi * b * x - c * 2 * np.pi) + d
 
-    def create_folder_if_not_exists(self, folder_path):
-        import os
-        if not os.path.exists(folder_path):
-            os.makedirs(folder_path)
 
-    def plot_results(self, I, Q, gains):
+
+    def plot_results(self, I, Q, gains, config = None):
 
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
         plt.rcParams.update({'font.size': 18})
@@ -122,13 +121,23 @@ class AmplitudeRabiExperiment:
             else:
                 ax1.plot(gains, q1_fit_cosine, '-', color='red', linewidth=3, label="Fit")
 
-            fig.text(plot_middle, 0.98,
-                     f"Rabi Q{self.QubitIndex + 1}, pi gain %.2f" % pi_amp + f", {self.config['sigma'] * 1000} ns sigma" + f", {self.config['reps']} avgs",
-                     fontsize=24, ha='center', va='top')
+            if config is not None:
+                fig.text(plot_middle, 0.98,
+                         f"Rabi Q{self.QubitIndex + 1}_" f", {config['sigma'] * 1000} ns sigma" + f", {config['reps']} avgs",
+                         fontsize=24, ha='center', va='top')
+            else:
+                fig.text(plot_middle, 0.98,
+                         f"Rabi Q{self.QubitIndex + 1}_" f", {self.config['sigma'] * 1000} ns sigma" + f", {self.config['reps']} avgs",
+                         fontsize=24, ha='center', va='top')
         else:
-            fig.text(plot_middle, 0.98,
-                     f"Rabi Q{self.QubitIndex + 1}_" f", {self.config['sigma'] * 1000} ns sigma" + f", {self.config['reps']} avgs",
-                     fontsize=24, ha='center', va='top')
+            if config is not None:
+                fig.text(plot_middle, 0.98,
+                         f"Rabi Q{self.QubitIndex + 1}_" f", {float(config['sigma']) * 1000} ns sigma" + f", {float(config['reps'])} avgs",
+                         fontsize=24, ha='center', va='top')
+            else:
+                fig.text(plot_middle, 0.98,
+                         f"Rabi Q{self.QubitIndex + 1}_" f", {self.config['sigma'] * 1000} ns sigma" + f", {self.config['reps']} avgs",
+                         fontsize=24, ha='center', va='top')
             q1_fit_cosine = None
 
 
@@ -142,20 +151,23 @@ class AmplitudeRabiExperiment:
         ax2.tick_params(axis='both', which='major', labelsize=16)
 
         plt.tight_layout()
-
         plt.subplots_adjust(top=0.93)
-        self.experiment.outerFolder_expt = self.outerFolder + "/" + self.expt_name + "/"
-        self.experiment.create_folder_if_not_exists = self.outerFolder + "/" + self.expt_name + "/"
-        self.create_folder_if_not_exists(self.experiment.outerFolder_expt)
-        now = datetime.datetime.now()
-        formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-        file_name = self.experiment.outerFolder_expt + f"R_{self.round_num}_" + f"Q_{self.QubitIndex+1}_" + f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex+1}.png"
 
         if self.save_figs:
+            outerFolder_expt = self.outerFolder + "/" + self.expt_name + "/"
+            self.create_folder_if_not_exists(outerFolder_expt)
+            now = datetime.datetime.now()
+            formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
+            file_name = outerFolder_expt + f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png"
             fig.savefig(file_name, dpi=300, bbox_inches='tight')
         plt.close(fig)
 
         return q1_fit_cosine
+
+    def create_folder_if_not_exists(self, folder):
+        """Creates a folder at the given path if it doesn't already exist."""
+        if not os.path.exists(folder):
+            os.makedirs(folder)
 
 
 class AmplitudeRabiProgram(AveragerProgramV2):

@@ -9,25 +9,24 @@ from section_004_qubit_spec_ge import QubitSpectroscopy
 from section_006_amp_rabi_ge import AmplitudeRabiExperiment
 from section_007_T1_ge import T1Measurement
 from section_005_single_shot_ge import SingleShot
-from section_008_save_T1_T2 import Save
+from section_008_save_data_to_h5 import Data_H5
 from section_009_T2R_ge import T2RMeasurement
 from system_config import QICK_experiment
 from section_003_punch_out_ge_mux import PunchOut
 from expt_config import *
 
 
-n= 1
+n= 1000
 save_r = 1          # how many rounds to save after
 signal = 'Q'        #'I', or 'Q' depending on where the signal is (after optimization). Put 'None' if no optimization has happened
-save_figs = False   # save plots for everything?
+save_figs = False   # save plots for everything as you go along the RR script?
 live_plot = True    # for live plotting open http://localhost:8097/ on firefox
 fit_data = False    # fit the data here and save or plot the fits?
 save_data_h5 = True # save all of the data to h5 files?
 outerFolder = "/data/QICK_data/6transmon_run4a/" + str(datetime.date.today()) + "/"
 
 Qs = [0,1,2,3,4,5]
-Qs=[0]
-
+#Qs = [0,1]
 res_data = {Q: {'Dates': [None]*save_r, 'freq_pts': [None]*save_r, 'freq_center': [None]*save_r, 'Amps': [None]*save_r,
                 'Found Freqs': [None]*save_r, 'Round Num': [None]*save_r, 'Batch Num': [None]*save_r} for Q in range(6)}
 
@@ -72,7 +71,6 @@ while j < n:
         res_freqs, freq_pts, freq_center, amps = res_spec.run(experiment.soccfg, experiment.soc)
         experiment.readout_cfg['res_freq_ge'] = res_freqs #change after optimization, add offset value to each of the freqs in this list [r + offset for r in res_freqs]
         print("Resonator frequencies found: ",res_freqs)
-
         del res_spec
 
         # #
@@ -105,9 +103,7 @@ while j < n:
         # ------------------------T2R-------------------------
         signal = 'I'
         t2r = T2RMeasurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data)
-        t2r_est, t2r_err, t2r_I, t2r_Q, t2r_delay_times, fit_ramsey = t2r.run(experiment.soccfg, experiment.soc)
-
-        del experiment
+        t2r_est, t2r_err, t2r_I, t2r_Q, t2r_delay_times, fit_ramsey, config_to_save = t2r.run(experiment.soccfg, experiment.soc)
 
         if save_data_h5:
             # ---------------------Collect Res Spec Results----------------
@@ -160,6 +156,13 @@ while j < n:
             t2r_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
             t2r_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
 
+            # ---------------------save last config---------------------
+            saver_config = Data_H5(outerFolder)
+            saver_config.save_config(config_to_save)
+            del saver_config
+
+        del experiment
+
     # --------------------------------Potentially Save---------------------------
     if save_data_h5:
         # Check if you are at the right round number. If so, then save all of the data and change the round num so you replace data starting next round
@@ -167,29 +170,30 @@ while j < n:
             batch_num+=1
 
             # --------------------------save Res Spec-----------------------
-            saver_res = Save(outerFolder, rabi_data, batch_num, save_r)
+            saver_res = Data_H5(outerFolder, res_data, batch_num, save_r)
             saver_res.save_to_h5('Res')
             del saver_res
 
             # --------------------------save QSpec-----------------------
-            saver_qspec = Save(outerFolder, rabi_data, batch_num, save_r)
+            saver_qspec = Data_H5(outerFolder, qspec_data, batch_num, save_r)
             saver_qspec.save_to_h5('QSpec')
             del saver_qspec
 
             # --------------------------save Rabi-----------------------
-            saver_rabi = Save(outerFolder, rabi_data, batch_num, save_r)
+            saver_rabi = Data_H5(outerFolder, rabi_data, batch_num, save_r)
             saver_rabi.save_to_h5('Rabi')
             del saver_rabi
 
             # --------------------------save t1-----------------------
-            saver_t1 = Save(outerFolder,t1_data, batch_num, save_r)
+            saver_t1 = Data_H5(outerFolder, t1_data, batch_num, save_r)
             saver_t1.save_to_h5('T1')
             del saver_t1
 
             #--------------------------save t2-----------------------
-            saver_t2r = Save(outerFolder, t2r_data, batch_num, save_r)
+            saver_t2r = Data_H5(outerFolder, t2r_data, batch_num, save_r)
             saver_t2r.save_to_h5('T2')
             del saver_t2r
+
 
 
 

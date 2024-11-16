@@ -31,7 +31,7 @@ class SingleToneSpectroscopyProgram(AveragerProgramV2):
         self.pulse(ch=cfg['res_ch'], name="mymux", t=0)
 
 class ResonanceSpectroscopy:
-    def __init__(self, QubitIndex, outerFolder, round_num, save_figs, experiment):
+    def __init__(self, QubitIndex, outerFolder, round_num, save_figs, experiment = None):
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
         self.expt_name = "res_spec"
@@ -40,9 +40,11 @@ class ResonanceSpectroscopy:
         self.save_figs = save_figs
         self.experiment = experiment
         self.exp_cfg = expt_cfg[self.expt_name]
-        self.q_config = all_qubit_state(experiment)
-        self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
-        print(f'Q {self.QubitIndex + 1} Round {self.round_num} Res Spec configuration: ', self.config)
+        if experiment is not None:
+
+            self.q_config = all_qubit_state(experiment)
+            self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
+            print(f'Q {self.QubitIndex + 1} Round {self.round_num} Res Spec configuration: ', self.config)
 
     def run(self, soccfg, soc):
         fpts = self.exp_cfg["start"] + self.exp_cfg["step_size"] * np.arange(self.exp_cfg["steps"])
@@ -86,16 +88,20 @@ class ResonanceSpectroscopy:
         plt.suptitle(f"MUXed resonator spectroscopy {self.exp_cfg['reps']} avgs", fontsize=24, y=0.95)
         plt.tight_layout(pad=2.0)
 
-        outerFolder_expt = self.outerFolder + "/" + self.expt_name + "/"
-        self.experiment.create_folder_if_not_exists(outerFolder_expt)
-        now = datetime.datetime.now()
-        formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-        file_name = outerFolder_expt + f"R_{self.round_num}_" + f"Q_{self.QubitIndex+1}_" + f"{formatted_datetime}_" + self.expt_name + ".png"
         if self.save_figs:
+            outerFolder_expt = self.outerFolder + "/" + self.expt_name + "/"
+            self.create_folder_if_not_exists(outerFolder_expt)
+            now = datetime.datetime.now()
+            formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
+            file_name = outerFolder_expt + f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + ".png"
             plt.savefig(file_name, dpi=300)
         plt.close()
 
         res_freqs = [round(x, 3) for x in res_freqs]
         return res_freqs
 
+    def create_folder_if_not_exists(self, folder):
+        """Creates a folder at the given path if it doesn't already exist."""
+        if not os.path.exists(folder):
+            os.makedirs(folder)
 

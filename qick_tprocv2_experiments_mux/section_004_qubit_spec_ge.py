@@ -9,7 +9,7 @@ import copy
 import visdom
 
 class QubitSpectroscopy:
-    def __init__(self, QubitIndex, outerFolder,  round_num, signal, save_figs, experiment, live_plot):
+    def __init__(self, QubitIndex, outerFolder,  round_num, signal, save_figs, experiment = None, live_plot = None):
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
         self.expt_name = "qubit_spec_ge"
@@ -18,13 +18,14 @@ class QubitSpectroscopy:
         self.experiment = experiment
         self.Qubit = 'Q' + str(self.QubitIndex)
         self.exp_cfg = expt_cfg[self.expt_name]
-        self.q_config = all_qubit_state(self.experiment)
         self.round_num = round_num
-        self.live_plot = live_plot
-        self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
-        self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
+        if experiment is not None:
+            self.q_config = all_qubit_state(self.experiment)
+            self.live_plot = live_plot
+            self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
+            self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
 
-        print(f'Q {self.QubitIndex + 1} Round {self.round_num} Qubit Spec configuration: ', self.config)
+            print(f'Q {self.QubitIndex + 1} Round {self.round_num} Qubit Spec configuration: ', self.config)
 
     def run(self, soccfg, soc):
         qspec = PulseProbeSpectroscopyProgram(soccfg, reps=self.config['reps'], final_delay=0.5, cfg=self.config)
@@ -80,7 +81,7 @@ class QubitSpectroscopy:
             viz.line(X=freqs, Y=signal, win=win1, name=plot_sig)
         return I, Q, freqs
 
-    def plot_results(self, I, Q, freqs):
+    def plot_results(self, I, Q, freqs, config = None):
         freqs = np.array(freqs)
         freq_q = freqs[np.argmax(I)]
 
@@ -113,9 +114,14 @@ class QubitSpectroscopy:
         ax2.axvline(widest_curve_mean, color='orange', linestyle='--', linewidth=2)
 
         # Add title, centered on the plot area
-        fig.text(plot_middle, 0.98,
-                 f"Qubit Spectroscopy Q{self.QubitIndex + 1}, %.2f MHz" % widest_curve_mean + f" FWHM: {round(widest_fwhm, 1)}" + f", {self.config['reps']} avgs",
-                 fontsize=24, ha='center', va='top')
+        if config is not None: #then its been passed to this definition, so use that
+            fig.text(plot_middle, 0.98,
+                     f"Qubit Spectroscopy Q{self.QubitIndex + 1}, %.2f MHz" % widest_curve_mean + f" FWHM: {round(widest_fwhm, 1)}" + f", {config['reps']} avgs",
+                     fontsize=24, ha='center', va='top')
+        else:
+            fig.text(plot_middle, 0.98,
+                     f"Qubit Spectroscopy Q{self.QubitIndex + 1}, %.2f MHz" % widest_curve_mean + f" FWHM: {round(widest_fwhm, 1)}" + f", {self.config['reps']} avgs",
+                     fontsize=24, ha='center', va='top')
 
         # Adjust spacing
         plt.tight_layout()
@@ -124,13 +130,12 @@ class QubitSpectroscopy:
         plt.subplots_adjust(top=0.93)
 
         ### Save figure
-        outerFolder_expt = self.outerFolder + "/" + self.expt_name + "/"
-        self.experiment.create_folder_if_not_exists(outerFolder_expt)
-        now = datetime.datetime.now()
-        formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-        file_name = outerFolder_expt + f"R_{self.round_num}_" + f"Q_{self.QubitIndex+1}_" + f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png"
-
         if self.save_figs:
+            outerFolder_expt = self.outerFolder + "/" + self.expt_name + "/"
+            self.create_folder_if_not_exists(outerFolder_expt)
+            now = datetime.datetime.now()
+            formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
+            file_name = outerFolder_expt + f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png"
             fig.savefig(file_name, dpi=300, bbox_inches='tight')  # , facecolor='white'
         plt.close(fig)
         return widest_curve_mean, I_fit, Q_fit
