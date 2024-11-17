@@ -16,17 +16,17 @@ from section_003_punch_out_ge_mux import PunchOut
 from expt_config import *
 
 
-n= 1000
+n= 10000
 save_r = 1          # how many rounds to save after
 signal = 'Q'        #'I', or 'Q' depending on where the signal is (after optimization). Put 'None' if no optimization has happened
 save_figs = False   # save plots for everything as you go along the RR script?
-live_plot = True    # for live plotting open http://localhost:8097/ on firefox
+live_plot = False    # for live plotting open http://localhost:8097/ on firefox
 fit_data = False    # fit the data here and save or plot the fits?
 save_data_h5 = True # save all of the data to h5 files?
 outerFolder = "/data/QICK_data/6transmon_run4a/" + str(datetime.date.today()) + "/"
 
 Qs = [0,1,2,3,4,5]
-#Qs = [0,1]
+#Qs = [4]
 res_data = {Q: {'Dates': [None]*save_r, 'freq_pts': [None]*save_r, 'freq_center': [None]*save_r, 'Amps': [None]*save_r,
                 'Found Freqs': [None]*save_r, 'Round Num': [None]*save_r, 'Batch Num': [None]*save_r} for Q in range(6)}
 
@@ -48,59 +48,61 @@ t2r_data = {Q: {'T2': [None]*save_r, 'Errors': [None]*save_r, 'Dates': [None]*sa
 batch_num=0
 j = 0
 angles=[]
-#res_leng_vals = [, , , , , , ]
-res_gain = [0.7, 0.9, 0.7, 0.7, 0.7, 0.9, 0.9]
+res_leng_vals = [9.0, 9.0, 2.5, 4.5, 9.0, 9.0] #Note: ONLY Q3 and Q4 are optimized, and this is for ADC 10. The rest have the default value we have been using thus far.
+# res_gain = [0.7, 0.9, 0.7, 0.7, 0.7, 0.9, 0.9]
+res_gain = [1.0]*6
+
 while j < n:
     j += 1
     for QubitIndex in Qs:
         #Get the config for this qubit
-        experiment = QICK_experiment(outerFolder, DAC_attenuator1 = 5, DAC_attenuator2 = 10)
+        experiment = QICK_experiment(outerFolder, DAC_attenuator1 = 2, DAC_attenuator2 = 10, ADC_attenuator = 10)
 
         #Mask out all other resonators except this one
         res_gains = experiment.set_gain_filter_ge(QubitIndex, IndexGain=res_gain[QubitIndex])
         experiment.readout_cfg['res_gain_ge'] = res_gains
-        #experiment.readout_cfg['res_length'] = res_leng_vals[QubitIndex]
+        experiment.readout_cfg['res_length'] = res_leng_vals[QubitIndex]
 
         # ---------------------TOF------------------------
-        # tof        = TOFExperiment(QubitIndex, outerFolder, j, save_figs, experiment)
-        # tof.run(experiment.soccfg, experiment.soc)
-        # del tof
+        #tof        = TOFExperiment(QubitIndex, outerFolder, experiment, j, save_figs)
+        #tof.run(experiment.soccfg, experiment.soc)
+        #del tof
 
-        #---------------------Res spec---------------------
+        # #---------------------Res spec---------------------
         res_spec   = ResonanceSpectroscopy(QubitIndex, outerFolder, j, save_figs, experiment)
         res_freqs, freq_pts, freq_center, amps = res_spec.run(experiment.soccfg, experiment.soc)
         experiment.readout_cfg['res_freq_ge'] = res_freqs #change after optimization, add offset value to each of the freqs in this list [r + offset for r in res_freqs]
         print("Resonator frequencies found: ",res_freqs)
         del res_spec
-
-        # #
-        # # #-----------------Roll Signal into I---------------
-        # # #get the average theta value, then use that to rotate the signal. Plug that value into system_config res_phase
-        # # leng=4
-        # # ss = SingleShot(QubitIndex, outerFolder, experiment, j, save_figs)
-        # # fid, angle, iq_list_g, iq_list_e = ss.run(experiment.soccfg, experiment.soc)
-        # # angles.append(angle)
-        # # #print(angles)
-        # # #print('avg theta: ', np.average(angles))
-        # # del ss
-        # #
-        # #--------------------Qubit spec--------------------
+        #
+        # # #
+        # # # #-----------------Roll Signal into I---------------
+        # # # #get the average theta value, then use that to rotate the signal. Plug that value into system_config res_phase
+        # # # leng=4
+        # # # ss = SingleShot(QubitIndex, outerFolder, experiment, j, save_figs)
+        # # # fid, angle, iq_list_g, iq_list_e = ss.run(experiment.soccfg, experiment.soc)
+        # # # angles.append(angle)
+        # # # #print(angles)
+        # # # #print('avg theta: ', np.average(angles))
+        # # # del ss
+        # # #
+        # # #--------------------Qubit spec--------------------
         q_spec = QubitSpectroscopy(QubitIndex, outerFolder, j, 'I', save_figs, experiment, live_plot)
         qspec_I, qspec_Q, qspec_freqs, qspec_I_fit, qspec_Q_fit, qubit_freq = q_spec.run(experiment.soccfg, experiment.soc)
         experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = float(qubit_freq)
         print('Qubit freq for qubit ', QubitIndex + 1 ,' is: ',float(qubit_freq))
         del q_spec
-
-        #-----------------------Rabi-----------------------
+        #
+        # #-----------------------Rabi-----------------------
         rabi = AmplitudeRabiExperiment(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data)
         rabi_I, rabi_Q, rabi_gains, rabi_fit = rabi.run(experiment.soccfg, experiment.soc)
         del rabi
-
-        #------------------------T1-------------------------
+        #
+        # #------------------------T1-------------------------
         t1 = T1Measurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data)
         t1_est, t1_err, t1_I, t1_Q, t1_delay_times, q1_fit_exponential = t1.run(experiment.soccfg, experiment.soc)
-
-        # ------------------------T2R-------------------------
+        #
+        # # ------------------------T2R-------------------------
         signal = 'I'
         t2r = T2RMeasurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data)
         t2r_est, t2r_err, t2r_I, t2r_Q, t2r_delay_times, fit_ramsey, config_to_save = t2r.run(experiment.soccfg, experiment.soc)

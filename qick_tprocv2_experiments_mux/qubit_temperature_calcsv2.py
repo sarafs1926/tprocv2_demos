@@ -76,7 +76,7 @@ steps = 3000
 numbins = round(math.sqrt(steps))
 n, bins, _ = plt.hist(ig_new, bins=numbins, range=xlims, density=False, alpha=0.5, label='Histogram of $I_g$',
                       color='gray')
-print(numbins)
+#print(numbins)
 # Use the midpoints of bins to create boolean masks
 bin_centers = (bins[:-1] + bins[1:]) / 2
 ground_region = (bin_centers < crossing_point)

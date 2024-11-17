@@ -13,6 +13,11 @@ class QICK_experiment:
         self.outerFolder = folder
         self.create_folder_if_not_exists(self.outerFolder)
 
+        # attenuation settings
+        self.DAC_attenuator1 = DAC_attenuator1
+        self.DAC_attenuator2 = DAC_attenuator2
+        self.ADC_attenuator = ADC_attenuator
+
         # Make proxy to the QICK
         self.soc, self.soccfg = makeProxy()
         print(self.soccfg)
@@ -24,16 +29,16 @@ class QICK_experiment:
 
         ### NEW for the RF board
         self.qubit_center_freq = 4400  # To be in the middle of the qubit freqs.
-        self.res_center_freq = 6300  # To be in the middle of the res freqs. 3000-5000 see nothing,6000 and 7000 see something, 8000+ see nothing
+        self.res_center_freq = 6330  # To be in the middle of the res freqs. 3000-5000 see nothing,6000 and 7000 see something, 8000+ see nothing
         self.soc.rfb_set_gen_filter(self.MIXMUXGEN_CH, fc=self.res_center_freq / 1000, ftype='bandpass', bw=1.0)
         self.soc.rfb_set_gen_filter(self.FSGEN_CH, fc=self.qubit_center_freq / 1000, ftype='bandpass', bw=1.0)
         self.soc.rfb_set_ro_filter(self.MUXRO_CH_RF, fc=self.res_center_freq / 1000, ftype='bandpass', bw=1.0)
         # Set attenuator on DAC.
-        self.soc.rfb_set_gen_rf(self.MIXMUXGEN_CH, DAC_attenuator1, DAC_attenuator2)  # Verified 30->25 see increased gain in loopback
+        self.soc.rfb_set_gen_rf(self.MIXMUXGEN_CH, self.DAC_attenuator1, self.DAC_attenuator2)  # Verified 30->25 see increased gain in loopback
         self.soc.rfb_set_gen_rf(self.FSGEN_CH, 5, 10)  # Verified 30->25 see increased gain in loopback
         # Set attenuator on ADC.
         ### IMPORTANT: set this to 30 and you get 60 dB of warm gain. Set to 0 and you get 90 dB of warm gain
-        self.soc.rfb_set_ro_rf(self.MUXRO_CH_RF, ADC_attenuator)  # Verified 30->25 see increased gain in loopback
+        self.soc.rfb_set_ro_rf(self.MUXRO_CH_RF, self.ADC_attenuator)  # Verified 30->25 see increased gain in loopback
 
 
         # Qubit you want to work with
@@ -57,11 +62,12 @@ class QICK_experiment:
 
             # Changes related to the resonator output channel
             "mixer_freq": 6000,  # [MHz]
-            "res_freq_ge": [6191.439, 6216.0, 6292.261, 6405.79, 6432.899, 6468.501],  # MHz, latest
+            "res_freq_ge": [6191.419, 6216.1, 6292.361, 6405.77, 6432.759, 6468.481],  # MHz, new
+            #"res_freq_ge": [6191.439, 6216.0, 6292.261, 6405.79, 6432.899, 6468.501],  # MHz, old
             # "res_freq_ge": [6191.459, 6216.02, 6292.281, 6405.81, 6432.799, 6468.281],  # MHz, old
             #"res_freq_ge": [6191.479, 6216.040, 6292.301, 6405.83, 6433.059, 6468.901],  # MHz, old
             # "res_gain_ge": [1] + [0]*5,
-            "res_gain_ge": [1, 1, 1, 0.7, 1, 1],
+            "res_gain_ge": [1, 1, 1, 1, 1, 1],
             # set_res_gain_ge(QUBIT_INDEX), #utomatically sets all gains to zero except for the qubit you are observing
             # "res_gain_ge": [1,1,0.7,0.7,0.7,1], #[0.4287450656184295, 0.4903077560386716, 0.4903077560386716, 0.3941941738241592, 0.3941941738241592, 0.4903077560386716],  # DAC units
             # "res_freq_ef": [7149.44, 0, 0, 0, 0, 0], # [MHz]
@@ -76,10 +82,10 @@ class QICK_experiment:
 
         # Qubit Configuration
         self.qubit_cfg = {
-            "qubit_freq_ge": [4184.14, 3821.144, 4156.57, 4459.19, 4471.12, 4997.86], #new
+            "qubit_freq_ge": [4184.14, 3821.149, 4156.53, 4459.20, 4471.12, 4997.86],  # new
+            #"qubit_freq_ge": [4184.14, 3821.144, 4156.57, 4459.19, 4471.12, 4997.86], #old
             #"qubit_freq_ge": [4184.13, 3821.142, 4156.58, 4459.19, 4471.10, 4997.87], #old
             #"qubit_freq_ge": [4184.15, 3821.156, 4156.88, 4459.12, 4471.18, 4998.04],  # Freqs of Qubit g/e Transition, old
-            # 4184.131522750292, 3821.142737167706, 4156.57897361413, 4459.1949814835025, 4471.099595815802, 4997.870725348132 new (full values)
             "qubit_gain_ge": [0.05] * 6,
             # [0.4287450656184295, 0.4287450656184295, 0.4903077560386716, 0.6, 0.4903077560386716, 0.4287450656184295], # For spec pulse
             "qubit_length_ge": 15,  # [us] for spec Pulse

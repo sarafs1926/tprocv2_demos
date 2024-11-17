@@ -172,7 +172,7 @@ class SingleShot:
         iq_list_e = ssp_e.acquire(soc, soft_avgs=1, progress=False)
 
         # Use the fidelity calculation from SingleShot
-        fidelity, _, _ = self.hist_ssf(
+        fidelity, _, _, _,_ = self.hist_ssf(
             data=[iq_list_g[self.QubitIndex][0].T[0], iq_list_g[self.QubitIndex][0].T[1],
                   iq_list_e[self.QubitIndex][0].T[0], iq_list_e[self.QubitIndex][0].T[1]],
             cfg=self.config, plot=False)
@@ -316,7 +316,8 @@ class GainFrequencySweep:
             #print('Running for res_freq: ', freq, '...')
             fid_results = []
             for gain_step in range(gain_steps):
-                experiment = QICK_experiment(self.output_folder)
+                #experiment = QICK_experiment(self.output_folder)
+                experiment = QICK_experiment(self.output_folder, DAC_attenuator1=2, DAC_attenuator2=10, ADC_attenuator=30)
 
                 gain = gain_range[0] + gain_step * gain_step_size
                 print('gain', gain)

@@ -5,7 +5,7 @@ from expt_config import *
 from system_config import *
 
 class TOFExperiment:
-    def __init__(self, QubitIndex, outerFolder, round_num, save_figs, experiment):
+    def __init__(self, QubitIndex, outerFolder, experiment, round_num = 1, save_figs = True, title = False):
         # every time a class instance is created, these definitions are set
         self.expt_name = "tof"
         self.QubitIndex = QubitIndex
@@ -14,20 +14,16 @@ class TOFExperiment:
         self.exp_cfg = expt_cfg[self.expt_name]
         self.experiment = experiment
         self.save_figs = save_figs
+        self.title = title
 
         self.q_config = all_qubit_state(self.experiment)
         self.round_num = round_num
-        self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
-
-        # Update parameters to see TOF pulse with your setup
-        # self.config.update([('trig_time', trigger_time)])  #starting off with TOF = 0, we will change this later to be the found TOF
-        # print("initial readout phase is")
-        # print(self.config['ro_phase'])
-        # new_phases = [np.float64(70.40572044377751), np.float64(-162.07287664422063), np.float64(-91.29642515281115), np.float64(-53.58106709833659), np.float64(13.776008961640695), np.float64(-7.341398813031154)]
-        # self.config.update([('ro_phase', new_phases)])  #starting off with TOF = 0, we will change this later to be the found TOF
-        # print("new readout phase is")
-        #print(self.config['ro_phase'])
-        print(f'Q {self.QubitIndex + 1} Round {round_num} TOF configuration: ',self.config)
+        if 'All' in self.QubitIndex:
+            self.config = {**self.q_config['Q0'], **self.exp_cfg}
+            print(f'Q {self.QubitIndex} Round {round_num} TOF configuration: ', self.config)
+        else:
+            self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
+            print(f'Q {self.QubitIndex + 1} Round {round_num} TOF configuration: ',self.config)
 
 
     def run(self, soccfg, soc):
@@ -56,24 +52,38 @@ class TOFExperiment:
                 )
 
             def _body(self, cfg):
-                self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'], ddr4=True)
+                self.trigger(ros=cfg['ro_ch'], pins=[0], t=0, ddr4=True)
                 self.pulse(ch=cfg['res_ch'], name="mymux", t=0)
 
         prog = MuxProgram(soccfg, reps=1, final_delay=0.5, cfg=self.config)
         iq_list = prog.acquire_decimated(soc, soft_avgs=self.config['soft_avgs'])
         if self.save_figs:
-            self.plot_results(prog, iq_list)
+            (average_y_mag_values_last, average_y_mag_values_mid, average_y_mag_values_oct, DAC_attenuator1, DAC_attenuator2, ADC_attenuator) = self.plot_results(prog, iq_list)
+        else:
+            (average_y_mag_values_last, average_y_mag_values_mid, average_y_mag_values_oct, DAC_attenuator1, DAC_attenuator2, ADC_attenuator) = None, None, None, None, None, None,
+
+        return (average_y_mag_values_last, average_y_mag_values_mid, average_y_mag_values_oct, DAC_attenuator1, DAC_attenuator2, ADC_attenuator)
 
 
     def plot_results(self, prog, iq_list):
         t = prog.get_time_axis(ro_index=0)
         fig, axes = plt.subplots(len(self.config['ro_ch']), 1, figsize=(12, 12))
         phase_offsets=[]
+        average_y_mag_values_mid = []
+        average_y_I_values_mid = []
+        average_y_Q_values_mid = []
+        average_y_mag_values_oct = []
+        average_y_I_values_oct = []
+        average_y_Q_values_oct = []
+        average_y_mag_values_last = []
+        average_y_I_values_last = []
+        average_y_Q_values_last = []
         for i, ch in enumerate(self.config['ro_ch']):
             plot = axes[i]
             plot.plot(t, iq_list[i][:, 0], label="I value")
             plot.plot(t, iq_list[i][:, 1], label="Q value")
-            plot.plot(t, np.abs(iq_list[i].dot([1, 1j])), label="magnitude")
+            magnitude = np.abs(iq_list[i].dot([1, 1j]))
+            plot.plot(t, magnitude, label="magnitude")
             plot.legend()
             plot.set_ylabel("a.u.")
             plot.set_xlabel("us")
@@ -83,14 +93,61 @@ class TOFExperiment:
             # print("measured phase %f degrees" % (phase_offset))
             phase_offsets.append(phase_offset)
 
+
+            # Find indices of the middle three x-values
+            mid_index = len(t) // 2
+            indices_mid = [mid_index - 15, mid_index, mid_index + 15] #average 7 values
+
+            one_eighth_index = len(t) // 15
+            indices_oct = [one_eighth_index - 1, one_eighth_index, one_eighth_index + 1]
+
+            indices_last = slice(-15, None)  # this will grab the last 7 elements
+
+            # Calculate average y-values for I, Q, and magnitude
+            avg_i_mid = np.mean(iq_list[i][indices_mid, 0])
+            avg_q_mid = np.mean(iq_list[i][indices_mid, 1])
+            avg_mag_mid = np.mean(magnitude[indices_mid])
+
+            # Calculate average y-values for I, Q, and magnitude
+            avg_i_oct = np.mean(iq_list[i][indices_oct, 0])
+            avg_q_oct = np.mean(iq_list[i][indices_oct, 1])
+            avg_mag_oct = np.mean(magnitude[indices_oct])
+
+            # Calculate average y-values for I, Q, and magnitude
+            avg_i_last = np.mean(iq_list[i][indices_last, 0])
+            avg_q_last = np.mean(iq_list[i][indices_last, 1])
+            avg_mag_last = np.mean(magnitude[indices_last])
+
+            # Append the average magnitude to the list, you can change this to average I or Q.
+            average_y_mag_values_mid.append(avg_mag_mid)
+            average_y_I_values_mid.append(avg_i_mid)
+            average_y_Q_values_mid.append(avg_q_mid)
+
+            average_y_mag_values_oct.append(avg_mag_oct)
+            average_y_I_values_oct.append(avg_i_oct)
+            average_y_Q_values_oct.append(avg_q_oct)
+
+            average_y_mag_values_last.append(avg_mag_last)
+            average_y_I_values_last.append(avg_i_last)
+            average_y_Q_values_last.append(avg_q_last)
+        if self.title:
+            plt.suptitle(f"TOF DAC_Att_1:{self.experiment.DAC_attenuator1} DAC_Att_2:{self.experiment.DAC_attenuator2} ADC_Att:{self.experiment.ADC_attenuator}", fontsize=24, y=0.95)
+
+
         # Save
-        outerFolder_expt = self.outerFolder + "/" + self.expt_name + "/"
-        self.experiment.create_folder_if_not_exists(outerFolder_expt)
-        now = datetime.datetime.now()
-        formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-        file_name = outerFolder_expt + f"R_{self.round_num}" + f"Q_{self.QubitIndex+1}" + f"{formatted_datetime}_" + self.expt_name + ".png"
-        plt.savefig(file_name, dpi=300)
-        plt.close(fig)
+        if self.save_figs:
+            outerFolder_expt = self.outerFolder + "/" + self.expt_name + "/"
+            self.experiment.create_folder_if_not_exists(outerFolder_expt)
+            now = datetime.datetime.now()
+            formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
+            if 'All' in self.QubitIndex:
+                file_name = outerFolder_expt + f"R_{self.round_num}" + f"Q_{self.QubitIndex}" + f"{formatted_datetime}_" + self.expt_name + ".png"
+            else:
+                file_name = outerFolder_expt + f"R_{self.round_num}" + f"Q_{self.QubitIndex+1}" + f"{formatted_datetime}_" + self.expt_name + ".png"
+            plt.savefig(file_name, dpi=50)
+            plt.close(fig)
+
+        return average_y_mag_values_last, average_y_mag_values_mid, average_y_mag_values_oct, self.experiment.DAC_attenuator1, self.experiment.DAC_attenuator2, self.experiment.ADC_attenuator
 
 
 
