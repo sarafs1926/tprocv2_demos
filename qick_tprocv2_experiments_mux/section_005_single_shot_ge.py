@@ -317,7 +317,7 @@ class GainFrequencySweep:
             fid_results = []
             for gain_step in range(gain_steps):
                 #experiment = QICK_experiment(self.output_folder)
-                experiment = QICK_experiment(self.output_folder, DAC_attenuator1=2, DAC_attenuator2=10, ADC_attenuator=30)
+                experiment = QICK_experiment(self.output_folder, DAC_attenuator1=2, DAC_attenuator2=10, ADC_attenuator=0)
 
                 gain = gain_range[0] + gain_step * gain_step_size
                 print('gain', gain)

@@ -12,7 +12,7 @@ class AmplitudeRabiExperiment:
     def __init__(self, QubitIndex, outerFolder, round_num, signal, save_figs, experiment = None, live_plot = None, fit_data = None):
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
-        self.fit_data = fit_data
+        self.fit_data = True
         self.expt_name = "power_rabi_ge"
         self.Qubit = 'Q' + str(self.QubitIndex)
         self.exp_cfg = expt_cfg[self.expt_name]
@@ -115,7 +115,7 @@ class AmplitudeRabiExperiment:
                 pi_amp = gains[np.argmax(q1_fit_cosine)]
             else:
                 pi_amp = gains[np.argmin(q1_fit_cosine)]
-
+            print("Pi amp =", pi_amp)
             if 'Q' in self.signal:
                 ax2.plot(gains, q1_fit_cosine, '-', color='red', linewidth=3, label="Fit")
             else:

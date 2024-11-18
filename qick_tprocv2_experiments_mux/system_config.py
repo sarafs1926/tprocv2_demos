@@ -91,7 +91,9 @@ class QICK_experiment:
             "qubit_length_ge": 15,  # [us] for spec Pulse
             "qubit_phase": 0,  # [deg]
             "sigma": [0.08, 0.18, 0.14, 0.13, 0.18, 0.6],  # [us] for Gaussian Pulse
-            "pi_amp": [0.92, 0.87, 0.75, 0.73, 0.77, 0.78],
+            # "pi_amp": [0.92, 0.87, 0.75, 0.73, 0.77, 0.78], # old RR values
+            "pi_amp": [1.0, 0.93, 0.77, 0.8, 0.81, 0.9], # Eyeballed by Sara today
+
         }
 
     def create_folder_if_not_exists(self, folder):

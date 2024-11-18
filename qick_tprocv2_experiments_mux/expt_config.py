@@ -6,7 +6,7 @@ VNA_qubit = np.array([4184.10, 3821.43, 4156.88, 4459.12, 4471.18, 4998.04])  # 
 
 expt_cfg = {
     "tof": {
-        "reps": 10,
+        "reps": 1, #reps doesnt make a difference here, leave it at 1
         "soft_avgs": 300,
         "relax_delay": 0,  # [us]
     },

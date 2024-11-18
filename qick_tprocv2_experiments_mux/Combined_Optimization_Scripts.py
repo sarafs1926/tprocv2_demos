@@ -72,7 +72,7 @@ for QubitIndex in Qs:
                 # ------------------------Single Shot-------------------------
                 # Initialize experiment for each loop iteration
                 #experiment = QICK_experiment(output_folder)
-                experiment = QICK_experiment(output_folder, DAC_attenuator1=2, DAC_attenuator2=10, ADC_attenuator=30)
+                experiment = QICK_experiment(output_folder, DAC_attenuator1=2, DAC_attenuator2=10, ADC_attenuator=0)
                 # Set specific configuration values for each iteration
                 experiment.readout_cfg['res_length'] = leng  # Set the current readout pulse length
 
@@ -216,4 +216,4 @@ for QubitIndex in Qs:
     plt.savefig(file, dpi=600, bbox_inches='tight')
     plt.close()  # Close the plot to free up memory
     del results, sweep
-    print(f"Saved plot for Qubit {QubitIndex + 1} to {file}")
+    print(f"Saved plot for Qubit {QubitIndex + 1} to {file}") '''

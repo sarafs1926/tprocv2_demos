@@ -17,10 +17,10 @@ from expt_config import *
 
 
 n= 10000
-save_r = 1          # how many rounds to save after
+save_r = 1         # how many rounds to save after
 signal = 'Q'        #'I', or 'Q' depending on where the signal is (after optimization). Put 'None' if no optimization has happened
 save_figs = False   # save plots for everything as you go along the RR script?
-live_plot = False    # for live plotting open http://localhost:8097/ on firefox
+live_plot = True    # for live plotting open http://localhost:8097/ on firefox
 fit_data = False    # fit the data here and save or plot the fits?
 save_data_h5 = True # save all of the data to h5 files?
 outerFolder = "/data/QICK_data/6transmon_run4a/" + str(datetime.date.today()) + "/"

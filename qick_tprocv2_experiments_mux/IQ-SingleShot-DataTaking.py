@@ -14,10 +14,22 @@ output_folder = f"/data/QICK_data/6transmon_run4a/{date_str}/Qubit_Temps/"
 os.makedirs(output_folder, exist_ok=True)
 
 # Optimized parameters for qubits 3 and 4
-qubits = {
-    3: {"length": 3.50, "gain": 0.8462, "freq_offset": -0.2000, "reference_freq": 6292.261, "qubit_freq": 4156.57},
-    4: {"length": 4.75, "gain": 0.9615, "freq_offset": -0.2000, "reference_freq": 6405.79, "qubit_freq": 4459.19}
-}
+
+#For ADC 10 and DAC 2,10
+# qubits = {
+#     3: {"length": 2.5, "gain": 0.8, "freq_offset": -0.2667, "reference_freq": 6292.361, "qubit_freq": 4156.53},
+#     4: {"length": 4.5, "gain": 0.95, "freq_offset": -0.1333, "reference_freq": 6405.77, "qubit_freq": 4459.20}
+# }
+#For ADC 20 and DAC 2,10
+# qubits = {
+#     3: {"length": 2.25, "gain": 0.8, "freq_offset": -0.2000, "reference_freq": 6292.361, "qubit_freq": 4156.53},
+#     4: {"length": 4.0, "gain": 0.95, "freq_offset": -0.2667, "reference_freq": 6405.77, "qubit_freq": 4459.20}
+# }
+#For ADC 30 and DAC 2,10
+qubits = { #Note: gain and freq_offset were not optimized for this configuration, only readout length was optimized.
+     3: {"length": 2.00, "gain": 0.8, "freq_offset": -0.0, "reference_freq": 6292.361, "qubit_freq": 4156.53},
+     4: {"length": 5.75, "gain": 0.95, "freq_offset": -0.0, "reference_freq": 6405.77, "qubit_freq": 4459.20}
+ }
 
 # Loop through specified qubits and apply settings
 for qubit_index, params in qubits.items():
@@ -30,9 +42,10 @@ for qubit_index, params in qubits.items():
 
     # Initialize experiment
     QubitIndex = qubit_index - 1
-    experiment = QICK_experiment(output_folder)
+    #experiment = QICK_experiment(output_folder)
+    experiment = QICK_experiment(output_folder, DAC_attenuator1=2, DAC_attenuator2=10, ADC_attenuator=30)
     experiment.readout_cfg['res_length'] = length
-    experiment.readout_cfg['res_freq_ge'][QubitIndex] = frequency
+    experiment.readout_cfg['res_freq_ge'][QubitIndex] = frequency #resonator freq
     res_gains = experiment.set_gain_filter_ge(QubitIndex, gain)
     experiment.readout_cfg['res_gain_ge'] = res_gains
 

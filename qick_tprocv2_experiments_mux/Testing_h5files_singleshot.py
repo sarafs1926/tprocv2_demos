@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Path to the HDF5 file for a specific qubit (replace with actual file path)
-h5_filename = '/data/QICK_data/6transmon_run4a/2024-11-16/SingleShot_Test/qubit_4_data_20241116_214547.h5'  # Update with your file path
+h5_filename = '/data/QICK_data/6transmon_run4a/2024-11-17/SingleShot_Test/qubit_4_data_20241117_205640.h5'  # Update with your file path
 
 
 # Lists to store pulse lengths, average fidelities, and RMS fidelities
@@ -51,11 +51,11 @@ print('second max length: ', max_length2)
 plt.figure()
 plt.errorbar(pulse_lengths, avg_fidelities, yerr=rms_fidelities, fmt='-o', color='black', capsize=2)
 #plt.axvline(x=max_length, linestyle="--", color="red")
-plt.axvline(x=max_length2, linestyle="--", color="green")
+#plt.axvline(x=max_length2, linestyle="--", color="green")
 #plt.text(max_length + 0.1, max_fidelity-0.2, f'max length {max_length:.2f}', color='red')
-plt.text(max_length2 + 0.1, max_fidelity2-0.2, f'max length {max_length2:.2f}', color='green')
+#plt.text(max_length2 + 0.1, max_fidelity2-0.2, f'max length {max_length2:.2f}', color='green')
 plt.xlabel('Readout and Pulse Length')
 plt.ylabel('Fidelity')
-plt.title('Fidelity vs. Pulse Length')
+plt.title('Fidelity vs. Pulse Length Q4')
 plt.show()
 plt.close()
