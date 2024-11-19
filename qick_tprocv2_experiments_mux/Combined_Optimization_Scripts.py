@@ -30,8 +30,8 @@ n = 1  # Number of rounds
 n_loops = 5  # Number of repetitions per length to average
 
 # List of qubits and pulse lengths to measure
-Qs = [2, 3]
-
+Qs = [5]
+'''
 optimal_lengths = [None] * 6 # creates list where the script will be storing the optimal readout lengths for each qubit. We currently have 6 qubits in total.
 
 #res_gain = [0.7, 0.9, 0.7, 0.7, 0.7, 0.9, 0.9]
@@ -72,7 +72,7 @@ for QubitIndex in Qs:
                 # ------------------------Single Shot-------------------------
                 # Initialize experiment for each loop iteration
                 #experiment = QICK_experiment(output_folder)
-                experiment = QICK_experiment(output_folder, DAC_attenuator1=2, DAC_attenuator2=10, ADC_attenuator=0)
+                experiment = QICK_experiment(output_folder, DAC_attenuator1=10, DAC_attenuator2=5, ADC_attenuator=10)
                 # Set specific configuration values for each iteration
                 experiment.readout_cfg['res_length'] = leng  # Set the current readout pulse length
 
@@ -81,15 +81,6 @@ for QubitIndex in Qs:
                 res_gains = experiment.set_gain_filter_ge(QubitIndex, gain)  # Set gain for current qubit only
 
                 experiment.readout_cfg['res_gain_ge'] = res_gains
-
-                """
-                exp_cfg = expt_cfg["Readout_Optimization"]
-                q_config = all_qubit_state(experiment)
-                Qubit = 'Q' + str(QubitIndex)
-
-                # Combine specific qubit configuration with experiment-specific settings
-                config = {**q_config[Qubit], **exp_cfg}"""
-                # print(f"Single Shot configuration:", config)
 
                 # ss = SingleShot(QubitIndex, output_folder, k, round(leng, 3)) #Old way
                 ss = SingleShot(QubitIndex, output_folder, experiment, round_num=k, save_figs=False)  # New way
@@ -134,18 +125,18 @@ for QubitIndex in Qs:
     avg_max_index = avg_fids.index(avg_max)
     max_len = lengs[avg_max_index]
     optimal_lengths[QubitIndex] = max_len
-    '''
-    # Compute the first and second derivatives
-    first_derivative = np.gradient(avg_fids, lengs)
-    second_derivative = np.gradient(first_derivative, lengs)
-
-    # Find the index of the maximum second derivative (absolute value)
-    corner_index = np.argmax(np.abs(second_derivative))
-    max_len_corner = lengs[corner_index]
-
-    # Save the optimal length corresponding to the corner
-    optimal_lengths[QubitIndex] = max_len_corner
-    '''
+    
+    # # Compute the first and second derivatives
+    # first_derivative = np.gradient(avg_fids, lengs)
+    # second_derivative = np.gradient(first_derivative, lengs)
+    # 
+    # # Find the index of the maximum second derivative (absolute value)
+    # corner_index = np.argmax(np.abs(second_derivative))
+    # max_len_corner = lengs[corner_index]
+    # 
+    # # Save the optimal length corresponding to the corner
+    # optimal_lengths[QubitIndex] = max_len_corner
+    
 
     # Plot the average fidelity vs. pulse length with error bars for each qubit
     plt.figure()
@@ -162,7 +153,7 @@ for QubitIndex in Qs:
 '''
 ########################################################################################################################
 #exit() #use this if you only want to run the first half of this script
-optimal_lengths = [None, None, 2.25, 4.0, None, None] #use when you are running the second half of this code separately
+optimal_lengths = [3.0, 6.25, 3.50, 5.75, 5.50, 4.0] #use when you are running the second half of this code separately
 date_str = str(datetime.date.today())
 outerFolder = f"/data/QICK_data/6transmon_run4a/{date_str}/readout_opt/Gain_Freq_Sweeps/"
 
@@ -216,4 +207,4 @@ for QubitIndex in Qs:
     plt.savefig(file, dpi=600, bbox_inches='tight')
     plt.close()  # Close the plot to free up memory
     del results, sweep
-    print(f"Saved plot for Qubit {QubitIndex + 1} to {file}") '''
+    print(f"Saved plot for Qubit {QubitIndex + 1} to {file}")

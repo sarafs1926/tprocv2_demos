@@ -4,7 +4,7 @@ import os
 import glob
 
 # Directory where your HDF5 files are stored
-outerFolder = f"/data/QICK_data/6transmon_run4a/2024-11-16/readout_opt/Gain_Freq_Sweeps"
+outerFolder = f"/data/QICK_data/6transmon_run4a/2024-11-19/readout_opt/Gain_Freq_Sweeps"
 
 def find_max_fidelity(file_path):
     with h5py.File(file_path, "r") as f:

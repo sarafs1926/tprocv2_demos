@@ -23,7 +23,7 @@ signal = 'None'        #'I', or 'Q' depending on where the signal is (after opti
 save_figs = False   # save plots for everything as you go along the RR script?
 live_plot = True    # for live plotting open http://localhost:8097/ on firefox
 fit_data = False    # fit the data here and save or plot the fits?
-save_data_h5 = False # save all of the data to h5 files?
+save_data_h5 = True # save all of the data to h5 files?
 outerFolder = "/data/QICK_data/6transmon_run4a/" + str(datetime.date.today()) + "/"
 
 Qs = [0,1,2,3,4,5]

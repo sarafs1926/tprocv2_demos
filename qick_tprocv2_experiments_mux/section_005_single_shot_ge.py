@@ -121,7 +121,7 @@ class SingleShotProgram_e(AveragerProgramV2):
                        mask=[0, 1, 2, 3, 4, 5],
                        )
 
-        self.declare_gen(ch=qubit_ch, nqz=1, mixer_freq=4000)
+        self.declare_gen(ch=qubit_ch, nqz=1, mixer_freq=4500)
 
         self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma'], length=cfg['sigma'] * 5, even_length=True)
 
@@ -317,7 +317,7 @@ class GainFrequencySweep:
             fid_results = []
             for gain_step in range(gain_steps):
                 #experiment = QICK_experiment(self.output_folder)
-                experiment = QICK_experiment(self.output_folder, DAC_attenuator1=2, DAC_attenuator2=10, ADC_attenuator=0)
+                experiment = QICK_experiment(self.output_folder, DAC_attenuator1=10, DAC_attenuator2=5, ADC_attenuator=10)
 
                 gain = gain_range[0] + gain_step * gain_step_size
                 print('gain', gain)
