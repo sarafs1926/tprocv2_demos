@@ -78,7 +78,14 @@ class T1Measurement:
             Q = iq_list[self.QubitIndex][0, :, 1]
             delay_times = t1.get_time_param('wait', "t", as_array=True)
 
-        T1_est, T1_err, I, Q, q1_fit_exponential = self.plot_results(I, Q, delay_times, now)
+        if self.fit_data:
+            q1_fit_exponential, T1_err, T1_est, plot_sig = self.t1_fit(I, Q, delay_times)
+        else:
+            q1_fit_exponential, T1_est, T1_err = None, None, None
+
+        if self.plot_results:
+            self.plot_results(I, Q, delay_times, now)
+
         return  T1_est, T1_err, I, Q, delay_times, q1_fit_exponential
 
     def live_plotting(self, t1, soc):
@@ -131,6 +138,48 @@ class T1Measurement:
     def exponential(self, x, a, b, c, d):
         return a * np.exp(- (x - b) / c) + d
 
+    def t1_fit(self, I, Q, delay_times):
+        if 'I' in self.signal:
+            signal = I
+            plot_sig = 'I'
+        elif 'Q' in self.signal:
+            signal = Q
+            plot_sig = 'Q'
+        else:
+            if abs(I[-1] - I[0]) > abs(Q[-1] - Q[0]):
+                signal = I
+                plot_sig = 'I'
+            else:
+                signal = Q
+                plot_sig = 'Q'
+
+        # Initial guess for parameters
+        q1_a_guess = np.max(signal) - np.min(signal)  # Initial guess for amplitude (a)
+        q1_b_guess = 0  # Initial guess for time shift (b)
+        q1_c_guess = (delay_times[-1] - delay_times[0]) / 5  # Initial guess for decay constant (T1)
+        q1_d_guess = np.min(signal)  # Initial guess for baseline (d)
+
+        # Form the guess array
+        q1_guess = [q1_a_guess, q1_b_guess, q1_c_guess, q1_d_guess]
+
+        # Define bounds to constrain T1 (c) to be positive, but allow amplitude (a) to be negative
+        lower_bounds = [-np.inf, -np.inf, 0, -np.inf]  # Amplitude (a) can be negative/positive, but T1 (c) > 0
+        upper_bounds = [np.inf, np.inf, np.inf, np.inf]  # No upper bound on parameters
+
+        # Perform the fit using the 'trf' method with bounds
+        q1_popt, q1_pcov = curve_fit(self.exponential, delay_times, signal,
+                                     p0=q1_guess, bounds=(lower_bounds, upper_bounds),
+                                     method='trf', maxfev=10000)
+
+        # Generate the fitted exponential curve
+        q1_fit_exponential = self.exponential(delay_times, *q1_popt)
+
+        # Extract T1 and its error
+        T1_est = q1_popt[2]  # Decay constant T1
+        T1_err = np.sqrt(q1_pcov[2][2]) if q1_pcov[2][2] >= 0 else float('inf')  # Ensure error is valid
+
+        return q1_fit_exponential, T1_err, T1_est, plot_sig
+
     def plot_results(self, I, Q, delay_times, now, config = None):
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
         plt.rcParams.update({'font.size': 18})
@@ -139,44 +188,7 @@ class T1Measurement:
         plot_middle = (ax1.get_position().x0 + ax1.get_position().x1) / 2
 
         if self.fit_data:
-            if 'I' in self.signal:
-                signal = I
-                plot_sig='I'
-            elif 'Q' in self.signal:
-                signal = Q
-                plot_sig = 'Q'
-            else:
-                if abs(I[-1]-I[0]) > abs(Q[-1]-Q[0]):
-                    signal = I
-                    plot_sig = 'I'
-                else:
-                    signal = Q
-                    plot_sig = 'Q'
-
-            # Initial guess for parameters
-            q1_a_guess = np.max(signal) - np.min(signal)  # Initial guess for amplitude (a)
-            q1_b_guess = 0  # Initial guess for time shift (b)
-            q1_c_guess = (delay_times[-1] - delay_times[0]) / 5  # Initial guess for decay constant (T1)
-            q1_d_guess = np.min(signal)  # Initial guess for baseline (d)
-
-            # Form the guess array
-            q1_guess = [q1_a_guess, q1_b_guess, q1_c_guess, q1_d_guess]
-
-            # Define bounds to constrain T1 (c) to be positive, but allow amplitude (a) to be negative
-            lower_bounds = [-np.inf, -np.inf, 0, -np.inf]  # Amplitude (a) can be negative/positive, but T1 (c) > 0
-            upper_bounds = [np.inf, np.inf, np.inf, np.inf]  # No upper bound on parameters
-
-            # Perform the fit using the 'trf' method with bounds
-            q1_popt, q1_pcov = curve_fit(self.exponential, delay_times, signal,
-                                         p0=q1_guess, bounds=(lower_bounds, upper_bounds),
-                                         method='trf', maxfev=10000)
-
-            # Generate the fitted exponential curve
-            q1_fit_exponential = self.exponential(delay_times, *q1_popt)
-
-            # Extract T1 and its error
-            T1_est = q1_popt[2]  # Decay constant T1
-            T1_err = np.sqrt(q1_pcov[2][2]) if q1_pcov[2][2] >= 0 else float('inf')  # Ensure error is valid
+            q1_fit_exponential, T1_err, T1_est, plot_sig = self.t1_fit(I, Q, delay_times)
 
             if 'I' in plot_sig:
                 ax1.plot(delay_times, q1_fit_exponential, '-', color='red', linewidth=3, label="Fit")
@@ -235,5 +247,5 @@ class T1Measurement:
             file_name = outerFolder_expt + f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png"
             fig.savefig(file_name, dpi=300, bbox_inches='tight')  # , facecolor='white'
         plt.close(fig)
-        return T1_est, T1_err, I, Q, q1_fit_exponential
+
 

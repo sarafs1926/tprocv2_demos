@@ -63,7 +63,7 @@ class Data_H5:
                     create_dataset("Round Num", data.get('Round Num'))
                     create_dataset("Batch Num", data.get('Batch Num'))
 
-                if 'QSpec' in data_type:
+                elif 'QSpec' in data_type:
                     create_dataset("Dates", data.get('Dates'))
                     create_dataset("I", data.get('I'))
                     create_dataset("Q", data.get('Q'))
@@ -73,7 +73,7 @@ class Data_H5:
                     create_dataset("Round Num", data.get('Round Num'))
                     create_dataset("Batch Num", data.get('Batch Num'))
 
-                if 'Rabi' in data_type:
+                elif 'Rabi' in data_type:
                     create_dataset("Dates", data.get('Dates'))
                     create_dataset("I", data.get('I'))
                     create_dataset("Q", data.get('Q'))
@@ -82,7 +82,7 @@ class Data_H5:
                     create_dataset("Round Num", data.get('Round Num'))
                     create_dataset("Batch Num", data.get('Batch Num'))
 
-                if 'T1' in data_type:
+                elif 'T1' in data_type:
                     create_dataset("T1", data.get('T1'))
                     create_dataset("Errors", data.get('Errors'))
                     create_dataset("Dates", data.get('Dates'))
@@ -93,7 +93,7 @@ class Data_H5:
                     create_dataset("Round Num", data.get('Round Num'))
                     create_dataset("Batch Num", data.get('Batch Num'))
 
-                if 'T2' in data_type:
+                elif 'T2' in data_type:
                     create_dataset("T2", data.get('T2'))
                     create_dataset("Errors", data.get('Errors'))
                     create_dataset("Dates", data.get('Dates'))
@@ -103,6 +103,19 @@ class Data_H5:
                     create_dataset("Fit", data.get('Fit'))
                     create_dataset("Round Num", data.get('Round Num'))
                     create_dataset("Batch Num", data.get('Batch Num'))
+
+                elif 'T2E' in data_type:
+                    create_dataset("T2E", data.get('T2E'))
+                    create_dataset("Errors", data.get('Errors'))
+                    create_dataset("Dates", data.get('Dates'))
+                    create_dataset("I", data.get('I'))
+                    create_dataset("Q", data.get('Q'))
+                    create_dataset("Delay Times", data.get('Delay Times'))
+                    create_dataset("Fit", data.get('Fit'))
+                    create_dataset("Round Num", data.get('Round Num'))
+                    create_dataset("Batch Num", data.get('Batch Num'))
+                else:
+                    print('Data type not supported, please pass one of the following: Res, QSpec, Rabi, T1, T2, T2E')
 
         #self.print_h5_contents(h5_filename)
         #print(h5_filename)
@@ -167,6 +180,10 @@ class Data_H5:
                         target_keys = {'T2': 'T2', 'Errors': 'Errors', 'Dates': 'Dates', 'I': 'I', 'Q': 'Q',
                                        'Delay Times': 'Delay Times', 'Fit': 'Fit', 'Round Num': 'Round Num',
                                        'Batch Num': 'Batch Num'}
+                    elif data_type == 'T2E':
+                        target_keys = {'T2E': 'T2E', 'Errors': 'Errors', 'Dates': 'Dates', 'I': 'I', 'Q': 'Q',
+                                       'Delay Times': 'Delay Times', 'Fit': 'Fit', 'Round Num': 'Round Num',
+                                       'Batch Num': 'Batch Num'}
                     else:
                         raise ValueError(f"Unsupported data_type: {data_type}")
 
@@ -206,13 +223,19 @@ class Data_H5:
         else:
             return data
 
-    def save_config(self, config):
-        config = self.convert_for_hdf5(config)
+    def save_config(self, sys_config, expt_cfg):
+        sys_config = self.convert_for_hdf5(sys_config)
+        expt_cfg = self.convert_for_hdf5(expt_cfg)
+
         outerFolder_expt = self.outerFolder_expt + "/Data_h5/config/"
         self.create_folder_if_not_exists(outerFolder_expt)
 
-        with h5py.File(outerFolder_expt + "config.h5" , "w") as hf:
-            for key, value in config.items():
+        with h5py.File(outerFolder_expt + "sys_config.h5" , "w") as hf:
+            for key, value in sys_config.items():
+                hf.create_dataset(key, data=value)
+
+        with h5py.File(outerFolder_expt + "expt_cfg.h5" , "w") as hf:
+            for key, value in expt_cfg.items():
                 hf.create_dataset(key, data=value)
 
     def load_config(self):

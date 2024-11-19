@@ -22,7 +22,7 @@ expt_cfg = {
 
     "qubit_spec_ge": {
         "reps": 300, #300
-        "rounds": 10, #10
+        "rounds": 2, #10
         "start": list(VNA_qubit-5), # [MHz]
         "stop":  list(VNA_qubit+5), # [MHz]
         "steps": 300,
@@ -58,17 +58,17 @@ expt_cfg = {
         "relax_delay": 1000, # [us] the time to wait to let the qubit to relax to gnd again after exciting it (make it way above T1)
         "wait_time": 0.0, # [us]
     },
-#
-#     "SpinEcho_ge": {
-#         "reps": 100,
-#         "py_avg": 10,
-#         "start": [0.0] * 6, # [us]
-#         "stop":  [100] * 6, # [us]
-#         "steps": 100,
-#         "ramsey_freq": 0.05,  # [MHz]
-#         "relax_delay": 1000, # [us]
-#         "wait_time": 0.0, # [us]
-#     },
+
+    "SpinEcho_ge": {
+        "reps": 300,
+        "rounds": 10,
+        "start": [0.0] * 6, # [us]
+        "stop":  [60] * 6, # [us]
+        "steps": 100,
+        "ramsey_freq": 0.12,  # [MHz]
+        "relax_delay": 1000, # [us]
+        "wait_time": 0.0, # [us]
+    },
 #
 
 #

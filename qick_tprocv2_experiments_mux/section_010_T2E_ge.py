@@ -143,7 +143,7 @@ class Fit:
 
         return out
 
-class T2RProgram(AveragerProgramV2):
+class T2EProgram(AveragerProgramV2):
     def _initialize(self, cfg):
         ro_ch = cfg['ro_ch']
         res_ch = cfg['res_ch']
@@ -173,6 +173,14 @@ class T2RProgram(AveragerProgramV2):
                        gain=cfg['pi_amp'] / 2,
                        )
 
+        self.add_pulse(ch=qubit_ch, name="qubit_pulse_pi",
+                       style="arb",
+                       envelope="ramp",
+                       freq=cfg['qubit_freq_ge'],
+                       phase=cfg['qubit_phase'],
+                       gain=cfg['pi_amp'],
+                       )
+
         self.add_pulse(ch=qubit_ch, name="qubit_pulse2",
                        style="arb",
                        envelope="ramp",
@@ -185,19 +193,20 @@ class T2RProgram(AveragerProgramV2):
 
     def _body(self, cfg):
         self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse1", t=0)  # play probe pulse
-        self.delay_auto(cfg['wait_time'] + 0.01, tag='wait')  # wait_time after last pulse
-        self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse2", t=0)  # play probe pulse
+        self.delay_auto((cfg['wait_time'] / 2) + 0.01, tag='wait1')  # wait_time after last pulse (wait / 2)
+        self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse_pi", t=0)  # play pulse
+        self.delay_auto((cfg['wait_time'] / 2) + 0.01, tag='wait2')  # wait_time after last pulse (wait / 2)
+        self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse2", t=0)  # play pulse
         self.delay_auto(0.01)  # wait_time after last pulse
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
 
-
-class T2RMeasurement:
+class T2EMeasurement:
     def __init__(self, QubitIndex, outerFolder, round_num, signal, save_figs, experiment = None, live_plot = None, fit_data = None):
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
         self.fit_data = fit_data
-        self.expt_name = "Ramsey_ge"
+        self.expt_name = "SpinEcho_ge"
         self.Qubit = 'Q' + str(self.QubitIndex)
         self.experiment = experiment
         self.exp_cfg = expt_cfg[self.expt_name]
@@ -209,7 +218,7 @@ class T2RMeasurement:
             self.q_config = all_qubit_state(self.experiment)
             self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
             self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
-            print(f'Q {self.QubitIndex + 1} Round {self.round_num} T2R configuration: ', self.config)
+            print(f'Q {self.QubitIndex + 1} Round {self.round_num} T2E configuration: ', self.config)
 
     def t2_fit(self, x_data, y_data, verbose = False, guess=None, plot=False):
         #fitting code taken from https://github.com/qua-platform/py-qua-tools/blob/37c741ade5a8f91888419c6fd23fd34e14372b06/qualang_tools/plot/fitting.py
@@ -346,15 +355,14 @@ class T2RMeasurement:
                 label=f"T2  = {out['T2'][0]:.1f} +/- {out['T2'][1]:.1f}ns \n f = {out['f'][0] * 1000:.3f} +/- {out['f'][1] * 1000:.3f} MHz",
             )
             plt.legend(loc="upper right")
-        t2r_est = out['T2'][0] #in ns
-        t2r_err = out['T2'][1] #in ns
-        return fit_type(x, popt) * y_normal, t2r_est, t2r_err
+        t2e_est = out['T2'][0] #in ns
+        t2e_err = out['T2'][1] #in ns
+        return fit_type(x, popt) * y_normal, t2e_est, t2e_err
 
     def run(self, soccfg, soc):
         now = datetime.datetime.now()
-        ramsey = T2RProgram(soccfg, reps=self.exp_cfg['reps'], final_delay=self.exp_cfg['relax_delay'],
+        ramsey = T2EProgram(soccfg, reps=self.exp_cfg['reps'], final_delay=self.exp_cfg['relax_delay'],
                          cfg=self.config)
-
         # for live plotting open http://localhost:8097/ on firefox
         if self.live_plot:
             I, Q, delay_times = self.live_plotting(ramsey, soc)
@@ -362,17 +370,19 @@ class T2RMeasurement:
             iq_list = ramsey.acquire(soc, soft_avgs=self.exp_cfg['rounds'], progress=True)
             I = iq_list[self.QubitIndex][0, :, 0]
             Q = iq_list[self.QubitIndex][0, :, 1]
-            delay_times = ramsey.get_time_param('wait', "t", as_array=True)
+            delay_times1 = ramsey.get_time_param('wait1', "t", as_array=True)
+            delay_times2 = ramsey.get_time_param('wait2', "t", as_array=True)
+            delay_times = delay_times1+delay_times2
 
         if self.fit_data:
-            fit, t2r_est, t2r_err = self.t2_fit(delay_times, I)
+            fit, t2e_est, t2e_err = self.t2_fit(delay_times, I)
         else:
-            fit, t2r_est, t2r_err = None, None, None
+            fit, t2e_est, t2e_err = None, None, None
 
         if self.save_figs:
-            self.plot_results(I, Q, delay_times, now, fit, t2r_est, t2r_err)
+            self.plot_results(I, Q, delay_times, now, fit, t2e_est, t2e_err)
 
-        return  t2r_est, t2r_err, I, Q, delay_times, fit
+        return  t2e_est, t2e_err, I, Q, delay_times, fit, self.config
 
     def live_plotting(self, ramsey, soc):
         I = Q = expt_mags = expt_phases = expt_pop = None
@@ -385,7 +395,9 @@ class T2RMeasurement:
 
         for ii in range(self.config["rounds"]):
             iq_list = ramsey.acquire(soc, soft_avgs=1, progress=True)
-            delay_times = ramsey.get_time_param('wait', "t", as_array=True)
+            delay_times1 = ramsey.get_time_param('wait1', "t", as_array=True)
+            delay_times2 = ramsey.get_time_param('wait2', "t", as_array=True)
+            delay_times = delay_times1 + delay_times2
 
             this_I = iq_list[self.QubitIndex][0, :, 0]
             this_Q = iq_list[self.QubitIndex][0, :, 1]
@@ -411,7 +423,6 @@ class T2RMeasurement:
                     plot_sig = 'Q'
 
             viz.line(X=delay_times, Y=signal, win=win1, name=plot_sig)
-
         return I, Q, delay_times
 
     def set_res_gain_ge(self, QUBIT_INDEX, num_qubits=6):
@@ -429,7 +440,7 @@ class T2RMeasurement:
         if not os.path.exists(folder):
             os.makedirs(folder)
 
-    def plot_results(self, I, Q, delay_times, now, fit, t2r_est, t2r_err, config = None):
+    def plot_results(self, I, Q, delay_times, now, fit, t2e_est, t2e_err, config = None):
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
         plt.rcParams.update({'font.size': 18})
 

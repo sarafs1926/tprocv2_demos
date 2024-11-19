@@ -85,7 +85,7 @@ class ResonanceSpectroscopy:
             plt.title(f"Resonator {i + 1} {freq_r:.3f} MHz", pad=10)
             plt.ylim(plt.ylim()[0] - 0.05 * (plt.ylim()[1] - plt.ylim()[0]), plt.ylim()[1])
 
-        plt.suptitle(f"MUXed resonator spectroscopy {self.exp_cfg['reps']} avgs", fontsize=24, y=0.95)
+        plt.suptitle(f"MUXed resonator spectroscopy {self.config['reps']}*{self.config['rounds']} avgs", fontsize=24, y=0.95)
         plt.tight_layout(pad=2.0)
 
         if self.save_figs:

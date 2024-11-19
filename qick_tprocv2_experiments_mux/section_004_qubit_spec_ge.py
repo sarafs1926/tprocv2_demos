@@ -39,8 +39,8 @@ class QubitSpectroscopy:
             Q = iq_list[self.QubitIndex][0, :, 1]
             freqs = qspec.get_pulse_param('qubit_pulse', "freq", as_array=True)
 
-        widest_curve_mean, I_fit, Q_fit = self.plot_results(I, Q, freqs)
-        return I, Q, freqs, I_fit, Q_fit, widest_curve_mean
+        largest_amp_curve_mean, I_fit, Q_fit = self.plot_results(I, Q, freqs)
+        return I, Q, freqs, I_fit, Q_fit, largest_amp_curve_mean
 
     def live_plotting(self, qspec, soc):
         I = Q = expt_mags = expt_phases = expt_pop = None
@@ -105,22 +105,22 @@ class QubitSpectroscopy:
         # Calculate the middle of the plot area
         plot_middle = (ax1.get_position().x0 + ax1.get_position().x1) / 2
 
-        mean_I, mean_Q, I_fit, Q_fit, widest_curve_mean, widest_fwhm = self.fit_lorenzian(I, Q, freqs, freq_q)
+        mean_I, mean_Q, I_fit, Q_fit, largest_amp_curve_mean, largest_amp_curve_fwhm = self.fit_lorenzian(I, Q, freqs, freq_q)
 
         ax1.plot(freqs, I_fit, 'r--', label='Lorentzian Fit')
-        ax1.axvline(widest_curve_mean, color='orange', linestyle='--', linewidth=2)
+        ax1.axvline(largest_amp_curve_mean, color='orange', linestyle='--', linewidth=2)
 
         ax2.plot(freqs, Q_fit, 'r--', label='Lorentzian Fit')
-        ax2.axvline(widest_curve_mean, color='orange', linestyle='--', linewidth=2)
+        ax2.axvline(largest_amp_curve_mean, color='orange', linestyle='--', linewidth=2)
 
         # Add title, centered on the plot area
         if config is not None: #then its been passed to this definition, so use that
             fig.text(plot_middle, 0.98,
-                     f"Qubit Spectroscopy Q{self.QubitIndex + 1}, %.2f MHz" % widest_curve_mean + f" FWHM: {round(widest_fwhm, 1)}" + f", {config['reps']} avgs",
+                     f"Qubit Spectroscopy Q{self.QubitIndex + 1}, %.2f MHz" % largest_amp_curve_mean + f" FWHM: {round(largest_amp_curve_fwhm, 1)}" + f", {self.config['reps']}*{self.config['rounds']} avgs",
                      fontsize=24, ha='center', va='top')
         else:
             fig.text(plot_middle, 0.98,
-                     f"Qubit Spectroscopy Q{self.QubitIndex + 1}, %.2f MHz" % widest_curve_mean + f" FWHM: {round(widest_fwhm, 1)}" + f", {self.config['reps']} avgs",
+                     f"Qubit Spectroscopy Q{self.QubitIndex + 1}, %.2f MHz" % largest_amp_curve_mean + f" FWHM: {round(largest_amp_curve_fwhm, 1)}" + f", {self.config['reps']}*{self.config['rounds']} avgs",
                      fontsize=24, ha='center', va='top')
 
         # Adjust spacing
@@ -138,7 +138,7 @@ class QubitSpectroscopy:
             file_name = outerFolder_expt + f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png"
             fig.savefig(file_name, dpi=300, bbox_inches='tight')  # , facecolor='white'
         plt.close(fig)
-        return widest_curve_mean, I_fit, Q_fit
+        return largest_amp_curve_mean, I_fit, Q_fit
 
     def lorentzian(self, f, f0, gamma, A, B):
         return A * gamma ** 2 / ((f - f0) ** 2 + gamma ** 2) + B
@@ -199,28 +199,26 @@ class QubitSpectroscopy:
         amp_I_fit = abs(np.max(I_fit) - np.min(I_fit))
         amp_Q_fit = abs(np.max(Q_fit) - np.min(Q_fit))
 
-        # Determine which fit has the widest curve if signal is not specified
+        # Determine which fit has the highest amplitude if signal is not specified
+        largest_amp_curve_mean = None
+        largest_amp_curve_fwhm = None
         if 'None' in self.signal:
             if amp_I_fit > amp_Q_fit:
-                widest_fit = "I"
-                widest_curve_mean = mean_I
-                widest_fwhm = fwhm_I
+                largest_amp_curve_mean = mean_I
+                largest_amp_curve_fwhm = fwhm_I
             else:
-                widest_fit = "Q"
-                widest_curve_mean = mean_Q
-                widest_fwhm = fwhm_Q
+                largest_amp_curve_mean = mean_Q
+                largest_amp_curve_fwhm = fwhm_Q
         elif 'I' in self.signal:
-            widest_curve_mean = mean_I
-            widest_fwhm = fwhm_I
-        else: #'Q' probably in self.signal
-            widest_curve_mean = mean_Q
-            widest_fwhm = fwhm_Q
+            largest_amp_curve_mean = mean_I
+            largest_amp_curve_fwhm = fwhm_I
+        elif 'Q' in self.signal:
+            largest_amp_curve_mean = mean_Q
+            largest_amp_curve_fwhm = fwhm_Q
+        else:
+            print('Invalid signal passed, please do I Q or None')
 
-
-        # Print the FWHM for the fit with the widest curve
-        #print(f"The widest FWHM is for the {widest_fit} data: {widest_fwhm}")
-
-        return mean_I, mean_Q, I_fit, Q_fit, widest_curve_mean, widest_fwhm
+        return mean_I, mean_Q, I_fit, Q_fit, largest_amp_curve_mean, largest_amp_curve_fwhm
 
     def create_folder_if_not_exists(self, folder_path):
         import os
