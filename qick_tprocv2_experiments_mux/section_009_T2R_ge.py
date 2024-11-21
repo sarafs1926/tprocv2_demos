@@ -412,6 +412,7 @@ class T2RMeasurement:
 
             viz.line(X=delay_times, Y=signal, win=win1, name=plot_sig)
 
+        viz.close(win=win1)
         return I, Q, delay_times
 
     def set_res_gain_ge(self, QUBIT_INDEX, num_qubits=6):

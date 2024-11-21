@@ -42,7 +42,7 @@ expt_cfg = {
         "reps": 300, #300
         "rounds": 10, #1
         "start": [0.0] * 6,  # [us]
-        "stop": [500.0] * 6,  # [us] ### Should be ~10x T1! Should change this per qubit.
+        "stop": [200.0] * 6,  # [us] ### Should be ~10x T1! Should change this per qubit.
         "steps": 80,
         "relax_delay": 1000,  # [us] ### Should be >10x T1!
         "wait_time": 0.0,  # [us]

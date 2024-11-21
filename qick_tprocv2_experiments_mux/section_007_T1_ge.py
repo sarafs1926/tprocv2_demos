@@ -125,6 +125,7 @@ class T1Measurement:
                     plot_sig = 'Q'
 
             viz.line(X=delay_times, Y=signal, win=win1, name=plot_sig)
+        viz.close(win=win1)
         return I, Q, delay_times
 
     def exponential(self, x, a, b, c, d):
