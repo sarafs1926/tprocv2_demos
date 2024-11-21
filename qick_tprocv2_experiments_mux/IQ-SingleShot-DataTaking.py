@@ -25,10 +25,10 @@ os.makedirs(output_folder, exist_ok=True)
 #     3: {"length": 2.25, "gain": 0.8, "freq_offset": -0.2000, "reference_freq": 6292.361, "qubit_freq": 4156.53},
 #     4: {"length": 4.0, "gain": 0.95, "freq_offset": -0.2667, "reference_freq": 6405.77, "qubit_freq": 4459.20}
 # }
-#For ADC 30 and DAC 2,10
+
 qubits = { #Note: gain and freq_offset were not optimized for this configuration, only readout length was optimized.
-     3: {"length": 2.00, "gain": 0.8, "freq_offset": -0.0, "reference_freq": 6292.361, "qubit_freq": 4156.53},
-     4: {"length": 5.75, "gain": 0.95, "freq_offset": -0.0, "reference_freq": 6405.77, "qubit_freq": 4459.20}
+     3: {"length": 2.5, "gain": 1.0, "freq_offset": -0.0, "reference_freq": 6292.361, "qubit_freq": 4156.53},
+     4: {"length": 4.0, "gain": 1.0, "freq_offset": -0.0, "reference_freq": 6405.77, "qubit_freq": 4459.20}
  }
 
 # Loop through specified qubits and apply settings
@@ -39,14 +39,14 @@ for qubit_index, params in qubits.items():
     qubit_frequency = params["qubit_freq"]
 
     print(f"Processing Qubit {qubit_index} with Res_Length {length}, Res_Gain {gain}, Res Freq {frequency}, and Qubit Frequency {qubit_frequency}")
-
+#For ADC 30 and DAC 2,10
     # Initialize experiment
     QubitIndex = qubit_index - 1
     #experiment = QICK_experiment(output_folder)
     experiment = QICK_experiment(output_folder, DAC_attenuator1=2, DAC_attenuator2=10, ADC_attenuator=30)
     experiment.readout_cfg['res_length'] = length
     experiment.readout_cfg['res_freq_ge'][QubitIndex] = frequency #resonator freq
-    res_gains = experiment.set_gain_filter_ge(QubitIndex, gain)
+    res_gains = experiment.mask_gain_res(QubitIndex, gain)
     experiment.readout_cfg['res_gain_ge'] = res_gains
 
     # Run the single-shot experiment

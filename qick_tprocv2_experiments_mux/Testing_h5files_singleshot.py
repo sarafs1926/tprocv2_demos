@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Path to the HDF5 file for a specific qubit (replace with actual file path)
-h5_filename = '/data/QICK_data/6transmon_run4a/2024-11-19/SingleShot_Test/qubit_6_data_20241119_091532.h5'  # Update with your file path
+h5_filename = '/data/QICK_data/6transmon_run4a/2024-11-20/SingleShot_Test/qubit_6_data_20241120_112949.h5'  # Update with your file path
 
 
 # Lists to store pulse lengths, average fidelities, and RMS fidelities
@@ -52,10 +52,10 @@ plt.figure()
 plt.errorbar(pulse_lengths, avg_fidelities, yerr=rms_fidelities, fmt='-o', color='black', capsize=2)
 plt.axvline(x=max_length, linestyle="--", color="red")
 #plt.axvline(x=max_length2, linestyle="--", color="green")
-plt.text(max_length + 0.1, max_fidelity-0.2, f'max length {max_length:.2f}', color='red')
+plt.text(max_length + 0.1, max_fidelity-0.1, f'max length {max_length:.2f}', color='red')
 #plt.text(max_length2 + 0.1, max_fidelity2-0.2, f'max length {max_length2:.2f}', color='green')
 plt.xlabel('Readout and Pulse Length')
 plt.ylabel('Fidelity')
-plt.title('Fidelity vs. Pulse Length Q6')
+plt.title('Avg Fidelity vs. Readout and Pulse Length for Qubit 6, (5 repetitions)')
 plt.show()
 plt.close()

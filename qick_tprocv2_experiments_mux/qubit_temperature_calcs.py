@@ -71,7 +71,7 @@ for qubit_index, params in qubits.items():
     experiment = QICK_experiment(output_folder)
     experiment.readout_cfg['res_length'] = length
     experiment.readout_cfg['res_freq_ge'][QubitIndex] = frequency
-    res_gains = experiment.set_gain_filter_ge(QubitIndex, gain)
+    res_gains = experiment.mask_gain_res(QubitIndex, gain)
     experiment.readout_cfg['res_gain_ge'] = res_gains
 
     # Run the single-shot experiment

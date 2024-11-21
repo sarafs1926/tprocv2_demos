@@ -131,7 +131,7 @@ class QubitSpectroscopy:
 
         ### Save figure
         if self.save_figs:
-            outerFolder_expt = self.outerFolder + "/" + self.expt_name + "/"
+            outerFolder_expt = os.path.join(self.outerFolder, self.expt_name)
             self.create_folder_if_not_exists(outerFolder_expt)
             now = datetime.datetime.now()
             formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")

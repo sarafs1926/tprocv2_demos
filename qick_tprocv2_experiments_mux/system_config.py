@@ -22,26 +22,27 @@ class QICK_experiment:
         self.soc, self.soccfg = makeProxy()
         print(self.soccfg)
 
-        self.FSGEN_CH = 6 # 0 for "old QICK", 6 for RF board
+        self.FSGEN_CH = 0 # 0 for "old QICK", 6 for RF board
         self.MIXMUXGEN_CH = 4 # Readout resonator DAC channel
         self.MUXRO_CH = [2, 3, 4, 5, 6, 7]
         self.MUXRO_CH_RF = 5  # New variable that we need for QICK box
 
-        self.TESTCH_DAC = 5 # 0 for "old QICK", 6 for RF board
-        self.TESTCH_ADC_RF = 0  # New variable that we need for QICK box
+        self.TESTCH_DAC = 5 # loopback channel for RF board
+        self.TESTCH_ADC = 0  # loopback channel for RF board
+        self.TESTCH_ADC_RF = 4  # New variable that we need for QICK box
 
         ### NEW for the RF board
         self.qubit_center_freq = 4400  # To be in the middle of the qubit freqs.
         self.res_center_freq = 6330  # To be in the middle of the res freqs. 3000-5000 see nothing,6000 and 7000 see something, 8000+ see nothing
-        self.soc.rfb_set_gen_filter(self.MIXMUXGEN_CH, fc=self.res_center_freq / 1000, ftype='bandpass', bw=1.0)
-        self.soc.rfb_set_gen_filter(self.FSGEN_CH, fc=self.qubit_center_freq / 1000, ftype='bandpass', bw=1.0)
-        self.soc.rfb_set_ro_filter(self.MUXRO_CH_RF, fc=self.res_center_freq / 1000, ftype='bandpass', bw=1.0)
-        # Set attenuator on DAC.
-        self.soc.rfb_set_gen_rf(self.MIXMUXGEN_CH, self.DAC_attenuator1, self.DAC_attenuator2)  # Verified 30->25 see increased gain in loopback
-        self.soc.rfb_set_gen_rf(self.FSGEN_CH, 5, 4)  # Verified 30->25 see increased gain in loopback
-        # Set attenuator on ADC.
-        ### IMPORTANT: set this to 30 and you get 60 dB of warm gain. Set to 0 and you get 90 dB of warm gain
-        self.soc.rfb_set_ro_rf(self.MUXRO_CH_RF, self.ADC_attenuator)  # Verified 30->25 see increased gain in loopback
+        # self.soc.rfb_set_gen_filter(self.MIXMUXGEN_CH, fc=self.res_center_freq / 1000, ftype='bandpass', bw=1.0)
+        # self.soc.rfb_set_gen_filter(self.FSGEN_CH, fc=self.qubit_center_freq / 1000, ftype='bandpass', bw=1.0)
+        # self.soc.rfb_set_ro_filter(self.MUXRO_CH_RF, fc=self.res_center_freq / 1000, ftype='bandpass', bw=1.0)
+        # # Set attenuator on DAC.
+        # self.soc.rfb_set_gen_rf(self.MIXMUXGEN_CH, self.DAC_attenuator1, self.DAC_attenuator2)  # Verified 30->25 see increased gain in loopback
+        # self.soc.rfb_set_gen_rf(self.FSGEN_CH, 5, 4)  # Verified 30->25 see increased gain in loopback
+        # # Set attenuator on ADC.
+        # ### IMPORTANT: set this to 30 and you get 60 dB of warm gain. Set to 0 and you get 90 dB of warm gain
+        # self.soc.rfb_set_ro_rf(self.MUXRO_CH_RF, self.ADC_attenuator)  # Verified 30->25 see increased gain in loopback
 
 
         # Qubit you want to work with
@@ -93,11 +94,11 @@ class QICK_experiment:
             # [0.4287450656184295, 0.4287450656184295, 0.4903077560386716, 0.6, 0.4903077560386716, 0.4287450656184295], # For spec pulse
             "qubit_length_ge": 15,  # [us] for spec Pulse
             "qubit_phase": 0,  # [deg]
-            # "sigma": [0.08, 0.18, 0.14, 0.13, 0.18, 0.6],  # [us] for Gaussian Pulse (5+10 DAC atten for qubit)
-            "sigma": [0.05, 0.09, 0.07, 0.065, 0.09, 0.3],  # Goal: cut sigma in half [us] for Gaussian Pulse (5+4 DAC atten for qubit)
+             "sigma": [0.08, 0.18, 0.14, 0.13, 0.18, 0.6],  # [us] for Gaussian Pulse (5+10 DAC atten for qubit)
+            #"sigma": [0.05, 0.09, 0.07, 0.065, 0.09, 0.3],  # Goal: cut sigma in half [us] for Gaussian Pulse (5+4 DAC atten for qubit)
             # "pi_amp": [0.92, 0.87, 0.75, 0.73, 0.77, 0.78], # old RR values
-            # "pi_amp": [1.0, 0.93, 0.77, 0.8, 0.81, 0.9], # Eyeballed by Sara today (5+10 DAC atten for qubit)
-            "pi_amp": [0.7, 0.95, 0.75, 0.78, 0.77, 0.8],  # With shorter sigma (5+4 DAC instead of 5+5 DAC atten for qubit)
+            "pi_amp": [1.0, 0.93, 0.77, 0.8, 0.81, 0.9], # Eyeballed by Sara today (5+10 DAC atten for qubit)
+            #"pi_amp": [0.7, 0.95, 0.75, 0.78, 0.77, 0.8],  # With shorter sigma (5+4 DAC instead of 5+5 DAC atten for qubit)
 
         }
 
@@ -106,7 +107,7 @@ class QICK_experiment:
         if not os.path.exists(folder):
             os.makedirs(folder)
 
-    def set_gain_filter_ge(self, QUBIT_INDEX, IndexGain = 1, num_qubits=6):
+    def mask_gain_res(self, QUBIT_INDEX, IndexGain = 1, num_qubits=6):
         """Sets the gain for the selected qubit to 1, others to 0."""
         filtered_gain_ge = [0] * num_qubits  # Initialize all gains to 0
         if 0 <= QUBIT_INDEX < num_qubits: #makes sure you are within the range of options

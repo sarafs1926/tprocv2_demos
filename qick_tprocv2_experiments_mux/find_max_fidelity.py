@@ -4,7 +4,7 @@ import os
 import glob
 
 # Directory where your HDF5 files are stored
-outerFolder = f"/data/QICK_data/6transmon_run4a/2024-11-19/readout_opt/Gain_Freq_Sweeps"
+outerFolder = f"/data/QICK_data/6transmon_run4a/2024-11-20/readout_opt/Gain_Freq_Sweeps"
 
 def find_max_fidelity(file_path):
     with h5py.File(file_path, "r") as f:
@@ -15,6 +15,7 @@ def find_max_fidelity(file_path):
         reference_frequency = f.attrs["reference_frequency"]
         freq_steps = f.attrs["freq_steps"]
         gain_steps = f.attrs["gain_steps"]
+        optimal_length = f.attrs["optimal_length"]
 
         # Calculate step sizes
         freq_step_size = (freq_range[1] - freq_range[0]) / freq_steps
@@ -32,7 +33,7 @@ def find_max_fidelity(file_path):
             freq_idx, gain_idx = index
             gain = gain_range[0] + gain_idx * gain_step_size
             freq_offset = (freq_range[0] - reference_frequency) + freq_idx * freq_step_size
-            configurations.append((max_fidelity, gain, freq_offset))
+            configurations.append((max_fidelity, gain, freq_offset, optimal_length))
 
         return max_fidelity, configurations
 
@@ -61,8 +62,9 @@ for qubit_index in range(1, 7):
 
         # Print all configurations with the highest fidelity
         print(f"Qubit {qubit_index}:")
-        for max_fidelity, max_gain, max_freq_offset in all_configurations:
+        for max_fidelity, max_gain, max_freq_offset, optimal_length in all_configurations:
             print(f"  Max Fidelity: {overall_max_fidelity:.4f}")
+            print(f"  Optimal Readout Length: {optimal_length:.4f} us")
             print(f"  Optimal Gain: {max_gain:.4f} a.u.")
             print(f"  Optimal Frequency Offset: {max_freq_offset:.4f} MHz\n")
     else:

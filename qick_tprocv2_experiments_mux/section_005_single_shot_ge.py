@@ -290,12 +290,18 @@ class SingleShot:
 
 
 class GainFrequencySweep:
-    def __init__(self,qubit_index, optimal_lengths=None, output_folder="/default/path/"):
+    def __init__(self,qubit_index, experiment, optimal_lengths=None, output_folder="/default/path/"):
         self.qubit_index = qubit_index
         self.output_folder = output_folder
         self.expt_name = "Readout_Optimization"
         self.Qubit = 'Q' + str(self.qubit_index)
         self.optimal_lengths = optimal_lengths
+
+        self.experiment = experiment
+        self.exp_cfg = expt_cfg[self.expt_name]
+        self.q_config = all_qubit_state(self.experiment)
+        self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
+
     def set_res_gain_ge(self, QUBIT_INDEX, set_gain, num_qubits=6):
         """Sets the gain for the selected qubit to 1, others to 0."""
         res_gain_ge = [0] * num_qubits  # Initialize all gains to 0
@@ -317,23 +323,23 @@ class GainFrequencySweep:
             fid_results = []
             for gain_step in range(gain_steps):
                 #experiment = QICK_experiment(self.output_folder)
-                experiment = QICK_experiment(self.output_folder, DAC_attenuator1=10, DAC_attenuator2=5, ADC_attenuator=10)
-
+                #experiment = QICK_experiment(self.output_folder, DAC_attenuator1=10, DAC_attenuator2=5, ADC_attenuator=10)
+                fresh_experiment = copy.deepcopy(self.experiment)
                 gain = gain_range[0] + gain_step * gain_step_size
                 print('gain', gain)
 
                 # Update config with current gain and frequency values
-                experiment.readout_cfg['res_freq_ge'][self.qubit_index]= freq
-                experiment.readout_cfg['res_length'] = readout_length  # Set the optimal readout length for the qubit
+                fresh_experiment.readout_cfg['res_freq_ge'][self.qubit_index]= freq
+                fresh_experiment.readout_cfg['res_length'] = readout_length  # Set the optimal readout length for the qubit
 
-                res_gains = experiment.set_gain_filter_ge(self.qubit_index, gain)
-                experiment.readout_cfg['res_gain_ge'] = res_gains
+                res_gains = fresh_experiment.mask_gain_res(self.qubit_index, gain)
+                fresh_experiment.readout_cfg['res_gain_ge'] = res_gains
 
                 # Initialize SingleShot instance for fidelity calculation
-                single_shot = SingleShot(self.qubit_index, self.output_folder, experiment, round_num=0, save_figs = False)
-                fidelity = single_shot.fidelity_test(experiment.soccfg, experiment.soc)
+                single_shot = SingleShot(self.qubit_index, self.output_folder, fresh_experiment, round_num=0, save_figs = False)
+                fidelity = single_shot.fidelity_test(fresh_experiment.soccfg, fresh_experiment.soc)
                 fid_results.append(fidelity)
-                del experiment
+                del fresh_experiment
                 del single_shot
 
             results.append(fid_results)

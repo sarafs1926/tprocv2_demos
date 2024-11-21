@@ -240,7 +240,7 @@ class T1Measurement:
         # Adjust the top margin to make room for the title
         plt.subplots_adjust(top=0.93)
         if self.save_figs:
-            outerFolder_expt = self.outerFolder + "/" + self.expt_name + "/"
+            outerFolder_expt = os.path.join(self.outerFolder, self.expt_name)
             self.create_folder_if_not_exists(outerFolder_expt)
             now = datetime.datetime.now()
             formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")

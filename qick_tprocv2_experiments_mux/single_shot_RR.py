@@ -67,7 +67,7 @@ for QubitIndex in Qs:
 
                 # Set gain for the current qubit
                 gain = 1
-                res_gains = experiment.set_gain_filter_ge(QubitIndex, gain)  # Set gain for current qubit only
+                res_gains = experiment.mask_gain_res(QubitIndex, gain)  # Set gain for current qubit only
 
                 experiment.readout_cfg['res_gain_ge'] = res_gains
 

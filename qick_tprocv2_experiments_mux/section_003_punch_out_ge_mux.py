@@ -108,7 +108,7 @@ class PunchOut:
 
         plt.tight_layout(pad=2.0)
 
-        outerFolder_expt = self.outerFolder + "/punch_out/"
+        outerFolder_expt = os.path.join(self.outerFolder, 'punch_out')
         self.experiment.create_folder_if_not_exists(outerFolder_expt)
         now = datetime.datetime.now()
         formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")

@@ -1,18 +1,32 @@
-from section_005_single_shot_ge import SingleShot
-from section_005_single_shot_ge import GainFrequencySweep
-# from system_config import *
-from system_config import QICK_experiment
-import numpy as np
-import matplotlib.pyplot as plt
+import sys
 import os
-import h5py
+import numpy as np
 import datetime
+sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
+from section_001_time_of_flight import TOFExperiment
+from section_002_res_spec_ge_mux import ResonanceSpectroscopy
+from section_004_qubit_spec_ge import QubitSpectroscopy
+from section_006_amp_rabi_ge import AmplitudeRabiExperiment
+from section_005_single_shot_ge import GainFrequencySweep
+from section_007_T1_ge import T1Measurement
+from section_005_single_shot_ge import SingleShot
+from section_008_save_data_to_h5 import Data_H5
+from section_009_T2R_ge import T2RMeasurement
+from section_010_T2E_ge import T2EMeasurement
+from system_config import QICK_experiment
+from section_003_punch_out_ge_mux import PunchOut
+from expt_config import *
+import h5py
 import time
-from expt_config import *
-from qick.asm_v2 import AveragerProgramV2
-from tqdm import tqdm
-from build_state import *
-from expt_config import *
+import matplotlib.pyplot as plt
+import copy
+
+
+signal = 'None'        #'I', or 'Q' depending on where the signal is (after optimization). Put 'None' if no optimization has happened
+save_figs = True   # save plots for everything as you go along the RR script?
+live_plot = False    # for live plotting open http://localhost:8097/ on firefox
+fit_data = False    # fit the data here and save or plot the fits?
+outerFolder = "/data/QICK_data/6transmon_run4a/" + str(datetime.date.today()) + "/"
 
 
 def create_folder_if_not_exists(folder_path):
@@ -21,7 +35,7 @@ def create_folder_if_not_exists(folder_path):
         os.makedirs(folder_path)
 
 
-# Where to save data
+# Where to save readout length sweep data
 prefix = str(datetime.date.today())
 output_folder = "/data/QICK_data/6transmon_run4a/" + prefix + "/SingleShot_Test/"
 create_folder_if_not_exists(output_folder)
@@ -32,33 +46,71 @@ n_loops = 5  # Number of repetitions per length to average
 # List of qubits and pulse lengths to measure
 Qs = [0,1,2,3,4,5]
 
-optimal_lengths = [None] * 6 # creates list where the script will be storing the optimal readout lengths for each qubit. We currently have 6 qubits in total.
-
-#res_gain = [0.7, 0.9, 0.7, 0.7, 0.7, 0.9, 0.9]
+# optimal_lengths = [None] * 6 # creates list where the script will be storing the optimal readout lengths for each qubit. We currently have 6 qubits in total.
 res_gain = [1.0]*6
+#res_gain = [0.7, 0.9, 0.7, 0.7, 0.7, 0.9, 0.9]
+res_freq_ge = [None] * 6
+j=1 #round number, from RR code. Not really used here since we just run it once for each qubit
 
 #lengs = np.linspace(0.5, 5, 19)  # increments of 0.25
-lengs = np.linspace(0.5, 7, 27) # increments of 0.25
+#lengs = np.linspace(0.5, 7, 27) # increments of 0.25
 
 for QubitIndex in Qs:
+    #Get the config for this qubit
+    experiment = QICK_experiment(outerFolder, DAC_attenuator1 = 5, DAC_attenuator2 = 10, ADC_attenuator = 10)
+
+    #Mask out all other resonators except this one
+    res_gains = experiment.mask_gain_res(QubitIndex, IndexGain=res_gain[QubitIndex])
+    experiment.readout_cfg['res_gain_ge'] = res_gains
+
+
+    #---------------------Res spec---------------------
+    res_spec   = ResonanceSpectroscopy(QubitIndex, outerFolder, j, save_figs, experiment)
+    res_freqs, freq_pts, freq_center, amps = res_spec.run(experiment.soccfg, experiment.soc)
+    experiment.readout_cfg['res_freq_ge'] = res_freqs #change after optimization, add offset value to each of the freqs in this list [r + offset for r in res_freqs]
+    this_res_freq = res_freqs[QubitIndex]
+    res_freq_ge[QubitIndex] = float(this_res_freq)
+    del res_spec
+
+    #--------------------Qubit spec--------------------
+    q_spec = QubitSpectroscopy(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot)
+    qspec_I, qspec_Q, qspec_freqs, qspec_I_fit, qspec_Q_fit, qubit_freq = q_spec.run(experiment.soccfg, experiment.soc)
+    experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = float(qubit_freq)
+    print('Qubit freq for qubit ', QubitIndex + 1 ,' is: ',float(qubit_freq))
+    del q_spec
+
+    #-----------------------Rabi-----------------------
+    rabi = AmplitudeRabiExperiment(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot)
+    rabi_I, rabi_Q, rabi_gains, rabi_fit, pi_amp  = rabi.run(experiment.soccfg, experiment.soc)
+    experiment.qubit_cfg['pi_amp'][QubitIndex] = float(pi_amp)
+    print('Pi amplitude for qubit ', QubitIndex + 1, ' is: ', float(pi_amp))
+    del rabi
+
+    # #------------------Single Shot Measurements---------------
+    # ss = SingleShot(QubitIndex, outerFolder, experiment, round_num=0, save_figs=True)
+    # fid, angle, iq_list_g, iq_list_e = ss.run(experiment.soccfg, experiment.soc)
+    #
+    # I_g = iq_list_g[QubitIndex][0].T[0]
+    # Q_g = iq_list_g[QubitIndex][0].T[1]
+    # I_e = iq_list_e[QubitIndex][0].T[0]
+    # Q_e = iq_list_e[QubitIndex][0].T[1]
+    #
+    # fid, threshold, rotation_angle, ig_new, ie_new = ss.hist_ssf(
+    #     data=[I_g, Q_g, I_e, Q_e], cfg=ss.config, plot=True)
+
+    tuned_experiment = copy.deepcopy(experiment)
+    '''
+    # #-----------Sweeping Readout Length----------------------------
     QubitIndex = int(QubitIndex)  # Ensure QubitIndex is an integer
 
     avg_fids = []
     rms_fids = []
 
-    # Create a single HDF5 file for each qubit
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    # print("Output folder:", output_folder)
-    # print("Type of output_folder:", type(output_folder))
     h5_filename = os.path.join(output_folder, f"qubit_{QubitIndex + 1}_data_{timestamp}.h5")
     with h5py.File(h5_filename, 'w') as h5_file:
         # Top-level group for the qubit
         qubit_group = h5_file.create_group(f"Qubit_{QubitIndex + 1}")
-
-        # Iterate over rounds
-        # for j in range(1, n + 1): #rounds
-        # Create a group for each round
-        # round_group = qubit_group.create_group(f"Round_{j}")
         fids = []  # Store fidelity values for each loop
         ground_iq_data = []  # Store ground state IQ data for each loop
         excited_iq_data = []  # Store excited state IQ data for each loop
@@ -71,14 +123,15 @@ for QubitIndex in Qs:
             for k in range(n_loops):  # loops for each read out length
                 # ------------------------Single Shot-------------------------
                 # Initialize experiment for each loop iteration
-                #experiment = QICK_experiment(output_folder)
-                experiment = QICK_experiment(output_folder, DAC_attenuator1=10, DAC_attenuator2=5, ADC_attenuator=10)
+                # experiment = QICK_experiment(output_folder)
+                #experiment = QICK_experiment(output_folder, DAC_attenuator1=10, DAC_attenuator2=5, ADC_attenuator=10)
+                experiment = copy.deepcopy(tuned_experiment)
                 # Set specific configuration values for each iteration
                 experiment.readout_cfg['res_length'] = leng  # Set the current readout pulse length
 
                 # Set gain for the current qubit
                 gain = res_gain[QubitIndex]
-                res_gains = experiment.mask_gain_res(QubitIndex, gain)  # Set gain for current qubit only
+                res_gains = experiment.set_gain_filter_ge(QubitIndex, gain)  # Set gain for current qubit only
 
                 experiment.readout_cfg['res_gain_ge'] = res_gains
 
@@ -125,18 +178,6 @@ for QubitIndex in Qs:
     avg_max_index = avg_fids.index(avg_max)
     max_len = lengs[avg_max_index]
     optimal_lengths[QubitIndex] = max_len
-    
-    # # Compute the first and second derivatives
-    # first_derivative = np.gradient(avg_fids, lengs)
-    # second_derivative = np.gradient(first_derivative, lengs)
-    # 
-    # # Find the index of the maximum second derivative (absolute value)
-    # corner_index = np.argmax(np.abs(second_derivative))
-    # max_len_corner = lengs[corner_index]
-    # 
-    # # Save the optimal length corresponding to the corner
-    # optimal_lengths[QubitIndex] = max_len_corner
-    
 
     # Plot the average fidelity vs. pulse length with error bars for each qubit
     plt.figure()
@@ -150,32 +191,28 @@ for QubitIndex in Qs:
     plt.close()
 
     del avg_fids, rms_fids, avg_ground_iq, avg_excited_iq, loop_group, length_group
+    '''
+    #---------------------Res Gain and Res Freq Sweeps------------------------
+    #exit()  # use this if you only want to run the readout length sweep
+    optimal_lengths = [3.0,4.75,4.0,3.25,4.0,5.75]  # use when you are running this part of the code separately
+    date_str = str(datetime.date.today())
+    outerFolder = f"/data/QICK_data/6transmon_run4a/{date_str}/readout_opt/Gain_Freq_Sweeps/"
 
-########################################################################################################################
-exit() #use this if you only want to run the first half of this script
-optimal_lengths = [] #use when you are running the second half of this code separately
-date_str = str(datetime.date.today())
-outerFolder = f"/data/QICK_data/6transmon_run4a/{date_str}/readout_opt/Gain_Freq_Sweeps/"
+    # Ensure the output folder exists
+    os.makedirs(outerFolder, exist_ok=True)
 
-# Ensure the output folder exists
-os.makedirs(outerFolder, exist_ok=True)
+    # Define sweeping parameters
+    gain_range = [0.5, 1]  # Gain range in a.u.
+    freq_steps = 30
+    gain_steps = 10
 
-# Reference frequencies for each resonator in MHz
-res_freq_ge = [6191.419, 6216.1, 6292.361, 6405.77, 6432.759, 6468.481] #new
-#res_freq_ge = [6191.439, 6216.0, 6292.261, 6405.79, 6432.899, 6468.501] old
-
-# Define sweeping parameters
-gain_range = [0.5,1]  # Gain range in a.u.
-freq_steps = 30
-gain_steps = 10
-
-for QubitIndex in Qs:
-    print(f'Starting Qubit {QubitIndex + 1} measurements.')
+    print(f'Starting Qubit {QubitIndex + 1} res gain and res freq measurements.')
     # Select the reference frequency for the current qubit
     reference_frequency = res_freq_ge[QubitIndex]
-    freq_range = [reference_frequency-1, reference_frequency + 1]  # Frequency range in MHz
+    freq_range = [reference_frequency - 1, reference_frequency + 1]  # Frequency range in MHz
 
-    sweep = GainFrequencySweep(QubitIndex,  optimal_lengths=optimal_lengths, output_folder=outerFolder)
+    experiment = copy.deepcopy(tuned_experiment)
+    sweep = GainFrequencySweep(QubitIndex, experiment, optimal_lengths=optimal_lengths, output_folder=outerFolder)
     results = sweep.run_sweep(freq_range, gain_range, freq_steps, gain_steps)
     results = np.array(results)
 
@@ -191,19 +228,21 @@ for QubitIndex in Qs:
         f.attrs["reference_frequency"] = reference_frequency
         f.attrs["freq_steps"] = freq_steps
         f.attrs["gain_steps"] = gain_steps
+        f.attrs["optimal_length"] = optimal_lengths[QubitIndex]
 
-    print(f"Saved data for Qubit {QubitIndex + 1} to {h5_file}")
+    #print(f"Saved data for Qubit {QubitIndex + 1} to {h5_file}")
 
     plt.imshow(results, aspect='auto',
-               extent=[gain_range[0], gain_range[1], freq_range[0] - reference_frequency, freq_range[1] - reference_frequency],
+               extent=[gain_range[0], gain_range[1], freq_range[0] - reference_frequency,
+                       freq_range[1] - reference_frequency],
                origin='lower')
     plt.colorbar(label="Fidelity")
     plt.xlabel("Readout pulse gain (a.u.)")  # Gain on x-axis
     plt.ylabel("Readout frequency offset (MHz)")  # Frequency on y-axis
     plt.title(f"Gain-Frequency Sweep for Qubit {QubitIndex + 1}")
-    #plt.show()
+    # plt.show()
     # Save the plot
-    file= f"{outerFolder}Gain_Freq_Sweep_Qubit_{QubitIndex + 1}_{timestamp}.png"
+    file = f"{outerFolder}Gain_Freq_Sweep_Qubit_{QubitIndex + 1}_{timestamp}.png"
     plt.savefig(file, dpi=600, bbox_inches='tight')
     plt.close()  # Close the plot to free up memory
     del results, sweep

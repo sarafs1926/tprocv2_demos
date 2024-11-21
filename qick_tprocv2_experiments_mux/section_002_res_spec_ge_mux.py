@@ -41,7 +41,6 @@ class ResonanceSpectroscopy:
         self.experiment = experiment
         self.exp_cfg = expt_cfg[self.expt_name]
         if experiment is not None:
-
             self.q_config = all_qubit_state(experiment)
             self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
             print(f'Q {self.QubitIndex + 1} Round {self.round_num} Res Spec configuration: ', self.config)
@@ -89,7 +88,7 @@ class ResonanceSpectroscopy:
         plt.tight_layout(pad=2.0)
 
         if self.save_figs:
-            outerFolder_expt = self.outerFolder + "/" + self.expt_name + "/"
+            outerFolder_expt = os.path.join(self.outerFolder, self.expt_name)
             self.create_folder_if_not_exists(outerFolder_expt)
             now = datetime.datetime.now()
             formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")

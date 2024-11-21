@@ -1,6 +1,7 @@
 import datetime
 import numpy as np
 import h5py
+import os
 
 class Data_H5:
     def __init__(self, outerFolder, data = None, batch_num = 0, save_r = 0):
@@ -11,12 +12,35 @@ class Data_H5:
 
     def create_folder_if_not_exists(self, folder):
         """Creates a folder at the given path if it doesn't already exist."""
-        import os
         if not os.path.exists(folder):
             os.makedirs(folder)
 
+    def create_dataset(self, name, value, group):
+        if value is not None:
+            if name == "Dates":
+                if isinstance(value, list) and 'None' in str(
+                        value[0]):  # Check for single 'None' string list
+                    value = np.array([])
+                else:
+                    try:
+                        value = np.array([dt.isoformat() for dt in value], dtype='S')
+                    except (TypeError, AttributeError) as e:
+                        print(f"Warning: Could not convert dates for '{name}'. Error: {e}")
+                        value = np.array([str(dt) for dt in value], dtype='S')
+            elif isinstance(value, list) and 'None' in str(value[0]):  # Check for single 'None' string list
+                value = np.array([])  # Save as empty array
+            else:
+                try:
+                    value = np.array(value, dtype=np.float64)
+                except ValueError:
+                    print(f"Warning: Could not convert data for '{name}' to float. Saving as string.")
+                    value = np.array(value, dtype='S')
+            group.create_dataset(name, data=value)
+        else:
+            group.create_dataset(name, data=np.array([]))
+
     def save_to_h5(self, data_type):
-        self.outerFolder_expt = self.outerFolder_expt + "/Data_h5/" + f"{data_type}_ge" + "/"
+        self.outerFolder_expt = os.path.join(self.outerFolder_expt, "Data_h5", f"{data_type}_ge")
         self.create_folder_if_not_exists(self.outerFolder_expt)
         formatted_datetime =  datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         h5_filename = self.outerFolder_expt + f"{formatted_datetime}_" + f"{data_type}_results_batch_{self.batch_num}_" + f"Num_per_batch{self.save_r}.h5"
@@ -28,94 +52,10 @@ class Data_H5:
                 # Create a group for each qubit
                 group = f.create_group(f'Q{QubitIndex + 1}')
 
-                def create_dataset(name, value):
-                    if value is not None:
-                        if name == "Dates":
-                            if isinstance(value, list) and 'None' in str(
-                                    value[0]):  # Check for single 'None' string list
-                                value = np.array([])
-                            else:
-                                try:
-                                    value = np.array([dt.isoformat() for dt in value], dtype='S')
-                                except (TypeError, AttributeError) as e:
-                                    print(f"Warning: Could not convert dates for '{name}'. Error: {e}")
-                                    value = np.array([str(dt) for dt in value], dtype='S')
-                        elif isinstance(value, list) and 'None' in str(value[0]) :  # Check for single 'None' string list
-                            value = np.array([])  # Save as empty array
-
-                        else:
-                            try:
-                                value = np.array(value, dtype=np.float64)
-                            except ValueError:
-                                print(f"Warning: Could not convert data for '{name}' to float. Saving as string.")
-                                value = np.array(value, dtype='S')
-                        group.create_dataset(name, data=value)
-                    else:
-                        group.create_dataset(name, data=np.array([]))
-
-                # Save everything with checks for 'None'. save the right datasets depending on "type"
-                if 'Res' in data_type:
-                    create_dataset("Dates", data.get('Dates'))
-                    create_dataset("freq_pts", data.get('freq_pts'))
-                    create_dataset("freq_center", data.get('freq_center'))
-                    create_dataset("Amps", data.get('Amps'))
-                    create_dataset("Found Freqs", data.get('Found Freqs'))
-                    create_dataset("Round Num", data.get('Round Num'))
-                    create_dataset("Batch Num", data.get('Batch Num'))
-
-                elif 'QSpec' in data_type:
-                    create_dataset("Dates", data.get('Dates'))
-                    create_dataset("I", data.get('I'))
-                    create_dataset("Q", data.get('Q'))
-                    create_dataset("Frequencies", data.get('Frequencies'))
-                    create_dataset("I Fit", data.get('I Fit'))
-                    create_dataset("Q Fit", data.get('Q Fit'))
-                    create_dataset("Round Num", data.get('Round Num'))
-                    create_dataset("Batch Num", data.get('Batch Num'))
-
-                elif 'Rabi' in data_type:
-                    create_dataset("Dates", data.get('Dates'))
-                    create_dataset("I", data.get('I'))
-                    create_dataset("Q", data.get('Q'))
-                    create_dataset("Gains", data.get('Gains'))
-                    create_dataset("Fit", data.get('Fit'))
-                    create_dataset("Round Num", data.get('Round Num'))
-                    create_dataset("Batch Num", data.get('Batch Num'))
-
-                elif 'T1' in data_type:
-                    create_dataset("T1", data.get('T1'))
-                    create_dataset("Errors", data.get('Errors'))
-                    create_dataset("Dates", data.get('Dates'))
-                    create_dataset("I", data.get('I'))
-                    create_dataset("Q", data.get('Q'))
-                    create_dataset("Delay Times", data.get('Delay Times'))
-                    create_dataset("Fit", data.get('Fit'))
-                    create_dataset("Round Num", data.get('Round Num'))
-                    create_dataset("Batch Num", data.get('Batch Num'))
-
-                elif 'T2' in data_type:
-                    create_dataset("T2", data.get('T2'))
-                    create_dataset("Errors", data.get('Errors'))
-                    create_dataset("Dates", data.get('Dates'))
-                    create_dataset("I", data.get('I'))
-                    create_dataset("Q", data.get('Q'))
-                    create_dataset("Delay Times", data.get('Delay Times'))
-                    create_dataset("Fit", data.get('Fit'))
-                    create_dataset("Round Num", data.get('Round Num'))
-                    create_dataset("Batch Num", data.get('Batch Num'))
-
-                elif 'T2E' in data_type:
-                    create_dataset("T2E", data.get('T2E'))
-                    create_dataset("Errors", data.get('Errors'))
-                    create_dataset("Dates", data.get('Dates'))
-                    create_dataset("I", data.get('I'))
-                    create_dataset("Q", data.get('Q'))
-                    create_dataset("Delay Times", data.get('Delay Times'))
-                    create_dataset("Fit", data.get('Fit'))
-                    create_dataset("Round Num", data.get('Round Num'))
-                    create_dataset("Batch Num", data.get('Batch Num'))
-                else:
-                    print('Data type not supported, please pass one of the following: Res, QSpec, Rabi, T1, T2, T2E')
+                #grab keys and get data
+                for key, value in data.items():
+                    if value is not None:  # check for None values before creating dataset
+                        self.create_dataset(key, value, group)
 
         #self.print_h5_contents(h5_filename)
         #print(h5_filename)
@@ -223,9 +163,27 @@ class Data_H5:
         else:
             return data
 
+    def convert_to_hdf5(self, data):
+        if isinstance(data, (list, tuple, np.ndarray)):
+            try:
+                return np.array(data)  #Try to convert to numpy array
+            except:
+                #Handle cases where it fails conversion to numpy array.
+                return data
+        elif isinstance(data, dict):
+            return {k: self.convert_to_hdf5(v) for k, v in data.items()}
+        elif isinstance(data, str):
+            return data.encode('utf-8') # Encode strings to bytes
+        elif isinstance(data, (int, float, bool, np.number)): # Add other simple numeric types as needed.
+            return data
+        else:
+            #Handle unsupported datatypes: Warn user and skip.
+            print(f"Warning: Unsupported data type encountered: {type(data)}. Skipping this entry.")
+            return None
+
     def save_config(self, sys_config, expt_cfg):
         sys_config = self.convert_for_hdf5(sys_config)
-        expt_cfg = self.convert_for_hdf5(expt_cfg)
+        expt_cfg = self.convert_to_hdf5(expt_cfg)
 
         outerFolder_expt = self.outerFolder_expt + "/Data_h5/config/"
         self.create_folder_if_not_exists(outerFolder_expt)
