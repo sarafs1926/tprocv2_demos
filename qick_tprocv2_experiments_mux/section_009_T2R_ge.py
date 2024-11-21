@@ -378,10 +378,6 @@ class T2RMeasurement:
         I = Q = expt_mags = expt_phases = expt_pop = None
         viz = visdom.Visdom()
         assert viz.check_connection(timeout_seconds=5), "Visdom server not connected!"
-        viz.close(win=None)  # close previous plots
-        win1 = viz.line(X=np.arange(0, 1), Y=np.arange(0, 1),
-                        opts=dict(height=400, width=700, title='T2 Ramsey Experiment', showlegend=True,
-                                  xlabel='expt_pts'))
 
         for ii in range(self.config["rounds"]):
             iq_list = ramsey.acquire(soc, soft_avgs=1, progress=True)
@@ -396,23 +392,8 @@ class T2RMeasurement:
                 I = (I * ii + this_I) / (ii + 1.0)
                 Q = (Q * ii + this_Q) / (ii + 1.0)
 
-            if 'I' in self.signal:
-                signal = I
-                plot_sig = 'I'
-            elif 'Q' in self.signal:
-                signal = Q
-                plot_sig = 'Q'
-            else:
-                if abs(I[-1] - I[0]) > abs(Q[-1] - Q[0]):
-                    signal = I
-                    plot_sig = 'I'
-                else:
-                    signal = Q
-                    plot_sig = 'Q'
-
-            viz.line(X=delay_times, Y=signal, win=win1, name=plot_sig)
-
-        viz.close(win=win1)
+            viz.line(X=delay_times, Y=I, opts=dict(height=400, width=700, title='T2 Ramsey I', showlegend=True, xlabel='expt_pts'),win='T2R_I')
+            viz.line(X=delay_times, Y=Q, opts=dict(height=400, width=700, title='T2 Ramsey Q', showlegend=True, xlabel='expt_pts'),win='T2R_Q')
         return I, Q, delay_times
 
     def set_res_gain_ge(self, QUBIT_INDEX, num_qubits=6):

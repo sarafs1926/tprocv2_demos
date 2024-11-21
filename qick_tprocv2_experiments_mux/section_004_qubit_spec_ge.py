@@ -47,10 +47,6 @@ class QubitSpectroscopy:
         viz = visdom.Visdom()
         assert viz.check_connection(timeout_seconds=5), "Visdom server not connected!"
         viz.close(win=None)  # close previous plots
-        win1 = viz.line(X=np.arange(0, 1), Y=np.arange(0, 1),
-                        opts=dict(height=400, width=700, title='T2 Ramsey Experiment', showlegend=True,
-                                  xlabel='expt_pts'))
-
         for ii in range(self.config["rounds"]):
             iq_list = qspec.acquire(soc, soft_avgs=1, progress=True)
             freqs = qspec.get_pulse_param('qubit_pulse', "freq", as_array=True)
@@ -64,22 +60,8 @@ class QubitSpectroscopy:
                 I = (I * ii + this_I) / (ii + 1.0)
                 Q = (Q * ii + this_Q) / (ii + 1.0)
 
-            if 'I' in self.signal:
-                signal = I
-                plot_sig = 'I'
-            elif 'Q' in self.signal:
-                signal = Q
-                plot_sig = 'Q'
-            else:
-                if abs(I[-1] - I[0]) > abs(Q[-1] - Q[0]):
-                    signal = I
-                    plot_sig = 'I'
-                else:
-                    signal = Q
-                    plot_sig = 'Q'
-
-            viz.line(X=freqs, Y=signal, win=win1, name=plot_sig)
-        viz.close(win=win1)
+            viz.line(X=freqs, Y=I, opts=dict(height=400, width=700, title='Qubit Spectroscopy I', showlegend=True, xlabel='expt_pts'),win='QSpec_I')
+            viz.line(X=freqs, Y=Q, opts=dict(height=400, width=700, title='Qubit Spectroscopy Q', showlegend=True, xlabel='expt_pts'),win='QSpec_Q')
         return I, Q, freqs
 
     def plot_results(self, I, Q, freqs, config = None):

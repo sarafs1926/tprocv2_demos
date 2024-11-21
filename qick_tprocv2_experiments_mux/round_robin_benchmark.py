@@ -3,6 +3,8 @@ import os
 import numpy as np
 import datetime
 import time
+import visdom
+
 sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
 from section_001_time_of_flight import TOFExperiment
 from section_002_res_spec_ge_mux import ResonanceSpectroscopy
@@ -20,7 +22,7 @@ from expt_config import expt_cfg
 n= 10000
 save_r = 5            # how many rounds to save after
 signal = 'None'       #'I', or 'Q' depending on where the signal is (after optimization). Put 'None' if no optimization has happened
-save_figs = False    # save plots for everything as you go along the RR script?
+save_figs = False     # save plots for everything as you go along the RR script?
 live_plot = True      # for live plotting open http://localhost:8097/ on firefox
 fit_data = False      # fit the data here and save or plot the fits?
 save_data_h5 = True   # save all of the data to h5 files?

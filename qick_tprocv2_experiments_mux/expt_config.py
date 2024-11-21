@@ -31,7 +31,7 @@ expt_cfg = {
 
     "power_rabi_ge": {
         "reps": 100, #100
-        "rounds": 10, #10
+        "rounds": 5, #5
         "start": [0.0] * 6, # [DAC units]
         "stop":  [1.0] * 6, # [DAC units]
         "steps": 100,

@@ -15,25 +15,26 @@ class Data_H5:
         if not os.path.exists(folder):
             os.makedirs(folder)
 
+    def convert_non_floats_to_strings(self, data_list):
+        return [str(x) if not isinstance(x, (int, float, np.float64)) else x for x in data_list]
+
     def create_dataset(self, name, value, group):
         if value is not None:
-            if name == "Dates":
-                if isinstance(value, list) and 'None' in str(
-                        value[0]):  # Check for single 'None' string list
-                    value = np.array([])
-                else:
-                    try:
-                        value = np.array([dt.isoformat() for dt in value], dtype='S')
-                    except (TypeError, AttributeError) as e:
-                        print(f"Warning: Could not convert dates for '{name}'. Error: {e}")
-                        value = np.array([str(dt) for dt in value], dtype='S')
-            elif isinstance(value, list) and 'None' in str(value[0]):  # Check for single 'None' string list
-                value = np.array([])  # Save as empty array
+            if name == "Dates":  # Handle timestamps directly
+                try:
+                    value = np.array(value, dtype=np.float64)  # Store as floats
+                except ValueError as e:
+                    #print(f"Warning: Could not convert dates for '{name}'. Error: {e}")
+                    value = np.array(value, dtype='S')  # Fallback to string if needed
+            elif isinstance(value, list) and 'None' in str(value[0]):
+                value = np.array([])
             else:
                 try:
+                    # need to do this because sometimes a list has not all floats, but a float and sometimes a list
+                    value = self.convert_non_floats_to_strings(value)
                     value = np.array(value, dtype=np.float64)
                 except ValueError:
-                    print(f"Warning: Could not convert data for '{name}' to float. Saving as string.")
+                    #print(f"Warning: Could not convert data for '{name}' to float. Saving as string.")
                     value = np.array(value, dtype='S')
             group.create_dataset(name, data=value)
         else:
@@ -43,7 +44,7 @@ class Data_H5:
         self.outerFolder_expt = os.path.join(self.outerFolder_expt, "Data_h5", f"{data_type}_ge")
         self.create_folder_if_not_exists(self.outerFolder_expt)
         formatted_datetime =  datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        h5_filename = self.outerFolder_expt + f"{formatted_datetime}_" + f"{data_type}_results_batch_{self.batch_num}_" + f"Num_per_batch{self.save_r}.h5"
+        h5_filename = os.path.join(self.outerFolder_expt, f"{formatted_datetime}_" + f"{data_type}_results_batch_{self.batch_num}_" + f"Num_per_batch{self.save_r}.h5")
         with h5py.File(h5_filename, 'w') as f:
             f.attrs['datestr']=formatted_datetime
             f.attrs[f'{data_type}_results_batch']=self.batch_num
@@ -149,24 +150,15 @@ class Data_H5:
         elif isinstance(data, np.ndarray):
             if data.dtype == 'O':
                 try:
+                    # Attempt to convert to string type. If it fails, raise an error
                     return np.array(data, dtype='U')
                 except:
                     raise TypeError(f"Cannot convert NumPy object array to HDF5-compatible type: {data}")
             else:
-                return data
-        elif isinstance(data, object):  # This might be too broad; let's focus on what you expect
+                return data  # Already a suitable type
+        elif isinstance(data, object):  # Added to handle objects
             try:
-                # Attempt to interpret and convert strings to their appropriate types
-                try:
-                    # First try to convert to int
-                    return int(data)
-                except ValueError:
-                    try:
-                        # Then try to convert to float
-                        return float(data)
-                    except ValueError:
-                        # Use the original string if it can't be a number
-                        return str(data)
+                return str(data)  # Convert to string
             except:
                 raise TypeError(f"Cannot convert object to HDF5-compatible type: {data}")
         else:
@@ -176,19 +168,23 @@ class Data_H5:
         sys_config = self.convert_for_hdf5(sys_config)
         expt_cfg = self.convert_for_hdf5(expt_cfg)
 
-        outerFolder_expt = os.path.join(self.outerFolder_expt, "/Data_h5/config/")
+        #make the folder for today if it doesnt exist already, because we didnt save any of the previous plots
+        self.create_folder_if_not_exists(self.outerFolder_expt)
+        outerFolder_expt = os.path.join(self.outerFolder_expt, "Data_h5")
+        self.create_folder_if_not_exists(outerFolder_expt)
+        outerFolder_expt = os.path.join(outerFolder_expt, "configs")
         self.create_folder_if_not_exists(outerFolder_expt)
 
-        with h5py.File(outerFolder_expt + "sys_config.h5" , "w") as hf:
+        with h5py.File(os.path.join(outerFolder_expt, "sys_config.h5") , "w") as hf:
             for key, value in sys_config.items():
                 hf.create_dataset(key, data=str(value))
 
-        with h5py.File(outerFolder_expt + "expt_cfg.h5" , "w") as hf:
+        with h5py.File(os.path.join(outerFolder_expt, "expt_cfg.h5") , "w") as hf:
             for key, value in expt_cfg.items():
                 hf.create_dataset(key, data=str(value))
 
     def load_config(self):
-        filename = os.path.join(self.outerFolder_expt, "/Data_h5/config/config.h5")
+        filename = os.path.join(self.outerFolder_expt, "/Data_h5/configs/config.h5")
         loaded_config = {}
         with h5py.File(filename, "r") as hf:
             for key in hf.keys():
