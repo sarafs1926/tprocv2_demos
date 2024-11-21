@@ -270,11 +270,11 @@ class SingleShot:
         fid = contrast[tind]
         #axs[2].set_title(f"Fidelity = {fid * 100:.2f}%")
 
-        outerFolder_expt = self.outerFolder + "/ss_repeat_meas/Q" + str(self.QubitIndex + 1) + '/'
+        outerFolder_expt = os.path.join(self.outerFolder , "/ss_repeat_meas/Q" + str(self.QubitIndex + 1) )
         self.create_folder_if_not_exists(outerFolder_expt)
         now = datetime.datetime.now()
         formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-        file_name = outerFolder_expt + f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png"
+        file_name = os.path.join(outerFolder_expt , f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png")
 
         if plot == True and self.round_num == 0:
             axs[2].set_title(f"Fidelity = {fid * 100:.2f}%")

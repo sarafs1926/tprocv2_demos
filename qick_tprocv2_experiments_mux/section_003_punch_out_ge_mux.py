@@ -112,7 +112,7 @@ class PunchOut:
         self.experiment.create_folder_if_not_exists(outerFolder_expt)
         now = datetime.datetime.now()
         formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-        file_name = outerFolder_expt + f"{formatted_datetime}_punch_out_center_shift_attn1_{attn_1}_attn2_{attn_2}.png"
+        file_name = os.path.join(outerFolder_expt, f"{formatted_datetime}_punch_out_center_shift_attn1_{attn_1}_attn2_{attn_2}.png")
         plt.savefig(file_name, dpi=300)
         plt.close()
         return
@@ -144,11 +144,11 @@ class PunchOut:
         plt.suptitle("Resonance At Various Probe Gains", fontsize=24, y=0.95)
 
         plt.tight_layout(pad=2.0)
-        outerFolder_expt = self.outerFolder + "/punch_out/"
+        outerFolder_expt = os.path.join(self.outerFolder, "/punch_out/")
         self.experiment.create_folder_if_not_exists(outerFolder_expt)
         now = datetime.datetime.now()
         formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-        file_name = outerFolder_expt + f"{formatted_datetime}_punch_out_res_sweep_attn1_{attn_1}_attn2_{attn_2}.png"
+        file_name = os.path.join(outerFolder_expt, f"{formatted_datetime}_punch_out_res_sweep_attn1_{attn_1}_attn2_{attn_2}.png")
         plt.savefig(file_name, dpi=300)
         plt.close()
         return

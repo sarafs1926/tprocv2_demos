@@ -149,55 +149,46 @@ class Data_H5:
         elif isinstance(data, np.ndarray):
             if data.dtype == 'O':
                 try:
-                    # Attempt to convert to string type. If it fails, raise an error
                     return np.array(data, dtype='U')
                 except:
                     raise TypeError(f"Cannot convert NumPy object array to HDF5-compatible type: {data}")
             else:
-                return data  # Already a suitable type
-        elif isinstance(data, object):  # Added to handle objects
+                return data
+        elif isinstance(data, object):  # This might be too broad; let's focus on what you expect
             try:
-                return str(data)  # Convert to string
+                # Attempt to interpret and convert strings to their appropriate types
+                try:
+                    # First try to convert to int
+                    return int(data)
+                except ValueError:
+                    try:
+                        # Then try to convert to float
+                        return float(data)
+                    except ValueError:
+                        # Use the original string if it can't be a number
+                        return str(data)
             except:
                 raise TypeError(f"Cannot convert object to HDF5-compatible type: {data}")
         else:
             return data
 
-    def convert_to_hdf5(self, data):
-        if isinstance(data, (list, tuple, np.ndarray)):
-            try:
-                return np.array(data)  #Try to convert to numpy array
-            except:
-                #Handle cases where it fails conversion to numpy array.
-                return data
-        elif isinstance(data, dict):
-            return {k: self.convert_to_hdf5(v) for k, v in data.items()}
-        elif isinstance(data, str):
-            return data.encode('utf-8') # Encode strings to bytes
-        elif isinstance(data, (int, float, bool, np.number)): # Add other simple numeric types as needed.
-            return data
-        else:
-            #Handle unsupported datatypes: Warn user and skip.
-            print(f"Warning: Unsupported data type encountered: {type(data)}. Skipping this entry.")
-            return None
-
     def save_config(self, sys_config, expt_cfg):
         sys_config = self.convert_for_hdf5(sys_config)
-        expt_cfg = self.convert_to_hdf5(expt_cfg)
+        expt_cfg = self.convert_for_hdf5(expt_cfg)
 
-        outerFolder_expt = self.outerFolder_expt + "/Data_h5/config/"
+        outerFolder_expt = os.path.join(self.outerFolder_expt, "/Data_h5/config/")
         self.create_folder_if_not_exists(outerFolder_expt)
 
         with h5py.File(outerFolder_expt + "sys_config.h5" , "w") as hf:
             for key, value in sys_config.items():
-                hf.create_dataset(key, data=value)
+                hf.create_dataset(key, data=str(value))
 
         with h5py.File(outerFolder_expt + "expt_cfg.h5" , "w") as hf:
             for key, value in expt_cfg.items():
-                hf.create_dataset(key, data=value)
+                hf.create_dataset(key, data=str(value))
 
     def load_config(self):
-        filename = self.outerFolder_expt + "/Data_h5/config/config.h5"
+        filename = os.path.join(self.outerFolder_expt, "/Data_h5/config/config.h5")
         loaded_config = {}
         with h5py.File(filename, "r") as hf:
             for key in hf.keys():
