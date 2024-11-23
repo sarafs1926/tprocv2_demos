@@ -22,7 +22,7 @@ expt_cfg = {
 
     "qubit_spec_ge": {
         "reps": 100, #100
-        "rounds": 2, #10
+        "rounds": 5, #10
         "start": list(VNA_qubit-5), # [MHz]
         "stop":  list(VNA_qubit+5), # [MHz]
         "steps": 300,
@@ -42,7 +42,7 @@ expt_cfg = {
         "reps": 300, #300
         "rounds": 10, #1
         "start": [0.0] * 6,  # [us]
-        "stop": [200.0] * 6,  # [us] ### Should be ~10x T1! Should change this per qubit.
+        "stop": [200,200,200,300,200,200], #[250.0] * 6,  # [us] ### Should be ~10x T1! Should change this per qubit.
         "steps": 80,
         "relax_delay": 1000,  # [us] ### Should be >10x T1!
         "wait_time": 0.0,  # [us]
@@ -127,16 +127,16 @@ expt_cfg = {
 #         "SS_ONLY": False,
 #     },
 #
-#     "Readout_Optimization":{
-#         "steps": 3000, # shots
-#         "py_avg": 1,
-#         "gain_start" : [0, 0, 0, 0],
-#         "gain_stop" : [1, 0, 0, 0],
-#         "gain_step" : 0.1,
-#         "freq_start" : [6176.0, 0, 0, 0],
-#         "freq_stop" : [6178.0, 0, 0, 0],
-#         "freq_step" : 0.1,
-#         "relax_delay": 1000, # [us]
-#     },
+    "Readout_Optimization":{
+        "steps": 3000, # shots
+        "py_avg": 1,
+        "gain_start" : [0, 0, 0, 0],
+        "gain_stop" : [1, 0, 0, 0],
+        "gain_step" : 0.1,
+        "freq_start" : [6176.0, 0, 0, 0],
+        "freq_stop" : [6178.0, 0, 0, 0],
+        "freq_step" : 0.1,
+        "relax_delay": 1000, # [us]
+    },
 #
 }

@@ -270,7 +270,9 @@ class SingleShot:
         fid = contrast[tind]
         #axs[2].set_title(f"Fidelity = {fid * 100:.2f}%")
 
-        outerFolder_expt = os.path.join(self.outerFolder , "/ss_repeat_meas/Q" + str(self.QubitIndex + 1) )
+        outerFolder_expt = os.path.join(self.outerFolder, "ss_repeat_meas")
+        self.create_folder_if_not_exists(outerFolder_expt)
+        outerFolder_expt = os.path.join(outerFolder_expt , "Q" + str(self.QubitIndex + 1))
         self.create_folder_if_not_exists(outerFolder_expt)
         now = datetime.datetime.now()
         formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")

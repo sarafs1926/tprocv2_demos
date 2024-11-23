@@ -20,9 +20,9 @@ from section_003_punch_out_ge_mux import PunchOut
 from expt_config import expt_cfg
 
 n= 10000
-save_r = 5            # how many rounds to save after
+save_r = 1            # how many rounds to save after
 signal = 'None'       #'I', or 'Q' depending on where the signal is (after optimization). Put 'None' if no optimization has happened
-save_figs = False     # save plots for everything as you go along the RR script?
+save_figs = False    # save plots for everything as you go along the RR script?
 live_plot = True      # for live plotting open http://localhost:8097/ on firefox
 fit_data = False      # fit the data here and save or plot the fits?
 save_data_h5 = True   # save all of the data to h5 files?
@@ -30,9 +30,9 @@ outerFolder = os.path.join("/data/QICK_data/6transmon_run4a/", str(datetime.date
 Qs = [0, 1, 2, 3, 4, 5]
 
 #optimization outputs
-res_leng_vals = [3.25, 4.75, 2.50, 3.50, 4.0, 6.50] #Final decision, for Danso at 3.5V
+res_leng_vals = [3.25, 4.75, 2.50, 3.50, 4.0, 6.00] #Final decision, for Danso at 3.5V
 res_gain = [0.9, 0.95, 0.95, 0.95, 0.9, 0.95]
-freq_offsets = [-0.1333, 0.0667, -0.3333, -0.1333, -0.2667, -0.6000]
+freq_offsets = [-0.1333, 0.0667, -0.3333, -0.1333, -0.2667, -0.2667]
 
 def create_data_dict(keys, save_r, qs):
     return {Q: {key: np.empty(save_r, dtype=object) for key in keys} for Q in range(len(qs))}

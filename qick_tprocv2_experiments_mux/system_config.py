@@ -94,7 +94,7 @@ class QICK_experiment:
             # [0.4287450656184295, 0.4287450656184295, 0.4903077560386716, 0.6, 0.4903077560386716, 0.4287450656184295], # For spec pulse
             "qubit_length_ge": 15,  # [us] for spec Pulse
             "qubit_phase": 0,  # [deg]
-             "sigma": [0.08, 0.18, 0.14, 0.13, 0.18, 0.6],  # [us] for Gaussian Pulse (5+10 DAC atten for qubit)
+             "sigma": [0.08, 0.15, 0.11, 0.09, 0.12, 0.11],  # [us] for Gaussian Pulse (5+10 DAC atten for qubit)
             #"sigma": [0.05, 0.09, 0.07, 0.065, 0.09, 0.3],  # Goal: cut sigma in half [us] for Gaussian Pulse (5+4 DAC atten for qubit)
             # "pi_amp": [0.92, 0.87, 0.75, 0.73, 0.77, 0.78], # old RR values
             "pi_amp": [1.0, 0.93, 0.77, 0.8, 0.81, 0.9], # Eyeballed by Sara today (5+10 DAC atten for qubit)

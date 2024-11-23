@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Path to the HDF5 file for a specific qubit (replace with actual file path)
-h5_filename = '/data/QICK_data/6transmon_run4a/2024-11-20/SingleShot_Test/qubit_6_data_20241120_112949.h5'  # Update with your file path
+h5_filename = '/data/QICK_data/6transmon_run4a/2024-11-21/SingleShot_Test/qubit_6_data_20241121_105409.h5'  # Update with your file path
 
 
 # Lists to store pulse lengths, average fidelities, and RMS fidelities
@@ -37,7 +37,7 @@ avg_fidelities = np.array(avg_fidelities)[sorted_indices]
 rms_fidelities = np.array(rms_fidelities)[sorted_indices]
 
 # Find the maximum average fidelity and corresponding length
-max_fidelity = max(avg_fidelities[:22])
+max_fidelity = max(avg_fidelities[:24])
 max_fid_index = avg_fidelities.tolist().index(max_fidelity)
 max_length = pulse_lengths[max_fid_index]
 print('first max length: ', max_length)
