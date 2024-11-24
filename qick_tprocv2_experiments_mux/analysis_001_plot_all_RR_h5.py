@@ -234,7 +234,7 @@ for h5_file in h5_files:
 
     del H5_class_instance
 
-# -------------------------------------------------------Load/Plot/Save T2------------------------------------------
+# -------------------------------------------------------Load/Plot/Save T2E------------------------------------------
 outerFolder_expt = outerFolder + "/Data_h5/T2E_ge/"
 h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
 
@@ -256,10 +256,10 @@ for h5_file in h5_files:
             batch_num = load_data['T2E'][q_key].get('Batch Num', [])[0][dataset]
 
             if len(I) > 0:
-                T2_class_instance = T2EMeasurement(q_key, outerFolder_save_plots, round_num, signal, save_figs, fit_data = True)
-                fitted, t2r_est, t2r_err, plot_sig = T2_class_instance.t2_fit(delay_times, I, Q)
-                T2_cfg = ast.literal_eval(exp_config['SpinEcho_ge'].decode())
-                T2_class_instance.plot_results(I, Q, delay_times, date, fitted, t2r_est, t2r_err, plot_sig, config = T2_cfg, fig_quality=figure_quality)
+                T2E_class_instance = T2EMeasurement(q_key, outerFolder_save_plots, round_num, signal, save_figs, fit_data = True)
+                fitted, t2e_est, t2e_err, plot_sig = T2E_class_instance.t2_fit(delay_times, I, Q)
+                T2E_cfg = ast.literal_eval(exp_config['SpinEcho_ge'].decode())
+                T2E_class_instance.plot_results(I, Q, delay_times, date, fitted, t2e_est, t2e_err, plot_sig, config = T2E_cfg, fig_quality=figure_quality)
                 del T2_class_instance
 
     del H5_class_instance

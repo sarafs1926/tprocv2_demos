@@ -101,7 +101,7 @@ class ResonanceSpectroscopy:
             plt.savefig(file_name, dpi=fig_quality)
         plt.close()
 
-        res_freqs = [round(x, 3) for x in res_freqs]
+        res_freqs = [round(x, 7) for x in res_freqs]
         return res_freqs
 
     def create_folder_if_not_exists(self, folder):
