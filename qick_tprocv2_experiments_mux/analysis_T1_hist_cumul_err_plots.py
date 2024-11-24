@@ -17,26 +17,21 @@ import matplotlib.pyplot as plt
 from scipy.stats import norm
 from scipy.optimize import curve_fit
 
-date = '2024-11-21'
+top_folder_dates = ['2024-11-21', '2024-11-21']
+final_figure_quality = 50
 
 #---------------------------------------get data--------------------------------
-outerFolder = "/data/QICK_data/6transmon_run4a/" + date + "/"
-outerFolder_save_plots = "/data/QICK_data/6transmon_run4a/" + date + "_plots/"
-
 save_figs = False
 fit_saved = False
 signal = 'None'
 figure_quality = 100 #ramp this up to like 500 for presentation plots
 
-loader_config_instance = Data_H5(outerFolder)
-sys_config = loader_config_instance.load_config('sys_config_batch2.h5')
-del loader_config_instance
-
-loader_config_instance = Data_H5(outerFolder)
-exp_config = loader_config_instance.load_config('expt_cfg_batch2.h5')
-del loader_config_instance
-
 #---------definitions---------
+def create_folder_if_not_exists(folder):
+    """Creates a folder at the given path if it doesn't already exist."""
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+
 def exponential(x, a, b, c, d):
     return a * np.exp(-(x - b) / c) + d
 
@@ -97,8 +92,6 @@ def string_to_float_list(input_string):
         return None
 
 # ----------Load/get data from T1------------------------
-outerFolder_expt = outerFolder + "/Data_h5/T1_ge/"
-h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
 t1_vals = {i: [] for i in range(6)}
 t1_errs = {i: [] for i in range(6)}
 qubit_for_this_index = []
@@ -108,41 +101,59 @@ file_names = []
 dates = {i: [] for i in range(6)}
 mean_values = {}
 show_legends = False
-for h5_file in h5_files:
 
-    save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
-    H5_class_instance = Data_H5(h5_file)
-    load_data = H5_class_instance.load_from_h5(data_type=  'T1', save_r = int(save_round))
+for folder_date in top_folder_dates:
+    outerFolder = "/data/QICK_data/6transmon_run4a/" + folder_date + "/"
+    outerFolder_save_plots = "/data/QICK_data/6transmon_run4a/" + folder_date + "_plots/"
 
-    for q_key in load_data['T1']:
-        for dataset in range(len(load_data['T1'][q_key].get('Dates', [])[0])):
-            #T1 = load_data['T1'][q_key].get('T1', [])[0][dataset]
-            #errors = load_data['T1'][q_key].get('Errors', [])[0][dataset]
-            date= datetime.datetime.fromtimestamp(load_data['T1'][q_key].get('Dates', [])[0][dataset])
-            I = process_h5_data(load_data['T1'][q_key].get('I', [])[0][dataset].decode())
-            Q = process_h5_data(load_data['T1'][q_key].get('Q', [])[0][dataset].decode())
-            delay_times = process_h5_data(load_data['T1'][q_key].get('Delay Times', [])[0][dataset].decode())
-            #fit = load_data['T1'][q_key].get('Fit', [])[0][dataset]
-            round_num = load_data['T1'][q_key].get('Round Num', [])[0][dataset]
-            batch_num = load_data['T1'][q_key].get('Batch Num', [])[0][dataset]
+    loader_config_instance = Data_H5(outerFolder)
+    sys_config = loader_config_instance.load_config('sys_config_batch2.h5')
+    del loader_config_instance
 
-            if len(I)>0:
-                T1_class_instance = T1Measurement(q_key, outerFolder_save_plots, round_num, signal, save_figs, fit_data = True)
-                T1_spec_cfg = ast.literal_eval(exp_config['T1_ge'].decode())
-                q1_fit_exponential, T1_err, T1, plot_sig = T1_class_instance.t1_fit(I, Q, delay_times)
+    loader_config_instance = Data_H5(outerFolder)
+    exp_config = loader_config_instance.load_config('expt_cfg_batch2.h5')
+    del loader_config_instance
 
-                t1_vals[q_key].extend([T1])  # Store T1 values
-                t1_errs[q_key].extend([T1_err])  # Store T1 error values
-                dates[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])  # Decode bytes to string
+    outerFolder_expt = outerFolder + "/Data_h5/T1_ge/"
+    h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
 
-                # You can also append qubit indices if needed
-                qubit_for_this_index.extend([q_key])
-                del T1_class_instance
+    for h5_file in h5_files:
+        save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
+        H5_class_instance = Data_H5(h5_file)
+        load_data = H5_class_instance.load_from_h5(data_type=  'T1', save_r = int(save_round))
 
-    del H5_class_instance
+        for q_key in load_data['T1']:
+            for dataset in range(len(load_data['T1'][q_key].get('Dates', [])[0])):
+                #T1 = load_data['T1'][q_key].get('T1', [])[0][dataset]
+                #errors = load_data['T1'][q_key].get('Errors', [])[0][dataset]
+                date= datetime.datetime.fromtimestamp(load_data['T1'][q_key].get('Dates', [])[0][dataset])
+                I = process_h5_data(load_data['T1'][q_key].get('I', [])[0][dataset].decode())
+                Q = process_h5_data(load_data['T1'][q_key].get('Q', [])[0][dataset].decode())
+                delay_times = process_h5_data(load_data['T1'][q_key].get('Delay Times', [])[0][dataset].decode())
+                #fit = load_data['T1'][q_key].get('Fit', [])[0][dataset]
+                round_num = load_data['T1'][q_key].get('Round Num', [])[0][dataset]
+                batch_num = load_data['T1'][q_key].get('Batch Num', [])[0][dataset]
 
+                if len(I)>0:
+                    T1_class_instance = T1Measurement(q_key, outerFolder_save_plots, round_num, signal, save_figs, fit_data = True)
+                    T1_spec_cfg = ast.literal_eval(exp_config['T1_ge'].decode())
+                    q1_fit_exponential, T1_err, T1, plot_sig = T1_class_instance.t1_fit(I, Q, delay_times)
+
+                    t1_vals[q_key].extend([T1])  # Store T1 values
+                    t1_errs[q_key].extend([T1_err])  # Store T1 error values
+                    dates[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])  # Decode bytes to string
+
+                    # You can also append qubit indices if needed
+                    qubit_for_this_index.extend([q_key])
+                    del T1_class_instance
+
+        del H5_class_instance
 
 #---------------------------------plot-----------------------------------------------------
+analysis_folder = "/data/QICK_data/6transmon_run4a/benchmark_analysis_plots/"
+create_folder_if_not_exists(analysis_folder)
+analysis_folder = "/data/QICK_data/6transmon_run4a/benchmark_analysis_plots/T1/"
+create_folder_if_not_exists(analysis_folder)
 
 fig, axes = plt.subplots(2, 3, figsize=(12, 8))
 axes = axes.flatten()
@@ -211,7 +222,7 @@ for i, ax in enumerate(axes):
         ax.tick_params(axis='both', which='major', labelsize=font)
 
 plt.tight_layout()
-plt.savefig('plots/hists.png', transparent=True, dpi=500)
+plt.savefig( analysis_folder + 'hists.png', transparent=True, dpi=final_figure_quality)
 
 fig, ax = plt.subplots(1, 1, figsize=(12, 8))
 plt.title('Cumulative Distribution',fontsize = font)
@@ -239,7 +250,7 @@ ax.legend(edgecolor='black')
 ax.set_xlim(10**0, 10**3)
 ax.set_ylim(10 ** -7, 10 ** 0) #to compare to johns plot, need to adjust a little
 plt.tight_layout()
-plt.savefig('plots/cumulative.png', transparent=True, dpi=500)
+plt.savefig(analysis_folder + 'cumulative.png', transparent=True, dpi=final_figure_quality)
 
 
 
@@ -261,6 +272,6 @@ for i, ax in enumerate(axes):
     ax.set_ylabel('Fit error (us)', fontsize = font)
     ax.tick_params(axis='both', which='major', labelsize=font)
 plt.tight_layout()
-plt.savefig('plots/errs.png', transparent=True, dpi=500)
+plt.savefig(analysis_folder + 'errs.png', transparent=True, dpi=final_figure_quality)
 
-plt.show()
+#plt.show()
