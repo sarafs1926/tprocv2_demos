@@ -61,7 +61,7 @@ class ResonanceSpectroscopy:
 
         return res_freqs, fpts, fcenter, amps
 
-    def plot_results(self, fpts, fcenter, amps):
+    def plot_results(self, fpts, fcenter, amps, reloaded_config = None, fig_quality = 100):
         res_freqs = []
         plt.figure(figsize=(12, 8))
         plt.rcParams.update({
@@ -75,7 +75,8 @@ class ResonanceSpectroscopy:
 
         for i in range(6):
             plt.subplot(2, 3, i + 1)
-            plt.plot(fpts + fcenter[i], amps[i], '-', linewidth=1.5)
+            #plt.plot(fpts + fcenter[i], amps[i], '-', linewidth=1.5)
+            plt.plot([f + fcenter[i] for f in fpts], amps[i], '-', linewidth=1.5)
             freq_r = fpts[np.argmin(amps[i])] + fcenter[i]
             res_freqs.append(freq_r)
             plt.axvline(freq_r, linestyle='--', color='orange', linewidth=1.5)
@@ -84,7 +85,11 @@ class ResonanceSpectroscopy:
             plt.title(f"Resonator {i + 1} {freq_r:.3f} MHz", pad=10)
             plt.ylim(plt.ylim()[0] - 0.05 * (plt.ylim()[1] - plt.ylim()[0]), plt.ylim()[1])
 
-        plt.suptitle(f"MUXed resonator spectroscopy {self.config['reps']}*{self.config['rounds']} avgs", fontsize=24, y=0.95)
+        if self.experiment is not None:
+            plt.suptitle(f"MUXed resonator spectroscopy {self.config['reps']}*{self.config['rounds']} avgs", fontsize=24, y=0.95)
+        else:
+            plt.suptitle(f"MUXed resonator spectroscopy {reloaded_config ['reps']}*{reloaded_config ['rounds']} avgs",
+                         fontsize=24, y=0.95)
         plt.tight_layout(pad=2.0)
 
         if self.save_figs:
@@ -93,7 +98,7 @@ class ResonanceSpectroscopy:
             now = datetime.datetime.now()
             formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
             file_name = os.path.join(outerFolder_expt, f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + ".png")
-            plt.savefig(file_name, dpi=300)
+            plt.savefig(file_name, dpi=fig_quality)
         plt.close()
 
         res_freqs = [round(x, 3) for x in res_freqs]

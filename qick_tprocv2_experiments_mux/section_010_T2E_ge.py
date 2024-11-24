@@ -220,8 +220,15 @@ class T2EMeasurement:
             self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
             print(f'Q {self.QubitIndex + 1} Round {self.round_num} T2E configuration: ', self.config)
 
-    def t2_fit(self, x_data, y_data, verbose = False, guess=None, plot=False):
-        #fitting code taken from https://github.com/qua-platform/py-qua-tools/blob/37c741ade5a8f91888419c6fd23fd34e14372b06/qualang_tools/plot/fitting.py
+    def t2_fit(self, x_data, I, Q, verbose = False, guess=None, plot=False):
+        #fitting code adapted from https://github.com/qua-platform/py-qua-tools/blob/37c741ade5a8f91888419c6fd23fd34e14372b06/qualang_tools/plot/fitting.py
+
+        if abs(I[-1] - I[0]) > abs(Q[-1] - Q[0]):
+            y_data = I
+            plot_sig = 'I'
+        else:
+            y_data = Q
+            plot_sig = 'Q'
 
         # Normalizing the vectors
         xn = preprocessing.normalize([x_data], return_norm=True)
@@ -357,7 +364,7 @@ class T2EMeasurement:
             plt.legend(loc="upper right")
         t2e_est = out['T2'][0] #in ns
         t2e_err = out['T2'][1] #in ns
-        return fit_type(x, popt) * y_normal, t2e_est, t2e_err
+        return fit_type(x, popt) * y_normal, t2e_est, t2e_err, plot_sig
 
     def run(self, soccfg, soc):
         now = datetime.datetime.now()
@@ -375,12 +382,12 @@ class T2EMeasurement:
             delay_times = delay_times1+delay_times2
 
         if self.fit_data:
-            fit, t2e_est, t2e_err = self.t2_fit(delay_times, I)
+            fit, t2e_est, t2e_err, plot_sig = self.t2_fit(delay_times, I, Q)
         else:
             fit, t2e_est, t2e_err = None, None, None
 
         if self.save_figs:
-            self.plot_results(I, Q, delay_times, now, fit, t2e_est, t2e_err)
+            self.plot_results(I, Q, delay_times, now, fit, t2e_est, t2e_err, plot_sig)
 
         return  t2e_est, t2e_err, I, Q, delay_times, fit, self.config
 
@@ -422,7 +429,7 @@ class T2EMeasurement:
         if not os.path.exists(folder):
             os.makedirs(folder)
 
-    def plot_results(self, I, Q, delay_times, now, fit, t2e_est, t2e_err, config = None):
+    def plot_results(self, I, Q, delay_times, now, fit, t2e_est, t2e_err, plot_sig, config = None, fig_quality = 100):
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
         plt.rcParams.update({'font.size': 18})
 
@@ -430,24 +437,16 @@ class T2EMeasurement:
         plot_middle = (ax1.get_position().x0 + ax1.get_position().x1) / 2
 
         if self.fit_data:
-            if 'I' in self.signal:
-                signal = I
-                plot_sig='I'
-            elif 'Q' in self.signal:
-                signal = Q
-                plot_sig = 'Q'
-
             if 'I' in plot_sig:
                 ax1.plot(delay_times, fit, '-', color='red', linewidth=3, label="Fit")
-            else:
+            if 'Q' in plot_sig:
                 ax2.plot(delay_times, fit, '-', color='red', linewidth=3, label="Fit")
 
             # Add title, centered on the plot area
             if config is not None:
                 fig.text(plot_middle, 0.98,
-                         f"T2 Q{self.QubitIndex + 1}, pi gain %.2f" % float(config[
-                                                                                'pi_amp']) + f", {float(config['sigma']) * 1000} ns sigma" + f", {float(config['reps'])}*{float(config['rounds'])} avgs,",
-                         fontsize=24, ha='center', va='top')
+                         f"T2 Q{self.QubitIndex + 1}" + f", {float(config['reps'])}*{float(config['rounds'])} avgs,",
+                         fontsize=24, ha='center', va='top') #, pi gain %.2f" % float(config['pi_amp']) + f", {float(config['sigma']) * 1000} ns sigma
             else:
                 fig.text(plot_middle, 0.98,
                          f"T2 Q{self.QubitIndex + 1}, pi gain %.2f" % float(self.config[
@@ -491,7 +490,7 @@ class T2EMeasurement:
             now = datetime.datetime.now()
             formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
             file_name = os.path.join(outerFolder_expt, f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png")
-            fig.savefig(file_name, dpi=300, bbox_inches='tight')  # , facecolor='white'
+            fig.savefig(file_name, dpi=fig_quality, bbox_inches='tight')  # , facecolor='white'
         plt.close(fig)
 
 

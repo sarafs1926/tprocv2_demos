@@ -39,7 +39,7 @@ class QubitSpectroscopy:
             Q = iq_list[self.QubitIndex][0, :, 1]
             freqs = qspec.get_pulse_param('qubit_pulse', "freq", as_array=True)
 
-        largest_amp_curve_mean, I_fit, Q_fit = self.plot_results(I, Q, freqs)
+        largest_amp_curve_mean, I_fit, Q_fit = self.plot_results(I, Q, freqs, config = self.config)
         return I, Q, freqs, I_fit, Q_fit, largest_amp_curve_mean
 
     def live_plotting(self, qspec, soc):
@@ -64,7 +64,7 @@ class QubitSpectroscopy:
             viz.line(X=freqs, Y=Q, opts=dict(height=400, width=700, title='Qubit Spectroscopy Q', showlegend=True, xlabel='expt_pts'),win='QSpec_Q')
         return I, Q, freqs
 
-    def plot_results(self, I, Q, freqs, config = None):
+    def plot_results(self, I, Q, freqs, config = None, fig_quality = 100):
         freqs = np.array(freqs)
         freq_q = freqs[np.argmax(I)]
 
@@ -99,7 +99,7 @@ class QubitSpectroscopy:
         # Add title, centered on the plot area
         if config is not None: #then its been passed to this definition, so use that
             fig.text(plot_middle, 0.98,
-                     f"Qubit Spectroscopy Q{self.QubitIndex + 1}, %.2f MHz" % largest_amp_curve_mean + f" FWHM: {round(largest_amp_curve_fwhm, 1)}" + f", {self.config['reps']}*{self.config['rounds']} avgs",
+                     f"Qubit Spectroscopy Q{self.QubitIndex + 1}, %.2f MHz" % largest_amp_curve_mean + f" FWHM: {round(largest_amp_curve_fwhm, 1)}" + f", {config['reps']}*{config['rounds']} avgs",
                      fontsize=24, ha='center', va='top')
         else:
             fig.text(plot_middle, 0.98,
@@ -119,7 +119,7 @@ class QubitSpectroscopy:
             now = datetime.datetime.now()
             formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
             file_name = os.path.join(outerFolder_expt, f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png")
-            fig.savefig(file_name, dpi=300, bbox_inches='tight')  # , facecolor='white'
+            fig.savefig(file_name, dpi=fig_quality, bbox_inches='tight')  # , facecolor='white'
         plt.close(fig)
         return largest_amp_curve_mean, I_fit, Q_fit
 

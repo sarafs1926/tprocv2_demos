@@ -83,7 +83,7 @@ class T1Measurement:
             q1_fit_exponential, T1_est, T1_err = None, None, None
 
         if self.plot_results:
-            self.plot_results(I, Q, delay_times, now)
+            self.plot_results( I, Q, delay_times, now)
 
         return  T1_est, T1_err, I, Q, delay_times, q1_fit_exponential
 
@@ -161,7 +161,7 @@ class T1Measurement:
 
         return q1_fit_exponential, T1_err, T1_est, plot_sig
 
-    def plot_results(self, I, Q, delay_times, now, config = None):
+    def plot_results(self, I, Q, delay_times, now, config = None, fig_quality =100):
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
         plt.rcParams.update({'font.size': 18})
 
@@ -179,9 +179,8 @@ class T1Measurement:
             # Add title, centered on the plot area
             if config is not None:
                 fig.text(plot_middle, 0.98,
-                         f"T1 Q{self.QubitIndex + 1}, pi gain %.2f" % float(config[
-                                                                                'pi_amp']) + f", {float(config['sigma']) * 1000} ns sigma" + f", {float(config['reps'])}*{float(config['rounds'])} avgs,",
-                         fontsize=24, ha='center', va='top')
+                         f"T1 Q{self.QubitIndex + 1}" + f", {float(config['reps'])}*{float(config['rounds'])} avgs,",
+                         fontsize=24, ha='center', va='top') #, pi gain %.2f" % float(config['pi_amp']) + f", {float(config['sigma']) * 1000} ns sigma
             else:
                 fig.text(plot_middle, 0.98,
                          f"T1 Q{self.QubitIndex + 1}, pi gain %.2f" % config[
@@ -191,9 +190,8 @@ class T1Measurement:
         else:
             if config is not None:
                 fig.text(plot_middle, 0.98,
-                         f"T1 Q{self.QubitIndex + 1}, pi gain %.2f" % float(config[
-                             'pi_amp']) + f", {float(config['sigma']) * 1000} ns sigma" + f", {float(config['reps'])}*{float(config['rounds'])} avgs,",
-                         fontsize=24, ha='center', va='top')
+                         f"T1 Q{self.QubitIndex + 1}" + f", {float(config['reps'])}*{float(config['rounds'])} avgs,",
+                         fontsize=24, ha='center', va='top') #, pi gain %.2f" % float(config['pi_amp']) + f", {float(config['sigma']) * 1000} ns sigma"   you can put this back once you save configs properly for when replotting
             else:
                 fig.text(plot_middle, 0.98,
                          f"T1 Q{self.QubitIndex + 1}",
@@ -226,7 +224,7 @@ class T1Measurement:
             now = datetime.datetime.now()
             formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
             file_name = os.path.join(outerFolder_expt, f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png")
-            fig.savefig(file_name, dpi=300, bbox_inches='tight')  # , facecolor='white'
+            fig.savefig(file_name, dpi=fig_quality, bbox_inches='tight')  # , facecolor='white'
         plt.close(fig)
 
 

@@ -183,10 +183,12 @@ class Data_H5:
             for key, value in expt_cfg.items():
                 hf.create_dataset(key, data=str(value))
 
-    def load_config(self):
-        filename = os.path.join(self.outerFolder_expt, "/Data_h5/configs/config.h5")
+    def load_config(self, filename = 'sys_config.h5'):
+        filepath = os.path.join(self.outerFolder_expt, "Data_h5")
+        filepath = os.path.join(filepath, 'configs')
+        filepath = os.path.join(filepath, filename)
         loaded_config = {}
-        with h5py.File(filename, "r") as hf:
+        with h5py.File(filepath, "r") as hf:
             for key in hf.keys():
                 loaded_config[key] = hf[key][()]  # The [()] gets the data as a NumPy array or scalar
         return loaded_config

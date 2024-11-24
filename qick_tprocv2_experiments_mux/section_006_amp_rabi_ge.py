@@ -38,7 +38,7 @@ class AmplitudeRabiExperiment:
             Q = iq_list[self.QubitIndex][0, :, 1]
             gains = amp_rabi.get_pulse_param('qubit_pulse', "gain", as_array=True)
 
-        q1_fit_cosine, pi_amp = self.plot_results( I, Q, gains)
+        q1_fit_cosine, pi_amp = self.plot_results( I, Q, gains, config = self.config)
         return I, Q, gains, q1_fit_cosine, pi_amp
 
     def live_plotting(self, amp_rabi, soc):
@@ -64,9 +64,10 @@ class AmplitudeRabiExperiment:
         return I, Q, gains
 
     def cosine(self, x, a, b, c, d):
+
         return a * np.cos(2. * np.pi * b * x - c * 2 * np.pi) + d
 
-    def plot_results(self, I, Q, gains, config = None):
+    def plot_results(self, I, Q, gains, config = None, fig_quality = 100):
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
         plt.rcParams.update({'font.size': 18})
 
@@ -133,8 +134,8 @@ class AmplitudeRabiExperiment:
 
         if config is not None:
             fig.text(plot_middle, 0.98,
-                     f"Rabi Q{self.QubitIndex + 1}_" f", {config['sigma'] * 1000} ns sigma" + f", {self.config['reps']}*{self.config['rounds']} avgs",
-                     fontsize=24, ha='center', va='top')
+                     f"Rabi Q{self.QubitIndex + 1}_"  + f", {config['reps']}*{config['rounds']} avgs",
+                     fontsize=24, ha='center', va='top') #f", {config['sigma'] * 1000} ns sigma" need to add in all qqubit sigmas to save exp_cfg before putting htis back
         else:
             fig.text(plot_middle, 0.98,
                      f"Rabi Q{self.QubitIndex + 1}_" f", {self.config['sigma'] * 1000} ns sigma" + f", {self.config['reps']}*{self.config['rounds']} avgs",
@@ -158,7 +159,7 @@ class AmplitudeRabiExperiment:
             now = datetime.datetime.now()
             formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
             file_name = os.path.join(outerFolder_expt, f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png")
-            fig.savefig(file_name, dpi=300, bbox_inches='tight')
+            fig.savefig(file_name, dpi=fig_quality, bbox_inches='tight')
         plt.close(fig)
 
         return best_signal_fit, pi_amp
