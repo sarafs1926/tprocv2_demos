@@ -123,6 +123,15 @@ class QubitSpectroscopy:
         plt.close(fig)
         return largest_amp_curve_mean, I_fit, Q_fit
 
+    def get_results(self, I, Q, freqs):
+        freqs = np.array(freqs)
+        freq_q = freqs[np.argmax(I)]
+
+        mean_I, mean_Q, I_fit, Q_fit, largest_amp_curve_mean, largest_amp_curve_fwhm = self.fit_lorenzian(I, Q, freqs, freq_q)
+
+        return largest_amp_curve_mean, I_fit, Q_fit
+
+
     def lorentzian(self, f, f0, gamma, A, B):
         return A * gamma ** 2 / ((f - f0) ** 2 + gamma ** 2) + B
 

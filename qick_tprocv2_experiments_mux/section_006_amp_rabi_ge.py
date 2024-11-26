@@ -164,6 +164,65 @@ class AmplitudeRabiExperiment:
 
         return best_signal_fit, pi_amp
 
+    def get_results(self, I, Q, gains):
+
+        q1_a_guess_I = (np.max(I) - np.min(I)) / 2
+        q1_d_guess_I = np.mean(I)
+        q1_a_guess_Q = (np.max(Q) - np.min(Q)) / 2
+        q1_d_guess_Q = np.mean(Q)
+        q1_b_guess = 1 / gains[-1]
+        q1_c_guess = 0
+
+        q1_guess_I = [q1_a_guess_I, q1_b_guess, q1_c_guess, q1_d_guess_I]
+        q1_popt_I, q1_pcov_I = curve_fit(self.cosine, gains, I, maxfev=100000, p0=q1_guess_I)
+        q1_fit_cosine_I = self.cosine(gains, *q1_popt_I)
+
+        q1_guess_Q = [q1_a_guess_Q, q1_b_guess, q1_c_guess, q1_d_guess_Q]
+        q1_popt_Q, q1_pcov_Q = curve_fit(self.cosine, gains, Q, maxfev=100000, p0=q1_guess_Q)
+        q1_fit_cosine_Q = self.cosine(gains, *q1_popt_Q)
+
+        first_three_avg_I = np.mean(q1_fit_cosine_I[:3])
+        last_three_avg_I = np.mean(q1_fit_cosine_I[-3:])
+        first_three_avg_Q = np.mean(q1_fit_cosine_Q[:3])
+        last_three_avg_Q = np.mean(q1_fit_cosine_Q[-3:])
+
+        best_signal_fit = None
+        pi_amp = None
+        if 'Q' in self.signal:
+            best_signal_fit = q1_fit_cosine_Q
+            # figure out if you should take the min or the max value of the fit to say where pi_amp should be
+            if last_three_avg_Q > first_three_avg_Q:
+                pi_amp = gains[np.argmax(best_signal_fit)]
+            else:
+                pi_amp = gains[np.argmin(best_signal_fit)]
+        if 'I' in self.signal:
+            best_signal_fit = q1_fit_cosine_I
+            # figure out if you should take the min or the max value of the fit to say where pi_amp should be
+            if last_three_avg_I > first_three_avg_I:
+                pi_amp = gains[np.argmax(best_signal_fit)]
+            else:
+                pi_amp = gains[np.argmin(best_signal_fit)]
+        if 'None' in self.signal:
+            # choose the best signal depending on which has a larger magnitude
+            if abs(first_three_avg_Q - last_three_avg_Q) > abs(first_three_avg_I - last_three_avg_I):
+                best_signal_fit = q1_fit_cosine_Q
+                # figure out if you should take the min or the max value of the fit to say where pi_amp should be
+                if last_three_avg_Q > first_three_avg_Q:
+                    pi_amp = gains[np.argmax(best_signal_fit)]
+                else:
+                    pi_amp = gains[np.argmin(best_signal_fit)]
+            else:
+                best_signal_fit = q1_fit_cosine_I
+                # figure out if you should take the min or the max value of the fit to say where pi_amp should be
+                if last_three_avg_I > first_three_avg_I:
+                    pi_amp = gains[np.argmax(best_signal_fit)]
+                else:
+                    pi_amp = gains[np.argmin(best_signal_fit)]
+        else:
+            print('Invalid signal passed, please do I Q or None')
+
+        return best_signal_fit, pi_amp
+
     def create_folder_if_not_exists(self, folder):
         """Creates a folder at the given path if it doesn't already exist."""
         if not os.path.exists(folder):

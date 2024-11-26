@@ -1,4 +1,7 @@
 import numpy as np
+import os
+import sys
+sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
 
 from section_002_res_spec_ge_mux import ResonanceSpectroscopy
 from section_004_qubit_spec_ge import QubitSpectroscopy
@@ -12,13 +15,14 @@ import glob
 import re
 import datetime
 import ast
-import os
+
 import matplotlib.pyplot as plt
 from scipy.stats import norm
 from scipy.optimize import curve_fit
 
-top_folder_dates = ['2024-11-21', '2024-11-21']
-final_figure_quality = 50
+
+top_folder_dates = ['2024-11-21', '2024-11-23','2024-11-24','2024-11-25']
+final_figure_quality = 500
 
 #---------------------------------------get data--------------------------------
 save_figs = False
@@ -105,11 +109,11 @@ for folder_date in top_folder_dates:
     outerFolder_save_plots = "/data/QICK_data/6transmon_run4a/" + folder_date + "_plots/"
 
     loader_config_instance = Data_H5(outerFolder)
-    sys_config = loader_config_instance.load_config('sys_config_batch2.h5')
+    sys_config = loader_config_instance.load_config('sys_config.h5')
     del loader_config_instance
 
     loader_config_instance = Data_H5(outerFolder)
-    exp_config = loader_config_instance.load_config('expt_cfg_batch2.h5')
+    exp_config = loader_config_instance.load_config('expt_cfg.h5')
     del loader_config_instance
 
     # ------------------------------------------Load/Plot/Save Res Spec------------------------------------
@@ -145,7 +149,7 @@ for folder_date in top_folder_dates:
                 if len(freq_pts) > 0:
                     res_class_instance = ResonanceSpectroscopy(q_key, outerFolder_save_plots, round_num, save_figs)
                     res_spec_cfg = ast.literal_eval(exp_config['res_spec'].decode())
-                    res_freqs = res_class_instance.plot_results(freq_pts, freq_center, amps, res_spec_cfg, figure_quality)
+                    res_freqs = res_class_instance.get_results(freq_pts, freq_center, amps)
 
                     resonator_centers[q_key].extend([res_freqs[q_key]])
                     date_times[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])

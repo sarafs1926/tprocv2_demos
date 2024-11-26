@@ -480,4 +480,3 @@ class T2RMeasurement:
             fig.savefig(file_name, dpi=fig_quality, bbox_inches='tight')  # , facecolor='white'
         plt.close(fig)
 
-
