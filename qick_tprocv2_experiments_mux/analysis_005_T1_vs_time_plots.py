@@ -141,8 +141,8 @@ for folder_date in top_folder_dates:
                     T1_class_instance = T1Measurement(q_key, outerFolder_save_plots, round_num, signal, save_figs,
                                                       fit_data=True)
                     T1_spec_cfg = ast.literal_eval(exp_config['T1_ge'].decode())
-                    q1_fit_exponential, T1, T1_est, plot_sig = T1_class_instance.t1_fit(I, Q, delay_times)
-                    t1_vals[q_key].extend([T1])
+                    q1_fit_exponential, T1_err, T1_est, plot_sig = T1_class_instance.t1_fit(I, Q, delay_times)
+                    t1_vals[q_key].extend([T1_est])
                     date_times[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])
 
                     del T1_class_instance
@@ -198,6 +198,6 @@ for i, ax in enumerate(axes):
     ax.tick_params(axis='both', which='major', labelsize=8)
 
 plt.tight_layout()
-plt.savefig(analysis_folder + 'T1_vals.png', transparent=True, dpi=final_figure_quality)
+plt.savefig(analysis_folder + 'T1_vals.pdf', transparent=True, dpi=final_figure_quality)
 
 #plt.show()

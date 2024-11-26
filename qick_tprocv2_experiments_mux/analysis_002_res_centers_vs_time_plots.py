@@ -206,6 +206,6 @@ for i, ax in enumerate(axes):
     ax.tick_params(axis='both', which='major', labelsize=8)
 
 plt.tight_layout()
-plt.savefig(analysis_folder + 'Res_Centers.png', transparent=True, dpi=final_figure_quality)
+plt.savefig(analysis_folder + 'Res_Centers.pdf', transparent=True, dpi=final_figure_quality)
 
 #plt.show()
