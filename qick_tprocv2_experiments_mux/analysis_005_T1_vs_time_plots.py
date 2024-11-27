@@ -1,4 +1,7 @@
 import numpy as np
+import os
+import sys
+sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
 
 from section_002_res_spec_ge_mux import ResonanceSpectroscopy
 from section_004_qubit_spec_ge import QubitSpectroscopy
@@ -17,8 +20,8 @@ import matplotlib.pyplot as plt
 from scipy.stats import norm
 from scipy.optimize import curve_fit
 
-top_folder_dates = ['2024-11-21', '2024-11-21']
-final_figure_quality = 50
+top_folder_dates = ['2024-11-21', '2024-11-23','2024-11-24','2024-11-25']
+final_figure_quality = 500
 
 #---------------------------------------get data--------------------------------
 save_figs = False
@@ -105,11 +108,11 @@ for folder_date in top_folder_dates:
     outerFolder_save_plots = "/data/QICK_data/6transmon_run4a/" + folder_date + "_plots/"
 
     loader_config_instance = Data_H5(outerFolder)
-    sys_config = loader_config_instance.load_config('sys_config_batch2.h5')
+    sys_config = loader_config_instance.load_config('sys_config.h5')
     del loader_config_instance
 
     loader_config_instance = Data_H5(outerFolder)
-    exp_config = loader_config_instance.load_config('expt_cfg_batch2.h5')
+    exp_config = loader_config_instance.load_config('expt_cfg.h5')
     del loader_config_instance
 
     # ------------------------------------------------Load/Plot/Save T1----------------------------------------------
@@ -138,8 +141,8 @@ for folder_date in top_folder_dates:
                     T1_class_instance = T1Measurement(q_key, outerFolder_save_plots, round_num, signal, save_figs,
                                                       fit_data=True)
                     T1_spec_cfg = ast.literal_eval(exp_config['T1_ge'].decode())
-                    q1_fit_exponential, T1, T1_est, plot_sig = T1_class_instance.t1_fit(I, Q, delay_times)
-                    t1_vals[q_key].extend([T1])
+                    q1_fit_exponential, T1_err, T1_est, plot_sig = T1_class_instance.t1_fit(I, Q, delay_times)
+                    t1_vals[q_key].extend([T1_est])
                     date_times[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])
 
                     del T1_class_instance
@@ -195,6 +198,6 @@ for i, ax in enumerate(axes):
     ax.tick_params(axis='both', which='major', labelsize=8)
 
 plt.tight_layout()
-plt.savefig(analysis_folder + 'T1_vals.png', transparent=True, dpi=final_figure_quality)
+plt.savefig(analysis_folder + 'T1_vals.pdf', transparent=True, dpi=final_figure_quality)
 
 #plt.show()

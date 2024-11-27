@@ -109,3 +109,26 @@ class ResonanceSpectroscopy:
         if not os.path.exists(folder):
             os.makedirs(folder)
 
+    def get_results(self, fpts, fcenter, amps):
+        res_freqs = []
+
+        for i in range(6):
+            freq_r = fpts[np.argmin(amps[i])] + fcenter[i]
+            res_freqs.append(freq_r)
+
+        res_freqs = [round(x, 7) for x in res_freqs]
+        return res_freqs
+
+class PostProcessResonanceSpectroscopy:
+    def __init__(self, QubitIndex, outerFolder, round_num, save_figs, experiment = None):
+        self.QubitIndex = QubitIndex
+        self.outerFolder = outerFolder
+        self.expt_name = "res_spec"
+        self.Qubit = 'Q' + str(self.QubitIndex)
+        self.round_num = round_num
+        self.save_figs = save_figs
+        self.experiment = experiment
+
+
+
+

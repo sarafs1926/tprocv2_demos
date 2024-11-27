@@ -1,4 +1,7 @@
 import numpy as np
+import os
+import sys
+sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
 
 from section_002_res_spec_ge_mux import ResonanceSpectroscopy
 from section_004_qubit_spec_ge import QubitSpectroscopy
@@ -17,14 +20,15 @@ import matplotlib.pyplot as plt
 from scipy.stats import norm
 from scipy.optimize import curve_fit
 
-top_folder_dates = ['2024-11-21', '2024-11-21']
+
+top_folder_dates = ['2024-11-21', '2024-11-23','2024-11-24','2024-11-25']
 final_figure_quality = 50
 
 #---------------------------------------get data--------------------------------
 save_figs = False
 fit_saved = False
 signal = 'None'
-figure_quality = 100 #ramp this up to like 500 for presentation plots
+figure_quality = 500 #ramp this up to like 500 for presentation plots
 
 #---------definitions---------
 def create_folder_if_not_exists(folder):
@@ -107,11 +111,11 @@ for folder_date in top_folder_dates:
     outerFolder_save_plots = "/data/QICK_data/6transmon_run4a/" + folder_date + "_plots/"
 
     loader_config_instance = Data_H5(outerFolder)
-    sys_config = loader_config_instance.load_config('sys_config_batch2.h5')
+    sys_config = loader_config_instance.load_config('sys_config.h5')
     del loader_config_instance
 
     loader_config_instance = Data_H5(outerFolder)
-    exp_config = loader_config_instance.load_config('expt_cfg_batch2.h5')
+    exp_config = loader_config_instance.load_config('expt_cfg.h5')
     del loader_config_instance
 
     outerFolder_expt = outerFolder + "/Data_h5/T1_ge/"
@@ -222,7 +226,7 @@ for i, ax in enumerate(axes):
         ax.tick_params(axis='both', which='major', labelsize=font)
 
 plt.tight_layout()
-plt.savefig( analysis_folder + 'hists.png', transparent=True, dpi=final_figure_quality)
+plt.savefig( analysis_folder + 'hists.pdf', transparent=True, dpi=final_figure_quality)
 
 fig, ax = plt.subplots(1, 1, figsize=(12, 8))
 plt.title('Cumulative Distribution',fontsize = font)
@@ -247,10 +251,10 @@ ax.set_xlabel('T1 (us)',fontsize = font)
 ax.set_ylabel('Cumulative Distribution',fontsize = font)
 ax.loglog()
 ax.legend(edgecolor='black')
-ax.set_xlim(10**0, 10**3)
-ax.set_ylim(10 ** -7, 10 ** 0) #to compare to johns plot, need to adjust a little
+#ax.set_xlim(10**0, 10**3)
+#ax.set_ylim(10 ** -7, 10 ** 0) #to compare to johns plot, need to adjust a little
 plt.tight_layout()
-plt.savefig(analysis_folder + 'cumulative.png', transparent=True, dpi=final_figure_quality)
+plt.savefig(analysis_folder + 'cumulative.pdf', transparent=True, dpi=final_figure_quality)
 
 
 
@@ -272,6 +276,6 @@ for i, ax in enumerate(axes):
     ax.set_ylabel('Fit error (us)', fontsize = font)
     ax.tick_params(axis='both', which='major', labelsize=font)
 plt.tight_layout()
-plt.savefig(analysis_folder + 'errs.png', transparent=True, dpi=final_figure_quality)
+plt.savefig(analysis_folder + 'errs.pdf', transparent=True, dpi=final_figure_quality)
 
 #plt.show()
