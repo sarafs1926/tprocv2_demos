@@ -1,21 +1,22 @@
 from qick import *
 import numpy as np
 
+VNA_res = np.array([6187.191, 5827.678, 6074.095, 5958.673])
 VNA_qubit = np.array([4909, 4749.4, 4569, 4759])
 # VNA_qubit = np.array([4909, 5000, 4569, 4759]) #dummy value for Q2 as a test
 
 expt_cfg = {
     "tof": {
         "reps": 1, #reps doesnt make a difference here, leave it at 1
-        "soft_avgs": 300,
+        "soft_avgs": 3000,
         "relax_delay": 0,  # [us]
     },
 
     "res_spec": {
         "reps": 100,
         "rounds": 1,
-        "start": -3.5,  # [MHz]
-        "step_size": 0.12,  # [MHz]
+        "start": list(VNA_res - 1),  # [MHz]
+        "stop":  list(VNA_res + 1),
         "steps": 101,
         "relax_delay": 20,  # [us]
     },

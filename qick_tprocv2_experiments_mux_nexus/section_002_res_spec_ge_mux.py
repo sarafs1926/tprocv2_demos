@@ -46,22 +46,21 @@ class ResonanceSpectroscopy:
             print(f'Q {self.QubitIndex + 1} Round {self.round_num} Res Spec configuration: ', self.config)
 
     def run(self, soccfg, soc):
-        fpts = self.exp_cfg["start"] + self.exp_cfg["step_size"] * np.arange(self.exp_cfg["steps"])
-        fcenter = self.config['res_freq_ge']
-        amps = np.zeros((len(fcenter), len(fpts)))
+        fpts = np.linspace(self.exp_cfg["start"], self.exp_cfg["stop"], self.exp_cfg["steps"])
+        amps = np.zeros((len(self.config["res_freq_ge"]), len(fpts)))
 
         for index, f in enumerate(tqdm(fpts)):
-            self.config["res_freq_ge"] = fcenter + f
+            self.config["res_freq_ge"] = f
             prog = SingleToneSpectroscopyProgram(soccfg, reps=self.exp_cfg["reps"], final_delay=0.5, cfg=self.config)
             iq_list = prog.acquire(soc, soft_avgs=self.exp_cfg["rounds"], progress=False)
             for i in range(len(self.config['res_freq_ge'])):
                 amps[i][index] = np.abs(iq_list[i][:, 0] + 1j * iq_list[i][:, 1])
         amps = np.array(amps)
-        res_freqs = self.plot_results(fpts, fcenter, amps) #return freqs from plotting loop so we can use to update experiment
+        res_freqs = self.plot_results(fpts, amps) #return freqs from plotting loop so we can use to update experiment
 
-        return res_freqs, fpts, fcenter, amps
+        return res_freqs, fpts, amps, self.config
 
-    def plot_results(self, fpts, fcenter, amps, reloaded_config = None, fig_quality = 100):
+    def plot_results(self, fpts, amps, reloaded_config = None, fig_quality = 100):
         res_freqs = []
         plt.figure(figsize=(12, 8))
         plt.rcParams.update({
@@ -75,9 +74,8 @@ class ResonanceSpectroscopy:
 
         for i in range(4):
             plt.subplot(2, 3, i + 1)
-            #plt.plot(fpts + fcenter[i], amps[i], '-', linewidth=1.5)
-            plt.plot([f + fcenter[i] for f in fpts], amps[i], '-', linewidth=1.5)
-            freq_r = fpts[np.argmin(amps[i])] + fcenter[i]
+            plt.plot(fpts.T[i], amps[i], '-', linewidth=1.5)
+            freq_r = fpts.T[i][np.argmin(amps[i])]
             res_freqs.append(freq_r)
             plt.axvline(freq_r, linestyle='--', color='orange', linewidth=1.5)
             plt.xlabel("Frequency (MHz)")

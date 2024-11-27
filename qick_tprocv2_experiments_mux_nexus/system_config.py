@@ -22,7 +22,7 @@ class QICK_experiment:
         self.soc, self.soccfg = makeProxy()
         print(self.soccfg)
 
-        self.FSGEN_CH = 15 # 0 for "old QICK", 6 for RF board
+        self.FSGEN_CH = 8 # 0 for "old QICK", 6 for RF board
         self.MIXMUXGEN_CH = 4 # Readout resonator DAC channel
         self.MUXRO_CH = [2, 3, 4, 5]
         # self.MUXRO_CH_RF = 5  # New variable that we need for QICK box
@@ -56,7 +56,7 @@ class QICK_experiment:
 
 
         # Qubit you want to work with
-        self.QUBIT_INDEX = 1
+        self.QUBIT_INDEX = 0
 
         # Hardware Configuration
         self.hw_cfg = {
@@ -74,10 +74,10 @@ class QICK_experiment:
         self.readout_cfg = {
             "trig_time": 0.75,  # [Clock ticks] - get this value from TOF experiment
             # Changes related to the resonator output channel
-            "mixer_freq": 5288.539,  # [MHz]
-            "res_freq_ge": [4749.4, 5827.678, 4749.4, 4749.4], #[6187.191, 5827.678, 6074.095, 5958.673], #MHz
+            "mixer_freq": 5500, # [MHz]
+            "res_freq_ge": [6187.191, 5827.678, 6074.095, 5958.673], #MHz
             "res_gain_ge": [1, 1, 1, 1],
-            "res_length": 100.0,  # [us] (1.0 for res spec)
+            "res_length": 4.0,  # [us] (1.0 for res spec)
             "res_phase": [0] * 4,
             "ro_phase": [0] * 4,  # Rotation Angle From QICK Function
         }
@@ -92,9 +92,9 @@ class QICK_experiment:
              "sigma": [0.08, 0.15, 0.11, 0.09], # TO DO CHANGE THIS (11/26)
             "pi_amp": [1.0, 0.93, 0.77, 0.8], # TO DO CHANGE THIS (11/26)
 
-            "qubit_freqs_ge": [4909, 4749.4, 4569, 4759],  # Freqs of Qubit g/e Transition
-            "qubit_gains_ge": [1] * 4,  # [0.05] * 4
-            "qubit_phases": [0] * 4,  # [deg]
+            # "qubit_freqs_ge": [4909, 4749.4, 4569, 4759],  # Freqs of Qubit g/e Transition
+            # "qubit_gains_ge": [1] * 4,  # [0.05] * 4
+            # "qubit_phases": [0] * 4,  # [deg]
         }
 
     def create_folder_if_not_exists(self, folder):
