@@ -31,7 +31,7 @@ expt_cfg = {
     },
 
     "power_rabi_ge": {
-        "reps": 300, #100
+        "reps": 400, #100
         "rounds": 10, #5
         "start": [0.0] * 6, # [DAC units]
         "stop":  [1.0] * 6, # [DAC units]
@@ -40,17 +40,17 @@ expt_cfg = {
     },
 
     "T1_ge": {
-        "reps": 300, #300
+        "reps": 500, #300
         "rounds": 10, #1
         "start": [0.0] * 6,  # [us]
-        "stop": [200,200,200,300,200,200], #[250.0] * 6,  # [us] ### Should be ~10x T1! Should change this per qubit.
+        "stop": [200,200,200,200,200,200], #[250.0] * 6,  # [us] ### Should be ~10x T1! Should change this per qubit.
         "steps": 80,
         "relax_delay": 1000,  # [us] ### Should be >10x T1!
         "wait_time": 0.0,  # [us]
     },
 
     "Ramsey_ge": {
-        "reps": 300, #300
+        "reps": 500, #300
         "rounds": 10,#10
         "start": [0.0] * 6, # [us]
         "stop":  [60] * 6, # [us]

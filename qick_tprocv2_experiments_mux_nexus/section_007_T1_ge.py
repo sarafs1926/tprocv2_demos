@@ -24,7 +24,7 @@ class T1Program(AveragerProgramV2):
         self.add_pulse(ch=res_ch, name="res_pulse",
                        style="const",
                        length=cfg["res_length"],
-                       mask=[0, 1, 2, 3, 4, 5],
+                       mask=[0, 1, 2, 3],
                        )
 
         self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])

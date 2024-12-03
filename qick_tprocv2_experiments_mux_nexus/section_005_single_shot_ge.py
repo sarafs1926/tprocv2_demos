@@ -31,7 +31,7 @@ class SingleShotProgram(AveragerProgramV2):
         self.add_pulse(ch=gen_ch, name="res_pulse",
                        style="const",
                        length=cfg["res_len"],
-                       mask=[0, 1, 2, 3, 4, 5],
+                       mask=[0, 1, 2, 3],
                        )
 
         self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
@@ -76,7 +76,7 @@ class SingleShotProgram_g(AveragerProgramV2):
         self.add_pulse(ch=gen_ch, name="res_pulse",
                        style="const",
                        length=cfg["res_length"],
-                       mask=[0, 1, 2, 3, 4, 5],
+                       mask=[0, 1, 2, 3],
                        )
 
         self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
@@ -118,7 +118,7 @@ class SingleShotProgram_e(AveragerProgramV2):
         self.add_pulse(ch=gen_ch, name="res_pulse",
                        style="const",
                        length=cfg["res_length"],
-                       mask=[0, 1, 2, 3, 4, 5],
+                       mask=[0, 1, 2, 3],
                        )
 
         self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
