@@ -5,7 +5,7 @@ import datetime
 sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
 from section_001_time_of_flight import TOFExperiment
 from section_002_res_spec_ge_mux import ResonanceSpectroscopy
-from section_004_qubit_spec_ge import QubitSpectroscopy
+from section_004_qubit_spec_ge_Franken import QubitSpectroscopy
 from section_006_amp_rabi_ge import AmplitudeRabiExperiment
 from section_005_single_shot_ge import GainFrequencySweep
 from section_007_T1_ge import T1Measurement

@@ -30,10 +30,55 @@ class TOFExperiment:
             def _initialize(self, cfg):
                 ro_chs = cfg['ro_ch']
                 gen_ch = cfg['res_ch']
-                qubit_ch = cfg['qubit_ch']
-                qubit_index = 3
+                # gen_ch = cfg['qubit_ch'] ## IF You want to test loopback through qubit DAC instead
 
-                # Set up MUX DAC
+                # # Set up MUX DAC
+                self.declare_gen(
+                    ch=gen_ch, nqz=cfg['nqz_res'], ro_ch=ro_chs[0],
+                    mux_freqs=cfg['res_freq_ge'],
+                    mux_gains=cfg['res_gain_ge'],
+                    mux_phases=cfg['res_phase'],
+                    mixer_freq=cfg['mixer_freq']
+                )
+                self.add_pulse(
+                    ch=gen_ch, name="mymux",
+                    style="const",
+                    length=cfg["res_length"],
+                    mask=[0, 1, 2, 3]
+                )
+
+                # # Test the other DACs in loopback (8,10,12,14) to verify connection is there
+                # self.declare_gen(ch=gen_ch, nqz=cfg['nqz_res'], mixer_freq=cfg['mixer_freq'])
+                # self.add_pulse(ch=gen_ch, name="mymux", ro_ch=ro_chs[0],
+                #                style="const",
+                #                length=cfg['res_length'],
+                #                freq=cfg['res_freq_ge'][0],
+                #                phase=0,
+                #                gain=cfg['res_gain_ge'][0],
+                #                )
+                # print("qubit gen = " + str(gen_ch))
+                # print("freq = " + str(cfg['res_freq_ge'][0]))
+                # print("length = " + str(cfg['res_length']))
+                # print("gain = " + str(cfg['res_gain_ge'][0]))
+
+                for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ge'], cfg['ro_phase']):
+                    self.declare_readout(
+                        ch=ch, length=cfg['res_length'], freq=f, phase=ph, gen_ch=gen_ch
+                    )
+
+            def _body(self, cfg):
+                self.trigger(ros=cfg['ro_ch'], pins=[0], t=0, ddr4=True)
+                # self.pulse(ch=cfg['qubit_ch'], name="mymux", t=0)
+                self.pulse(ch=cfg['res_ch'], name="mymux", t=0)
+
+
+        class MuxProgram_QubitDACtest(AveragerProgramV2):
+            def _initialize(self, cfg):
+                ro_chs = cfg['ro_ch']
+                # gen_ch = cfg['res_ch']
+                gen_ch = cfg['qubit_ch'] ## IF You want to test loopback through qubit DAC instead
+
+                # # # Set up MUX DAC
                 # self.declare_gen(
                 #     ch=gen_ch, nqz=cfg['nqz_res'], ro_ch=ro_chs[0],
                 #     mux_freqs=cfg['res_freq_ge'],
@@ -49,18 +94,18 @@ class TOFExperiment:
                 # )
 
                 # Test the other DACs in loopback (8,10,12,14) to verify connection is there
-                self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_res'], mixer_freq=cfg['mixer_freq'])
-                self.add_pulse(ch=qubit_ch, name="mymux", ro_ch=ro_chs[0],
+                self.declare_gen(ch=gen_ch, nqz=cfg['nqz_res'], mixer_freq=cfg['mixer_freq'])
+                self.add_pulse(ch=gen_ch, name="mymux", ro_ch=ro_chs[0],
                                style="const",
                                length=cfg['res_length'],
-                               freq=cfg['res_freq_ge'][qubit_index],
+                               freq=cfg['res_freq_ge'][0],
                                phase=0,
-                               gain=cfg['res_gain_ge'][qubit_index],
+                               gain=cfg['res_gain_ge'][0],
                                )
-                print("qubit gen = " + str(qubit_ch))
-                print("freq = " + str(cfg['res_freq_ge'][qubit_index]))
+                print("qubit gen = " + str(gen_ch))
+                print("freq = " + str(cfg['res_freq_ge'][0]))
                 print("length = " + str(cfg['res_length']))
-                print("gain = " + str(cfg['res_gain_ge'][qubit_index]))
+                print("gain = " + str(cfg['res_gain_ge'][0]))
 
                 for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ge'], cfg['ro_phase']):
                     self.declare_readout(
@@ -69,10 +114,12 @@ class TOFExperiment:
 
             def _body(self, cfg):
                 self.trigger(ros=cfg['ro_ch'], pins=[0], t=0, ddr4=True)
-                self.pulse(ch=cfg['res_ch'], name="mymux", t=0)
+                self.pulse(ch=cfg['qubit_ch'], name="mymux", t=0)
+                # self.pulse(ch=cfg['res_ch'], name="mymux", t=0)
 
 
-        prog = MuxProgram(soccfg, reps=1, final_delay=0.5, cfg=self.config)
+        prog = MuxProgram_QubitDACtest(soccfg, reps=1, final_delay=0.5, cfg=self.config)
+        # prog = MuxProgram(soccfg, reps=1, final_delay=0.5, cfg=self.config)
         iq_list = prog.acquire_decimated(soc, soft_avgs=self.config['soft_avgs'])
         if self.save_figs:
             (average_y_mag_values_last, average_y_mag_values_mid, average_y_mag_values_oct, DAC_attenuator1, DAC_attenuator2, ADC_attenuator) = self.plot_results(prog, iq_list)

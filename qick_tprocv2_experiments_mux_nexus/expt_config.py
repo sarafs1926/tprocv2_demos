@@ -1,19 +1,18 @@
 from qick import *
 import numpy as np
 
-VNA_res = np.array([6187.191, 5827.678, 6074.095, 5958.673])
-VNA_qubit = np.array([4909, 4749.4, 4569, 4759])
-# VNA_qubit = np.array([4909, 5000, 4569, 4759]) #dummy value for Q2 as a test
+VNA_res = np.array([6187.8, 5828.3, 6074.6, 5959.3])
+VNA_qubit = np.array([4909, 4749.4, 4569, 4759]) # Found on NR25 with the QICK
 
 expt_cfg = {
     "tof": {
         "reps": 1, #reps doesnt make a difference here, leave it at 1
-        "soft_avgs": 3000,
+        "soft_avgs": 1000,
         "relax_delay": 0,  # [us]
     },
 
     "res_spec": {
-        "reps": 100,
+        "reps": 1000,
         "rounds": 1,
         "start": list(VNA_res - 1),  # [MHz]
         "stop":  list(VNA_res + 1),
@@ -21,27 +20,19 @@ expt_cfg = {
         "relax_delay": 20,  # [us]
     },
 
-    "qubit_spec": {
-        "reps": 100,  # 100
-        "rounds": 30,  # 10
-        "start": list(VNA_qubit - 70),  # [MHz]
-        "stop": list(VNA_qubit + 70),  # [MHz]
-        "steps": 300,
-        "relax_delay": 1000,  # [us]
-    },
 
     "qubit_spec_ge": {
-        "reps": 100, #100
-        "rounds": 5, #10
-        "start": list(VNA_qubit-5), # [MHz]
-        "stop":  list(VNA_qubit+5), # [MHz]
+        "reps": 300, #100
+        "rounds": 10, #10
+        "start": list(VNA_qubit-70), # [MHz]
+        "stop":  list(VNA_qubit+70), # [MHz]
         "steps": 300,
         "relax_delay": 1000, # [us]
     },
 
     "power_rabi_ge": {
-        "reps": 100, #100
-        "rounds": 5, #5
+        "reps": 300, #100
+        "rounds": 10, #5
         "start": [0.0] * 6, # [DAC units]
         "stop":  [1.0] * 6, # [DAC units]
         "steps": 100,
