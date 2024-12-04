@@ -89,7 +89,7 @@ class QICK_experiment:
             "qubit_gain_ge": [0.2] * 4, # [0.05] * 4
             "qubit_length_ge": 20,  # [us] for spec Pulse
             "qubit_phase": 0,  # [deg]
-             "sigma": [0.04, 0.04, 0.03, 0.04], #[0.08, 0.15, 0.11, 0.09], # TO DO CHANGE THIS (11/26)
+             "sigma": [0.04, 0.04, 0.04, 0.04], #[0.08, 0.15, 0.11, 0.09], # TO DO CHANGE THIS (11/26)
             "pi_amp": [1.0, 0.93, 0.77, 0.8], # TO DO CHANGE THIS (11/26)
 
             # "qubit_freqs_ge": [4909, 4749.4, 4569, 4759],  # Freqs of Qubit g/e Transition

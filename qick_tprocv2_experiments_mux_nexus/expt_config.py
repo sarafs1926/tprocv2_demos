@@ -22,52 +22,64 @@ expt_cfg = {
 
 
     "qubit_spec_ge": {
-        "reps": 300, #100
-        "rounds": 10, #10
+        "reps": 1500, #100
+        "rounds": 1, #10
         "start": list(VNA_qubit-70), # [MHz]
         "stop":  list(VNA_qubit+70), # [MHz]
         "steps": 300,
-        "relax_delay": 1000, # [us]
+        "relax_delay": 0.5, # [us]
     },
 
     "power_rabi_ge": {
-        "reps": 400, #100
-        "rounds": 10, #5
+        "reps": 1500, #100
+        "rounds": 1, #5
         "start": [0.0] * 6, # [DAC units]
         "stop":  [1.0] * 6, # [DAC units]
         "steps": 100,
-        "relax_delay": 1000, # [us]
+        "relax_delay": 500, # [us]
+    },
+
+    "Readout_Optimization":{
+        "steps": 3000, # shots
+        "py_avg": 1,
+        "gain_start" : [0, 0, 0, 0],
+        "gain_stop" : [1, 0, 0, 0],
+        "gain_step" : 0.1,
+        "freq_start" : [6176.0, 0, 0, 0],
+        "freq_stop" : [6178.0, 0, 0, 0],
+        "freq_step" : 0.1,
+        "relax_delay": 500, # [us]
     },
 
     "T1_ge": {
-        "reps": 500, #300
-        "rounds": 10, #1
-        "start": [0.0] * 6,  # [us]
-        "stop": [200,200,200,200,200,200], #[250.0] * 6,  # [us] ### Should be ~10x T1! Should change this per qubit.
+        "reps": 2000, #300
+        "rounds": 1, #1
+        "start": [0.0]*6,  # [us]
+        "stop": [150]*6, #[250.0] * 6,  # [us] ### Should be ~10x T1! Should change this per qubit.
         "steps": 80,
-        "relax_delay": 1000,  # [us] ### Should be >10x T1!
+        "relax_delay": 500,  # [us] ### Should be >10x T1!
         "wait_time": 0.0,  # [us]
     },
 
     "Ramsey_ge": {
-        "reps": 500, #300
-        "rounds": 10,#10
+        "reps": 2500, #300
+        "rounds": 1,#10
         "start": [0.0] * 6, # [us]
-        "stop":  [60] * 6, # [us]
+        "stop":  [15] * 6, # [us]
         "steps": 100,
-        "ramsey_freq": 0.12,  # [MHz]
-        "relax_delay": 1000, # [us] the time to wait to let the qubit to relax to gnd again after exciting it (make it way above T1)
+        "ramsey_freq": 0.6,  # [MHz]
+        "relax_delay": 500, # [us] the time to wait to let the qubit to relax to gnd again after exciting it (make it way above T1)
         "wait_time": 0.0, # [us]
     },
 
     "SpinEcho_ge": {
-        "reps": 300,
-        "rounds": 10,
+        "reps": 2500,
+        "rounds": 1,
         "start": [0.0] * 6, # [us]
-        "stop":  [60] * 6, # [us]
+        "stop":  [15] * 6, # [us]
         "steps": 100,
-        "ramsey_freq": 0.12,  # [MHz]
-        "relax_delay": 1000, # [us]
+        "ramsey_freq": 0.6,  # [MHz]
+        "relax_delay": 500, # [us]
         "wait_time": 0.0, # [us]
     },
 #
@@ -128,16 +140,5 @@ expt_cfg = {
 #         "SS_ONLY": False,
 #     },
 #
-    "Readout_Optimization":{
-        "steps": 3000, # shots
-        "py_avg": 1,
-        "gain_start" : [0, 0, 0, 0],
-        "gain_stop" : [1, 0, 0, 0],
-        "gain_step" : 0.1,
-        "freq_start" : [6176.0, 0, 0, 0],
-        "freq_stop" : [6178.0, 0, 0, 0],
-        "freq_step" : 0.1,
-        "relax_delay": 1000, # [us]
-    },
-#
+
 }

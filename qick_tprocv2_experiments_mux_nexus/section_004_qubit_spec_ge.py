@@ -28,7 +28,7 @@ class QubitSpectroscopy:
             print(f'Q {self.QubitIndex + 1} Round {self.round_num} Qubit Spec configuration: ', self.config)
 
     def run(self, soccfg, soc):
-        qspec = PulseProbeSpectroscopyProgram(soccfg, reps=self.config['reps'], final_delay=0.5, cfg=self.config)
+        qspec = PulseProbeSpectroscopyProgram(soccfg, reps=self.config['reps'], final_delay=self.exp_cfg['relax_delay'], cfg=self.config)
 
         # iq_lists= []
         if self.live_plot:
