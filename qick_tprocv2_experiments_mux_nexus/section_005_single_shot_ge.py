@@ -304,7 +304,7 @@ class GainFrequencySweep:
         self.q_config = all_qubit_state(self.experiment)
         self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
 
-    def set_res_gain_ge(self, QUBIT_INDEX, set_gain, num_qubits=6):
+    def set_res_gain_ge(self, QUBIT_INDEX, set_gain, num_qubits=4):
         """Sets the gain for the selected qubit to 1, others to 0."""
         res_gain_ge = [0] * num_qubits  # Initialize all gains to 0
         if 0 <= QUBIT_INDEX < num_qubits:  # makes sure you are within the range of options

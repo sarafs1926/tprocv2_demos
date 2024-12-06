@@ -2,10 +2,12 @@ import numpy as np
 import h5py
 import os
 import glob
+import datetime
 
 # Directory where your HDF5 files are stored
-outerFolder = f"/data/QICK_data/6transmon_run4a/2024-11-21/readout_opt/Gain_Freq_Sweeps"
-
+outerFolder1 = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/", str(datetime.date.today()))
+outerFolder = outerFolder1 + "/readout_opt/Gain_Freq_Sweeps/"
+print(outerFolder)
 def find_max_fidelity(file_path):
     with h5py.File(file_path, "r") as f:
         # Load the results dataset and metadata
@@ -38,9 +40,9 @@ def find_max_fidelity(file_path):
         return max_fidelity, configurations
 
 # Loop through each HDF5 file in the folder for each qubit
-for qubit_index in range(1, 7):
+for qubit_index in range(1, 5):
     # Search for files matching the pattern with any timestamp
-    file_pattern = os.path.join(outerFolder, f"Gain_Freq_Sweep_Qubit_{qubit_index}_*.h5")
+    file_pattern = os.path.join(outerFolder, f"{str(datetime.date.today())}Gain_Freq_Sweep_Qubit_{qubit_index}_*.h5")
     file_list = glob.glob(file_pattern)
 
     if file_list:

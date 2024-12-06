@@ -72,10 +72,15 @@ class ResonanceSpectroscopy:
             'legend.fontsize': 14,
         })
 
-        for i in range(4):
+        #print(amps)
+        #print(fpts)
+
+        for i in range(4): #HERE
             plt.subplot(2, 3, i + 1)
+
             plt.plot(fpts.T[i], amps[i], '-', linewidth=1.5)
             freq_r = fpts.T[i][np.argmin(amps[i])]
+
             res_freqs.append(freq_r)
             plt.axvline(freq_r, linestyle='--', color='orange', linewidth=1.5)
             plt.xlabel("Frequency (MHz)")

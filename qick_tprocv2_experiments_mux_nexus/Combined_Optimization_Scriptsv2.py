@@ -2,10 +2,10 @@ import sys
 import os
 import numpy as np
 import datetime
-sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
+sys.path.append(os.path.abspath("/home/nexusadmin/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux_nexus/"))
 from section_001_time_of_flight import TOFExperiment
 from section_002_res_spec_ge_mux import ResonanceSpectroscopy
-from section_004_qubit_spec_ge_Franken import QubitSpectroscopy
+from section_004_qubit_spec_ge import QubitSpectroscopy
 from section_006_amp_rabi_ge import AmplitudeRabiExperiment
 from section_005_single_shot_ge import GainFrequencySweep
 from section_007_T1_ge import T1Measurement
@@ -25,10 +25,10 @@ import copy
 signal = 'None'        #'I', or 'Q' depending on where the signal is (after optimization). Put 'None' if no optimization has happened
 save_figs = True   # save plots for everything as you go along the RR script?
 live_plot = False    # for live plotting open http://localhost:8097/ on firefox
-fit_data = False    # fit the data here and save or plot the fits?
-outerFolder = "/data/QICK_data/6transmon_run4a/" + str(datetime.date.today()) + "/"
+fit_data = True# fit the data here and save or plot the fits?
+#outerFolder = "/data/QICK_data/6transmon_run4a/" + str(datetime.date.today()) + "/"
 
-
+outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/", str(datetime.date.today()))
 def create_folder_if_not_exists(folder_path):
     """Creates a folder at the given path if it doesn't already exist."""
     if not os.path.exists(folder_path):
@@ -37,24 +37,24 @@ def create_folder_if_not_exists(folder_path):
 
 # Where to save readout length sweep data
 prefix = str(datetime.date.today())
-output_folder = "/data/QICK_data/6transmon_run4a/" + prefix + "/SingleShot_Test/"
+output_folder =outerFolder + "/SingleShot_Test/"
 create_folder_if_not_exists(output_folder)
 
 n = 1  # Number of rounds
 n_loops = 5  # Number of repetitions per length to average
 
 # List of qubits and pulse lengths to measure
-Qs = [5]
-
-#optimal_lengths = [None] * 6 # creates list where the script will be storing the optimal readout lengths for each qubit. We currently have 6 qubits in total.
-res_gain = [1.0]*6
+Qs = [0,1,2,3]
+res_leng_vals = [10.5, 3.55, 3.55, 3.55] # From NR25
+optimal_lengths = [None] * 4# creates list where the script will be storing the optimal readout lengths for each qubit. We currently have 6 qubits in total.
+res_gain =[0.33]*4
 #res_gain = [0.7, 0.9, 0.7, 0.7, 0.7, 0.9, 0.9]
-res_freq_ge = [None] * 6
+res_freq_ge = [None] * 4
 j=1 #round number, from RR code. Not really used here since we just run it once for each qubit
 
 #lengs = np.linspace(0.5, 5, 19)  # increments of 0.25
-lengs = np.linspace(0.5, 7, 27) # increments of 0.25
-
+#engs = np.linspace(0.5, 7, 27) # increments of 0.25
+lengs = np.linspace(0.1, 15, 61) #increments of 0.25
 for QubitIndex in Qs:
     #Get the config for this qubit
     experiment = QICK_experiment(outerFolder, DAC_attenuator1 = 5, DAC_attenuator2 = 10, ADC_attenuator = 10)
@@ -62,7 +62,7 @@ for QubitIndex in Qs:
     #Mask out all other resonators except this one
     res_gains = experiment.mask_gain_res(QubitIndex, IndexGain=res_gain[QubitIndex])
     experiment.readout_cfg['res_gain_ge'] = res_gains
-
+    experiment.readout_cfg['res_length'] = res_leng_vals[QubitIndex]
 
     #---------------------Res spec---------------------
     res_spec   = ResonanceSpectroscopy(QubitIndex, outerFolder, j, save_figs, experiment)
@@ -100,7 +100,7 @@ for QubitIndex in Qs:
 
     tuned_experiment = copy.deepcopy(experiment)
 
-    # #-----------Sweeping Readout Length----------------------------
+    #-----------Sweeping Readout Length----------------------------
     # QubitIndex = int(QubitIndex)  # Ensure QubitIndex is an integer
     #
     # avg_fids = []
@@ -193,23 +193,23 @@ for QubitIndex in Qs:
     # del avg_fids, rms_fids, avg_ground_iq, avg_excited_iq, loop_group, length_group
 
     #---------------------Res Gain and Res Freq Sweeps------------------------
-    #exit()  # use this if you only want to run the readout length sweep
-    optimal_lengths = [3.25, 4.75, 2.50, 3.50, 4.0, 6.00] # use when you are running this part of the code separately
+   #exit()  # use this if you only want to run the readout length sweep
+    optimal_lengths = [10.28, 11.03,8.29, 13.51]
     date_str = str(datetime.date.today())
-    outerFolder = f"/data/QICK_data/6transmon_run4a/{date_str}/readout_opt/Gain_Freq_Sweeps/"
-
+    #uterFolder = f"/data/QICK_data/6transmon_run4a/{date_str}/readout_opt/Gain_Freq_Sweeps/"
+    output_folder = outerFolder + "/readout_opt/Gain_Freq_Sweeps/"
     # Ensure the output folder exists
-    os.makedirs(outerFolder, exist_ok=True)
+    os.makedirs(output_folder, exist_ok=True)
 
     # Define sweeping parameters
-    gain_range = [0.5, 1]  # Gain range in a.u.
-    freq_steps = 30
+    gain_range = [0.1, 0.5]#Gain range in a.u.
+    freq_steps = 50
     gain_steps = 10
 
     print(f'Starting Qubit {QubitIndex + 1} res gain and res freq measurements.')
     # Select the reference frequency for the current qubit
     reference_frequency = res_freq_ge[QubitIndex]
-    freq_range = [reference_frequency - 1, reference_frequency + 1]  # Frequency range in MHz
+    freq_range = [reference_frequency - 2,reference_frequency + 2]# Frequency range in MHz
 
     experiment = copy.deepcopy(tuned_experiment)
     sweep = GainFrequencySweep(QubitIndex, experiment, optimal_lengths=optimal_lengths, output_folder=outerFolder)
@@ -241,8 +241,7 @@ for QubitIndex in Qs:
     plt.ylabel("Readout frequency offset (MHz)")  # Frequency on y-axis
     plt.title(f"Gain-Frequency Sweep for Qubit {QubitIndex + 1}")
     # plt.show()
-    # Save the plot
-    file = f"{outerFolder}Gain_Freq_Sweep_Qubit_{QubitIndex + 1}_{timestamp}.png"
+    file = f"{outerFolder}_Gain_Freq_Sweep_Qubit_{QubitIndex + 1}_{timestamp}.png"
     plt.savefig(file, dpi=600, bbox_inches='tight')
     plt.close()  # Close the plot to free up memory
     del results, sweep
