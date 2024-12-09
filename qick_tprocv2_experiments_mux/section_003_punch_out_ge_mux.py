@@ -144,7 +144,7 @@ class PunchOut:
         plt.suptitle("Resonance At Various Probe Gains", fontsize=24, y=0.95)
 
         plt.tight_layout(pad=2.0)
-        outerFolder_expt = os.path.join(self.outerFolder, "/punch_out/")
+        outerFolder_expt = os.path.join(self.outerFolder, "punch_out")
         self.experiment.create_folder_if_not_exists(outerFolder_expt)
         now = datetime.datetime.now()
         formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")

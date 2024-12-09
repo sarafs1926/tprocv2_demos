@@ -374,7 +374,7 @@ class T2RMeasurement:
         if self.fit_data:
             fit, t2r_est, t2r_err, plot_sig = self.t2_fit(delay_times, I, Q)
         else:
-            fit, t2r_est, t2r_err = None, None, None
+            fit, t2r_est, t2r_err, plot_sig = None, None, None, None
 
         if self.save_figs:
             self.plot_results(I, Q, delay_times, now, fit, t2r_est, t2r_err, plot_sig)
@@ -437,8 +437,8 @@ class T2RMeasurement:
                          fontsize=24, ha='center', va='top') #, pi gain %.2f" % float(config['pi_amp']) + f", {float(config['sigma']) * 1000} ns sigma
             else:
                 fig.text(plot_middle, 0.98,
-                         f"T2 Q{self.QubitIndex + 1}, pi gain %.2f" % float(self.config[
-                                                                                'pi_amp']) + f", {float(self.config['sigma']) * 1000} ns sigma" + f", {float(self.config['reps'])}*{float(self.config['rounds'])} avgs,",
+                         f"T2 Q{self.QubitIndex + 1}, T2R %.2f us" % float(
+                             t2r_est) + f", {float(self.config['reps'])}*{float(self.config['rounds'])} avgs,",
                          fontsize=24, ha='center', va='top')
 
         else:

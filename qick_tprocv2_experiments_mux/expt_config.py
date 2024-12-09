@@ -1,7 +1,9 @@
 from qick import *
 import numpy as np
 
-VNA_res = np.array([6191.519, 6216, 6292.321, 6405.85, 6432.959, 6468.441,])
+VNA_res = np.array([6.20905, 6.26145, 6.321265, 6.401472, 6.467723, 6.5209414])*1000  # run 5
+# VNA_res = np.array([6191.519, 6216, 6292.321, 6405.85, 6432.959, 6468.441,]) # run 4a
+
 VNA_qubit = np.array([4184.10, 3821.43, 4156.88, 4459.12, 4471.18, 4998.04])  # Freqs of Qubit g/e Transition
 
 expt_cfg = {
@@ -22,7 +24,7 @@ expt_cfg = {
 
     "qubit_spec_ge": {
         "reps": 100, #100
-        "rounds": 5, #10
+        "rounds": 1, #10
         "start": list(VNA_qubit-5), # [MHz]
         "stop":  list(VNA_qubit+5), # [MHz]
         "steps": 300,
@@ -30,8 +32,8 @@ expt_cfg = {
     },
 
     "power_rabi_ge": {
-        "reps": 100, #100
-        "rounds": 5, #5
+        "reps": 300, #100
+        "rounds": 1, #5
         "start": [0.0] * 6, # [DAC units]
         "stop":  [1.0] * 6, # [DAC units]
         "steps": 100,
@@ -40,7 +42,7 @@ expt_cfg = {
 
     "T1_ge": {
         "reps": 300, #300
-        "rounds": 10, #1
+        "rounds": 2, #1
         "start": [0.0] * 6,  # [us]
         "stop": [200,200,200,300,200,200], #[250.0] * 6,  # [us] ### Should be ~10x T1! Should change this per qubit.
         "steps": 80,
@@ -50,7 +52,7 @@ expt_cfg = {
 
     "Ramsey_ge": {
         "reps": 300, #300
-        "rounds": 10,#10
+        "rounds": 2,#10
         "start": [0.0] * 6, # [us]
         "stop":  [60] * 6, # [us]
         "steps": 100,
@@ -61,7 +63,7 @@ expt_cfg = {
 
     "SpinEcho_ge": {
         "reps": 300,
-        "rounds": 10,
+        "rounds": 2,
         "start": [0.0] * 6, # [us]
         "stop":  [60] * 6, # [us]
         "steps": 100,

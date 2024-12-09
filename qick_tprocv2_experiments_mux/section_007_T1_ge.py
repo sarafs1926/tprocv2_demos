@@ -168,6 +168,7 @@ class T1Measurement:
         # Calculate the middle of the plot area
         plot_middle = (ax1.get_position().x0 + ax1.get_position().x1) / 2
 
+
         if self.fit_data:
             q1_fit_exponential, T1_err, T1_est, plot_sig = self.t1_fit(I, Q, delay_times)
 
@@ -180,18 +181,19 @@ class T1Measurement:
             if config is not None:
                 fig.text(plot_middle, 0.98,
                          f"T1 Q{self.QubitIndex + 1}" + f", {float(config['reps'])}*{float(config['rounds'])} avgs,",
-                         fontsize=24, ha='center', va='top') #, pi gain %.2f" % float(config['pi_amp']) + f", {float(config['sigma']) * 1000} ns sigma
+                         fontsize=24, ha='center',
+                         va='top')  # , pi gain %.2f" % float(config['pi_amp']) + f", {float(config['sigma']) * 1000} ns sigma
             else:
                 fig.text(plot_middle, 0.98,
-                         f"T1 Q{self.QubitIndex + 1}, pi gain %.2f" % config[
-                             'pi_amp'] + f", {self.config['sigma'] * 1000} ns sigma" + f", {self.config['reps']}*{self.config['rounds']} avgs,",
+                         f"T1 Q{self.QubitIndex + 1}, T1 %.2f us" % T1_est + f", {self.config['reps']}*{self.config['rounds']} avgs,",
                          fontsize=24, ha='center', va='top')
 
         else:
             if config is not None:
                 fig.text(plot_middle, 0.98,
                          f"T1 Q{self.QubitIndex + 1}" + f", {float(config['reps'])}*{float(config['rounds'])} avgs,",
-                         fontsize=24, ha='center', va='top') #, pi gain %.2f" % float(config['pi_amp']) + f", {float(config['sigma']) * 1000} ns sigma"   you can put this back once you save configs properly for when replotting
+                         fontsize=24, ha='center',
+                         va='top')  # , pi gain %.2f" % float(config['pi_amp']) + f", {float(config['sigma']) * 1000} ns sigma"   you can put this back once you save configs properly for when replotting
             else:
                 fig.text(plot_middle, 0.98,
                          f"T1 Q{self.QubitIndex + 1}",

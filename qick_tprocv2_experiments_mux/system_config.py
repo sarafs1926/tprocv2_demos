@@ -66,10 +66,8 @@ class QICK_experiment:
 
             # Changes related to the resonator output channel
             "mixer_freq": 6000,  # [MHz]
-            "res_freq_ge": [6191.419, 6216.1, 6292.361, 6405.77, 6432.759, 6468.481],  # MHz, new
-            #"res_freq_ge": [6191.439, 6216.0, 6292.261, 6405.79, 6432.899, 6468.501],  # MHz, old
-            # "res_freq_ge": [6191.459, 6216.02, 6292.281, 6405.81, 6432.799, 6468.281],  # MHz, old
-            #"res_freq_ge": [6191.479, 6216.040, 6292.301, 6405.83, 6433.059, 6468.901],  # MHz, old
+            "res_freq_ge": [6209.05, 6261.45, 6321.265, 6401.472, 6467.723, 6520.9414],  # MHz, run 5
+            # "res_freq_ge": [6191.419, 6216.1, 6292.361, 6405.77, 6432.759, 6468.481],  # MHz, run 4a
             # "res_gain_ge": [1] + [0]*5,
             "res_gain_ge": [1, 1, 1, 1, 1, 1],
             # set_res_gain_ge(QUBIT_INDEX), #utomatically sets all gains to zero except for the qubit you are observing
@@ -94,7 +92,8 @@ class QICK_experiment:
             # [0.4287450656184295, 0.4287450656184295, 0.4903077560386716, 0.6, 0.4903077560386716, 0.4287450656184295], # For spec pulse
             "qubit_length_ge": 15,  # [us] for spec Pulse
             "qubit_phase": 0,  # [deg]
-             "sigma": [0.08, 0.15, 0.11, 0.09, 0.12, 0.11],  # [us] for Gaussian Pulse (5+10 DAC atten for qubit)
+            "sigma": [0.15]*6,  # [us] for Gaussian Pulse (5+10 DAC atten for qubit)
+            # "sigma": [0.08, 0.15, 0.11, 0.09, 0.12, 0.11],  # [us] for Gaussian Pulse (5+10 DAC atten for qubit)
             #"sigma": [0.05, 0.09, 0.07, 0.065, 0.09, 0.3],  # Goal: cut sigma in half [us] for Gaussian Pulse (5+4 DAC atten for qubit)
             # "pi_amp": [0.92, 0.87, 0.75, 0.73, 0.77, 0.78], # old RR values
             "pi_amp": [1.0, 0.93, 0.77, 0.8, 0.81, 0.9], # Eyeballed by Sara today (5+10 DAC atten for qubit)
