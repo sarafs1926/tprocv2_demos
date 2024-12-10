@@ -44,8 +44,9 @@ n = 1  # Number of rounds
 n_loops = 5  # Number of repetitions per length to average
 
 # List of qubits and pulse lengths to measure
-Qs = [0,1,2,3]
-res_leng_vals = [9, 4, 6.5, 4] # From NR25
+# Qs = [0,1,2,3]
+Qs = [1]
+res_leng_vals = [9, 5.5, 6.5, 9] # From NR25
 optimal_lengths = [None] * 4# creates list where the script will be storing the optimal readout lengths for each qubit. We currently have 6 qubits in total.
 res_gain =[0.33]*4
 #res_gain = [0.7, 0.9, 0.7, 0.7, 0.7, 0.9, 0.9]
@@ -194,7 +195,7 @@ for QubitIndex in Qs:
 
     #---------------------Res Gain and Res Freq Sweeps------------------------
    #exit()  # use this if you only want to run the readout length sweep
-    optimal_lengths = [9, 4, 6.5, 9]
+    optimal_lengths = [9, 5.5, 6.5, 9]
     date_str = str(datetime.date.today())
     #uterFolder = f"/data/QICK_data/6transmon_run4a/{date_str}/readout_opt/Gain_Freq_Sweeps/"
     output_folder = outerFolder + "/readout_opt/Gain_Freq_Sweeps/"

@@ -7,12 +7,12 @@ VNA_qubit = np.array([4909, 4749.4, 4569, 4759]) # Found on NR25 with the QICK
 expt_cfg = {
     "tof": {
         "reps": 1, #reps doesnt make a difference here, leave it at 1
-        "soft_avgs": 1000,
+        "soft_avgs": 500,
         "relax_delay": 0,  # [us]
     },
 
     "res_spec": {
-        "reps": 1000,
+        "reps": 500,
         "rounds": 1,
         "start": list(VNA_res - 1),  # [MHz]
         "stop":  list(VNA_res + 1),
@@ -22,7 +22,7 @@ expt_cfg = {
 
 
     "qubit_spec_ge": {
-        "reps": 1500, #100
+        "reps": 500, #100
         "rounds": 1, #10
         "start": list(VNA_qubit-70), # [MHz]
         "stop":  list(VNA_qubit+70), # [MHz]
@@ -31,7 +31,7 @@ expt_cfg = {
     },
 
     "power_rabi_ge": {
-        "reps": 1500, #100
+        "reps": 500, #100
         "rounds": 1, #5
         "start": [0.0] * 6, # [DAC units]
         "stop":  [1.0] * 6, # [DAC units]
@@ -52,7 +52,7 @@ expt_cfg = {
     },
 
     "T1_ge": {
-        "reps": 2000, #300
+        "reps": 1000, #300
         "rounds": 1, #1
         "start": [0.0]*6,  # [us]
         "stop": [150]*6, #[250.0] * 6,  # [us] ### Should be ~10x T1! Should change this per qubit.
@@ -62,18 +62,18 @@ expt_cfg = {
     },
 
     "Ramsey_ge": {
-        "reps": 2500, #300
+        "reps": 1500, #300
         "rounds": 1,#10
         "start": [0.0] * 6, # [us]
-        "stop":  [15] * 6, # [us]
+        "stop":  [8.0] * 6, # [us]
         "steps": 100,
-        "ramsey_freq": 0.6,  # [MHz]
+        "ramsey_freq": 1.2,  # [MHz]
         "relax_delay": 500, # [us] the time to wait to let the qubit to relax to gnd again after exciting it (make it way above T1)
         "wait_time": 0.0, # [us]
     },
 
     "SpinEcho_ge": {
-        "reps": 2500,
+        "reps": 1500,
         "rounds": 1,
         "start": [0.0] * 6, # [us]
         "stop":  [15] * 6, # [us]
