@@ -19,7 +19,7 @@ from system_config import QICK_experiment
 from section_003_punch_out_ge_mux import PunchOut
 from expt_config import expt_cfg
 
-n= 5
+n= 10000
 save_r = 1            # how many rounds to save after
 signal = 'None'       #'I', or 'Q' depending on where the signal is (after optimization). Put 'None' if no optimization has happened
 save_figs = True    # save plots for everything as you go along the RR script?
@@ -27,6 +27,7 @@ live_plot = False      # for live plotting open http://localhost:8097/ on firefo
 fit_data = True      # fit the data here and save or plot the fits?
 save_data_h5 = True   # save all of the data to h5 files?
 outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/", str(datetime.date.today()))
+custom_Ramsey=True
 
 # Note if these Qs are not in order and dont start w 0, data wont save!
 Qs = [0,1,2,3] #this no longer specifies the qubits we want to look at, see line 68. We can make this better later.
@@ -38,6 +39,7 @@ res_gain = [0.46, 0.38, 0.46, 0.42] # Note 0.15 could be better for all, not sur
 # spec_gain= 0.85
 # res_gain = [spec_gain, 1, spec_gain, spec_gain]
 freq_offsets = [-0.08, 0.0, -0.24, -0.32]
+ramsey_freqs = [-0.5, 0.5, 0.5, 0.5]
 
 def create_data_dict(keys, save_r, qs):
     return {Q: {key: np.empty(save_r, dtype=object) for key in keys} for Q in range(len(qs))}
@@ -130,7 +132,7 @@ while j < n:
         del t1
 
         #------------------------T2R-------------------------
-        t2r = T2RMeasurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data)
+        t2r = T2RMeasurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data, custom_Ramsey)
         t2r_est, t2r_err, t2r_I, t2r_Q, t2r_delay_times, fit_ramsey = t2r.run(experiment.soccfg, experiment.soc)
         del t2r
 

@@ -193,7 +193,7 @@ class T2RProgram(AveragerProgramV2):
 
 
 class T2RMeasurement:
-    def __init__(self, QubitIndex, outerFolder, round_num, signal, save_figs, experiment = None, live_plot = None, fit_data = None):
+    def __init__(self, QubitIndex, outerFolder, round_num, signal, save_figs, experiment = None, live_plot = None, fit_data = None, custom_Ramsey= None):
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
         self.fit_data = fit_data
@@ -205,10 +205,17 @@ class T2RMeasurement:
         self.signal = signal
         self.save_figs = save_figs
         self.live_plot = live_plot
+        self.custom_Ramsey= custom_Ramsey
         if experiment is not None:
             self.q_config = all_qubit_state(self.experiment)
             self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
             self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
+            if self.custom_Ramsey:
+                print("Customizing Ramsey freq since Q1 is different than all others")
+                if self.QubitIndex == 0:
+                    self.config['ramsey_freq'] = -1 * self.config['ramsey_freq']
+                print("Qubit is " + str(self.QubitIndex+1))
+                print("Ramsey freq (MHz) is " + str(self.config['ramsey_freq']))
             print(f'Q {self.QubitIndex + 1} Round {self.round_num} T2R configuration: ', self.config)
 
     def t2_fit(self, x_data, I, Q, verbose = False, guess=None, plot=False):
@@ -365,6 +372,7 @@ class T2RMeasurement:
         # for live plotting open http://localhost:8097/ on firefox
         if self.live_plot:
             I, Q, delay_times = self.live_plotting(ramsey, soc)
+
         else:
             iq_list = ramsey.acquire(soc, soft_avgs=self.exp_cfg['rounds'], progress=True)
             I = iq_list[self.QubitIndex][0, :, 0]
