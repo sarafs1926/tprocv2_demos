@@ -19,7 +19,7 @@ from system_config import QICK_experiment
 from section_003_punch_out_ge_mux import PunchOut
 from expt_config import expt_cfg
 
-n= 1
+n= 10000
 save_r = 1            # how many rounds to save after
 signal = 'None'       #'I', or 'Q' depending on where the signal is (after optimization). Put 'None' if no optimization has happened
 save_figs = True    # save plots for everything as you go along the RR script?
@@ -27,18 +27,19 @@ live_plot = False      # for live plotting open http://localhost:8097/ on firefo
 fit_data = True      # fit the data here and save or plot the fits?
 save_data_h5 = True   # save all of the data to h5 files?
 outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/", str(datetime.date.today()))
+custom_Ramsey=True
 
 # Note if these Qs are not in order and dont start w 0, data wont save!
 Qs = [0,1,2,3] #this no longer specifies the qubits we want to look at, see line 68. We can make this better later.
 
 # #optimization outputs
 #res_leng_vals = [10.5, 3.55, 3.55, 3.55] # From NR25
-res_leng_vals = [10.28, 11.03, 8.29, 13.51] #after doing 1 round of optimization
-res_gain = [0.4600]*4 # Note 0.15 could be better for all, not sure yet
+res_leng_vals = [9, 5.5, 6.5, 9] # From 12/9 optimization
+res_gain = [0.46, 0.38, 0.46, 0.42] # Note 0.15 could be better for all, not sure yet
 # spec_gain= 0.85
 # res_gain = [spec_gain, 1, spec_gain, spec_gain]
-
-freq_offsets = [-0.08, -0.56, -0.24, -0.24]
+freq_offsets = [-0.08, 0.0, -0.24, -0.32]
+ramsey_freqs = [-0.5, 0.5, 0.5, 0.5]
 
 def create_data_dict(keys, save_r, qs):
     return {Q: {key: np.empty(save_r, dtype=object) for key in keys} for Q in range(len(qs))}
@@ -65,7 +66,7 @@ angles=[]
 while j < n:
     j += 1
     #for QubitIndex in Qs:
-    for QubitIndex in [0,3]: #specify which qubits you want to look at inside the brackets
+    for QubitIndex in [0,1,2,3]: #specify which qubits you want to look at inside the brackets
         #Get the config for this qubit
         experiment = QICK_experiment(outerFolder)
 
@@ -98,48 +99,48 @@ while j < n:
     #     # #print(angles)
     #     # #print('avg theta: ', np.average(angles))
     #     # del ss
-    #
+
         #--------------------Qubit spec--------------------
         q_spec = QubitSpectroscopy(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot)
         qspec_I, qspec_Q, qspec_freqs, qspec_I_fit, qspec_Q_fit, qubit_freq = q_spec.run(experiment.soccfg, experiment.soc)
         experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = float(qubit_freq)
         print('Qubit freq for qubit ', QubitIndex + 1 ,' is: ',float(qubit_freq))
         del q_spec
-    # #
+
         #-----------------------Rabi-----------------------
         rabi = AmplitudeRabiExperiment(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot)
         rabi_I, rabi_Q, rabi_gains, rabi_fit, pi_amp  = rabi.run(experiment.soccfg, experiment.soc)
         experiment.qubit_cfg['pi_amp'][QubitIndex] = float(pi_amp)
         print('Pi amplitude for qubit ', QubitIndex + 1, ' is: ', float(pi_amp))
         del rabi
-
-        #------------------Single Shot Measurements---------------
-        ss = SingleShot(QubitIndex, outerFolder, experiment, round_num=0, save_figs=True)
-        fid, angle, iq_list_g, iq_list_e = ss.run(experiment.soccfg, experiment.soc)
-
-        I_g = iq_list_g[QubitIndex][0].T[0]
-        Q_g = iq_list_g[QubitIndex][0].T[1]
-        I_e = iq_list_e[QubitIndex][0].T[0]
-        Q_e = iq_list_e[QubitIndex][0].T[1]
-
-        fid, threshold, rotation_angle, ig_new, ie_new = ss.hist_ssf(
-            data=[I_g, Q_g, I_e, Q_e], cfg=ss.config, plot=True)
-
+        #
+        # #------------------Single Shot Measurements---------------
+        # ss = SingleShot(QubitIndex, outerFolder, experiment, round_num=0, save_figs=True)
+        # fid, angle, iq_list_g, iq_list_e = ss.run(experiment.soccfg, experiment.soc)
+        #
+        # I_g = iq_list_g[QubitIndex][0].T[0]
+        # Q_g = iq_list_g[QubitIndex][0].T[1]
+        # I_e = iq_list_e[QubitIndex][0].T[0]
+        # Q_e = iq_list_e[QubitIndex][0].T[1]
+        #
+        # fid, threshold, rotation_angle, ig_new, ie_new = ss.hist_ssf(
+        #     data=[I_g, Q_g, I_e, Q_e], cfg=ss.config, plot=True)
+        #
         #------------------------T1-------------------------
         t1 = T1Measurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data)
         t1_est, t1_err, t1_I, t1_Q, t1_delay_times, q1_fit_exponential = t1.run(experiment.soccfg, experiment.soc)
         del t1
-    #
+
         #------------------------T2R-------------------------
-        t2r = T2RMeasurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data)
+        t2r = T2RMeasurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data, custom_Ramsey)
         t2r_est, t2r_err, t2r_I, t2r_Q, t2r_delay_times, fit_ramsey = t2r.run(experiment.soccfg, experiment.soc)
         del t2r
-    #
-        #------------------------T2E-------------------------
+
+        # ------------------------T2E-------------------------
         t2e = T2EMeasurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data)
         t2e_est, t2e_err, t2e_I, t2e_Q, t2e_delay_times, fit_ramsey_t2e, sys_config_to_save = t2e.run(experiment.soccfg, experiment.soc)
         del t2e
-    #
+    # #
         if save_data_h5:
             # ---------------------Collect Res Spec Results----------------
             res_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = time.mktime(datetime.datetime.now().timetuple())
@@ -159,7 +160,7 @@ while j < n:
             qspec_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
             qspec_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
 
-            # ---------------------Collect Rabi Results----------------
+            #---------------------Collect Rabi Results----------------
             rabi_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = time.mktime(datetime.datetime.now().timetuple())
             rabi_data[QubitIndex]['I'][j - batch_num * save_r - 1] = rabi_I
             rabi_data[QubitIndex]['Q'][j - batch_num * save_r - 1] = rabi_Q
@@ -179,7 +180,7 @@ while j < n:
             t1_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
             t1_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
 
-            # ---------------------Collect T2 Results----------------
+            #---------------------Collect T2 Results----------------
             t2r_data[QubitIndex]['T2'][j - batch_num*save_r - 1] = t2r_est
             t2r_data[QubitIndex]['Errors'][j - batch_num*save_r - 1] = t2r_err
             t2r_data[QubitIndex]['Dates'][j - batch_num*save_r - 1] = time.mktime(datetime.datetime.now().timetuple())

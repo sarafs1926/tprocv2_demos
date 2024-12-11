@@ -42,7 +42,9 @@ def find_max_fidelity(file_path):
 # Loop through each HDF5 file in the folder for each qubit
 for qubit_index in range(1, 5):
     # Search for files matching the pattern with any timestamp
-    file_pattern = os.path.join(outerFolder, f"{str(datetime.date.today())}Gain_Freq_Sweep_Qubit_{qubit_index}_*.h5")
+    file_pattern = os.path.join(outerFolder, f"*_Qubit_{qubit_index}_*.h5")
+    # file_pattern = os.path.join(outerFolder, f"{str(datetime.date.today())}_Gain_Freq_Sweep_Qubit_{qubit_index}_*.h5")
+    # print("file pattern = " + file_pattern)
     file_list = glob.glob(file_pattern)
 
     if file_list:
