@@ -52,7 +52,7 @@ expt_cfg = {
 
     "Ramsey_ge": {
         "reps": 300, #300
-        "rounds": 2,#10
+        "rounds": 10,#10
         "start": [0.0] * 6, # [us]
         "stop":  [60] * 6, # [us]
         "steps": 100,
@@ -63,7 +63,7 @@ expt_cfg = {
 
     "SpinEcho_ge": {
         "reps": 300,
-        "rounds": 2,
+        "rounds": 10,
         "start": [0.0] * 6, # [us]
         "stop":  [60] * 6, # [us]
         "steps": 100,
@@ -130,15 +130,15 @@ expt_cfg = {
 #     },
 #
     "Readout_Optimization":{
-        "steps": 3000, # shots
-        "py_avg": 1,
-        "gain_start" : [0, 0, 0, 0],
-        "gain_stop" : [1, 0, 0, 0],
-        "gain_step" : 0.1,
-        "freq_start" : [6176.0, 0, 0, 0],
-        "freq_stop" : [6178.0, 0, 0, 0],
-        "freq_step" : 0.1,
-        "relax_delay": 1000, # [us]
+        "steps": 3000, # shots # DEBUGGING changing this changes nothing
+        # "py_avg": 1,
+        # "gain_start" : [0, 0, 0, 0],
+        # "gain_stop" : [1, 0, 0, 0],
+        # "gain_step" : 0.1,
+        # "freq_start" : [6176.0, 0, 0, 0],
+        # "freq_stop" : [6178.0, 0, 0, 0],
+        # "freq_step" : 0.1,
+        "relax_delay": 0, # [us] # DEBUGGING changing this changes nothing... seems wrong
     },
 #
 }
