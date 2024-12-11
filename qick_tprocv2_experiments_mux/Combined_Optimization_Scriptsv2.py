@@ -26,7 +26,7 @@ signal = 'None'        #'I', or 'Q' depending on where the signal is (after opti
 save_figs = True   # save plots for everything as you go along the RR script?
 live_plot = False    # for live plotting open http://localhost:8097/ on firefox
 fit_data = False    # fit the data here and save or plot the fits?
-outerFolder = "/data/QICK_data/6transmon_run4a/" + str(datetime.date.today()) + "/"
+outerFolder = "/data/QICK_data/6transmon_run5/" + str(datetime.date.today()) + "/"
 
 
 def create_folder_if_not_exists(folder_path):
@@ -37,16 +37,17 @@ def create_folder_if_not_exists(folder_path):
 
 # Where to save readout length sweep data
 prefix = str(datetime.date.today())
-output_folder = "/data/QICK_data/6transmon_run4a/" + prefix + "/SingleShot_Test/"
+output_folder = "/data/QICK_data/6transmon_run5/" + prefix + "/SingleShot_Test/"
 create_folder_if_not_exists(output_folder)
 
 n = 1  # Number of rounds
 n_loops = 5  # Number of repetitions per length to average
 
 # List of qubits and pulse lengths to measure
-Qs = [5]
+Qs = [0,1,2,3,4,5]
+res_leng_vals = [2.75, 4, 2.25, 2.75, 3.5, 2.75]
 
-#optimal_lengths = [None] * 6 # creates list where the script will be storing the optimal readout lengths for each qubit. We currently have 6 qubits in total.
+optimal_lengths = [None] * 6 # creates list where the script will be storing the optimal readout lengths for each qubit. We currently have 6 qubits in total.
 res_gain = [1.0]*6
 #res_gain = [0.7, 0.9, 0.7, 0.7, 0.7, 0.9, 0.9]
 res_freq_ge = [None] * 6
@@ -62,6 +63,7 @@ for QubitIndex in Qs:
     #Mask out all other resonators except this one
     res_gains = experiment.mask_gain_res(QubitIndex, IndexGain=res_gain[QubitIndex])
     experiment.readout_cfg['res_gain_ge'] = res_gains
+    experiment.readout_cfg['res_length'] = res_leng_vals[QubitIndex]
 
 
     #---------------------Res spec---------------------
@@ -194,9 +196,10 @@ for QubitIndex in Qs:
 
     #---------------------Res Gain and Res Freq Sweeps------------------------
     #exit()  # use this if you only want to run the readout length sweep
-    optimal_lengths = [3.25, 4.75, 2.50, 3.50, 4.0, 6.00] # use when you are running this part of the code separately
+    optimal_lengths = [2.75, 4, 2.25, 2.75, 3.5, 2.75]
+    # optimal_lengths = [3.25, 4.75, 2.50, 3.50, 4.0, 6.00] # use when you are running this part of the code separately
     date_str = str(datetime.date.today())
-    outerFolder = f"/data/QICK_data/6transmon_run4a/{date_str}/readout_opt/Gain_Freq_Sweeps/"
+    outerFolder = f"/data/QICK_data/6transmon_run5/{date_str}/readout_opt/Gain_Freq_Sweeps/"
 
     # Ensure the output folder exists
     os.makedirs(outerFolder, exist_ok=True)

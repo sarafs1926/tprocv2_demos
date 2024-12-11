@@ -1,6 +1,7 @@
 
 import datetime
 import numpy as np
+np.set_printoptions(threshold=1000000000000000)
 from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
 import math
@@ -142,7 +143,7 @@ class SingleShotProgram_e(AveragerProgramV2):
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
 
 class SingleShot:
-    def __init__(self, QubitIndex, outerFolder, experiment, round_num, save_figs=False):
+    def __init__(self, QubitIndex, outerFolder, round_num, save_figs=False, experiment = None):
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
         self.expt_name = "Readout_Optimization"
@@ -151,15 +152,16 @@ class SingleShot:
         self.save_figs = save_figs
         self.experiment = experiment
 
-        self.exp_cfg = expt_cfg[self.expt_name]
-        self.q_config = all_qubit_state(self.experiment)
-        self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
+        if experiment is not None:
+            self.q_config = all_qubit_state(self.experiment)
+            self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
+            self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
+            print(f'Q {self.QubitIndex + 1} Round {self.round_num} Single Shot configuration: ', self.config)
 
         self.q1_t1 = []
         self.q1_t1_err = []
         self.dates = []
 
-        print(self.config)
 
     def fidelity_test(self, soccfg, soc):
         # Run the single shot programs (g and e)
@@ -189,28 +191,28 @@ class SingleShot:
         fid, angle = self.plot_results(iq_list_g, iq_list_e, self.QubitIndex)
         return fid, angle, iq_list_g, iq_list_e
 
-    def plot_results(self, iq_list_g, iq_list_e, QubitIndex):
+    def plot_results(self, iq_list_g, iq_list_e, QubitIndex,  fig_quality=100):
         I_g = iq_list_g[QubitIndex][0].T[0]
         Q_g = iq_list_g[QubitIndex][0].T[1]
         I_e = iq_list_e[QubitIndex][0].T[0]
         Q_e = iq_list_e[QubitIndex][0].T[1]
         print(QubitIndex)
 
-        fid, threshold, angle, ig_new, ie_new = self.hist_ssf(data=[I_g, Q_g, I_e, Q_e], cfg=self.config, plot=False)
+        fid, threshold, angle, ig_new, ie_new = self.hist_ssf(data=[I_g, Q_g, I_e, Q_e], cfg=self.config, plot=False,  fig_quality=fig_quality)
         print('Optimal fidelity after rotation = %.3f' % fid)
         print('Optimal angle after rotation = %f' % angle)
         print(self.config)
 
         return fid, angle
 
-    def hist_ssf(self, data=None, cfg=None, plot=True):
+    def hist_ssf(self, data=None, cfg=None, plot=True,  fig_quality = 100):
 
         ig = data[0]
         qg = data[1]
         ie = data[2]
         qe = data[3]
 
-        numbins = round(math.sqrt(cfg["steps"]))
+        numbins = round(math.sqrt(float(cfg["steps"])))
 
         xg, yg = np.median(ig), np.median(qg)
         xe, ye = np.median(ie), np.median(qe)
@@ -278,9 +280,9 @@ class SingleShot:
         formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
         file_name = os.path.join(outerFolder_expt , f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png")
 
-        if plot == True and self.round_num == 0:
+        if plot == True:
             axs[2].set_title(f"Fidelity = {fid * 100:.2f}%")
-            fig.savefig(file_name, dpi=300, bbox_inches='tight')
+            fig.savefig(file_name,  dpi=fig_quality, bbox_inches='tight')
             plt.close(fig)
 
         return fid, threshold, theta, ig_new, ie_new

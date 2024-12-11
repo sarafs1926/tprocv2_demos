@@ -4,6 +4,7 @@ from section_004_qubit_spec_ge import QubitSpectroscopy
 from section_006_amp_rabi_ge import AmplitudeRabiExperiment
 from section_007_T1_ge import T1Measurement
 from section_008_save_data_to_h5 import Data_H5
+from section_005_single_shot_ge import SingleShot
 from section_009_T2R_ge import T2RMeasurement
 from section_010_T2E_ge import T2EMeasurement
 #from expt_config import *
@@ -16,9 +17,9 @@ import sys
 sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
 
 
-date = '2024-11-23'
-outerFolder = "/data/QICK_data/6transmon_run4a/" + date + "/"
-outerFolder_save_plots = "/data/QICK_data/6transmon_run4a/" + date + "_plots/"
+date = '2024-12-10'
+outerFolder = "/data/QICK_data/6transmon_run5/" + date + "/"
+outerFolder_save_plots = "/data/QICK_data/6transmon_run5/" + date + "_plots/"
 
 save_figs = True
 fit_saved = False
@@ -114,35 +115,35 @@ def string_to_float_list(input_string):
 #                 del res_class_instance
 #
 #     del H5_class_instance
-
-# ----------------------------------------------Load/Plot/Save QSpec------------------------------------
-outerFolder_expt = outerFolder + "/Data_h5/QSpec_ge/"
-h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
-
-for h5_file in h5_files:
-    save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
-    H5_class_instance = Data_H5(h5_file)
-    load_data = H5_class_instance.load_from_h5(data_type=  'QSpec', save_r = int(save_round))
-
-    for q_key in load_data['QSpec']:
-        for dataset in range(len(load_data['QSpec'][q_key].get('Dates', [])[0])):
-            date = datetime.datetime.fromtimestamp(load_data['QSpec'][q_key].get('Dates', [])[0][dataset])
-            I = process_h5_data(load_data['QSpec'][q_key].get('I', [])[0][dataset].decode())
-            Q = process_h5_data(load_data['QSpec'][q_key].get('Q', [])[0][dataset].decode())
-            #I_fit = load_data['QSpec'][q_key].get('I Fit', [])[0][dataset]
-            #Q_fit = load_data['QSpec'][q_key].get('Q Fit', [])[0][dataset]
-            freqs = process_h5_data(load_data['QSpec'][q_key].get('Frequencies', [])[0][dataset].decode())
-            round_num = load_data['QSpec'][q_key].get('Round Num', [])[0][dataset]
-            batch_num = load_data['QSpec'][q_key].get('Batch Num', [])[0][dataset]
-
-            if len(I)>0:
-
-                qspec_class_instance = QubitSpectroscopy(q_key, outerFolder_save_plots, round_num, signal, save_figs)
-                q_spec_cfg = ast.literal_eval(exp_config['qubit_spec_ge'].decode())
-                qspec_class_instance.plot_results(I, Q, freqs, q_spec_cfg, figure_quality)
-                del qspec_class_instance
-
-    del H5_class_instance
+#
+# # ----------------------------------------------Load/Plot/Save QSpec------------------------------------
+# outerFolder_expt = outerFolder + "/Data_h5/QSpec_ge/"
+# h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
+#
+# for h5_file in h5_files:
+#     save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
+#     H5_class_instance = Data_H5(h5_file)
+#     load_data = H5_class_instance.load_from_h5(data_type=  'QSpec', save_r = int(save_round))
+#
+#     for q_key in load_data['QSpec']:
+#         for dataset in range(len(load_data['QSpec'][q_key].get('Dates', [])[0])):
+#             date = datetime.datetime.fromtimestamp(load_data['QSpec'][q_key].get('Dates', [])[0][dataset])
+#             I = process_h5_data(load_data['QSpec'][q_key].get('I', [])[0][dataset].decode())
+#             Q = process_h5_data(load_data['QSpec'][q_key].get('Q', [])[0][dataset].decode())
+#             #I_fit = load_data['QSpec'][q_key].get('I Fit', [])[0][dataset]
+#             #Q_fit = load_data['QSpec'][q_key].get('Q Fit', [])[0][dataset]
+#             freqs = process_h5_data(load_data['QSpec'][q_key].get('Frequencies', [])[0][dataset].decode())
+#             round_num = load_data['QSpec'][q_key].get('Round Num', [])[0][dataset]
+#             batch_num = load_data['QSpec'][q_key].get('Batch Num', [])[0][dataset]
+#
+#             if len(I)>0:
+#
+#                 qspec_class_instance = QubitSpectroscopy(q_key, outerFolder_save_plots, round_num, signal, save_figs)
+#                 q_spec_cfg = ast.literal_eval(exp_config['qubit_spec_ge'].decode())
+#                 qspec_class_instance.plot_results(I, Q, freqs, q_spec_cfg, figure_quality)
+#                 del qspec_class_instance
+#
+#     del H5_class_instance
 
 # # ------------------------------------------------Load/Plot/Save Rabi---------------------------------------
 # outerFolder_expt = outerFolder + "/Data_h5/Rabi_ge/"
@@ -176,6 +177,44 @@ for h5_file in h5_files:
 #
 #     del H5_class_instance
 #
+
+
+# ------------------------------------------------Load/Plot/Save SS---------------------------------------
+outerFolder_expt = outerFolder + "/Data_h5/SS_ge/"
+h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
+
+for h5_file in h5_files:
+
+    save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
+    H5_class_instance = Data_H5(h5_file)
+    load_data = H5_class_instance.load_from_h5(data_type=  'SS', save_r = int(save_round))
+
+    for q_key in load_data['SS']:
+        for dataset in range(len(load_data['SS'][q_key].get('Dates', [])[0])):
+            date= datetime.datetime.fromtimestamp(load_data['SS'][q_key].get('Dates', [])[0][dataset])
+            angle = load_data['SS'][q_key].get('Angle', [])[0][dataset]
+            fidelity = load_data['SS'][q_key].get('Fidelity', [])[0][dataset]
+            I_g = process_h5_data(load_data['SS'][q_key].get('I_g', [])[0][dataset].decode())
+            Q_g = process_h5_data(load_data['SS'][q_key].get('Q_g', [])[0][dataset].decode())
+            I_e = process_h5_data(load_data['SS'][q_key].get('I_e', [])[0][dataset].decode())
+            Q_e = process_h5_data(load_data['SS'][q_key].get('Q_e', [])[0][dataset].decode())
+            round_num = load_data['SS'][q_key].get('Round Num', [])[0][dataset]
+            batch_num = load_data['SS'][q_key].get('Batch Num', [])[0][dataset]
+
+            I_g = np.array(I_g)
+            Q_g = np.array(Q_g)
+            I_e = np.array(I_e)
+            Q_e = np.array(Q_e)
+
+            if len(Q_g)>0:
+                ss_class_instance = SingleShot(q_key, outerFolder_save_plots, round_num, save_figs)
+                ss_cfg = ast.literal_eval(exp_config['Readout_Optimization'].decode())
+                ss_class_instance.hist_ssf(data=[I_g, Q_g, I_e, Q_e], cfg=ss_cfg, plot=True)
+                del ss_class_instance
+
+    del H5_class_instance
+
+
 # # ------------------------------------------------Load/Plot/Save T1----------------------------------------------
 # outerFolder_expt = outerFolder + "/Data_h5/T1_ge/"
 # h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))

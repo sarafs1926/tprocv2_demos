@@ -4,6 +4,7 @@ import numpy as np
 import datetime
 import time
 import visdom
+np.set_printoptions(threshold=1000000000000000)
 
 sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
 from section_001_time_of_flight import TOFExperiment
@@ -23,17 +24,17 @@ n= 10000
 save_r = 1            # how many rounds to save after
 signal = 'None'       #'I', or 'Q' depending on where the signal is (after optimization). Put 'None' if no optimization has happened
 save_figs = True    # save plots for everything as you go along the RR script?
-live_plot = True      # for live plotting open http://localhost:8097/ on firefox
-fit_data = True      # fit the data here and save or plot the fits?
+live_plot = False      # for live plotting open http://localhost:8097/ on firefox
+fit_data = False      # fit the data here and save or plot the fits?
 save_data_h5 = True   # save all of the data to h5 files?
 outerFolder = os.path.join("/data/QICK_data/6transmon_run5/", str(datetime.date.today()))
-Qs = [0, 1, 2, 3, 4, 5]
+Qs = [0] #, 1, 2, 3, 4, 5
 
 #optimization outputs
-res_leng_vals = [3.25, 4.75, 2.50, 3.50, 4.0, 6.00] #Final decision, for Danso at 3.5V
+res_leng_vals = [2.75, 4.00, 2.25, 2.75, 3.5, 2.75] #Final decision, for Danso at 3.5V
 # res_gain = [0.9, 0.95, 0.95, 0.95, 0.9, 0.95]
-res_gain = [1,1,1,1,1,1]
-freq_offsets = [-0.1333, 0.0667, -0.3333, -0.1333, -0.2667, -0.2667]
+res_gain = [0.9,0.95,0.85,0.95,0.9,0.9]
+freq_offsets = [-0.2000, 0.1333, -0.1333, -0.2000, -0.2000, -0.1333]
 
 def create_data_dict(keys, save_r, qs):
     return {Q: {key: np.empty(save_r, dtype=object) for key in keys} for Q in range(len(qs))}
@@ -42,6 +43,7 @@ def create_data_dict(keys, save_r, qs):
 res_keys = ['Dates', 'freq_pts', 'freq_center', 'Amps', 'Found Freqs', 'Round Num', 'Batch Num']
 qspec_keys = ['Dates', 'I', 'Q', 'Frequencies', 'I Fit', 'Q Fit', 'Round Num', 'Batch Num']
 rabi_keys = ['Dates', 'I', 'Q', 'Gains', 'Fit', 'Round Num', 'Batch Num']
+ss_keys = ['Fidelity', 'Angle', 'Dates', 'I_g', 'Q_g', 'I_e', 'Q_e', 'Round Num', 'Batch Num']
 t1_keys = ['T1', 'Errors', 'Dates', 'I', 'Q', 'Delay Times', 'Fit', 'Round Num', 'Batch Num']
 t2r_keys = ['T2', 'Errors', 'Dates', 'I', 'Q', 'Delay Times', 'Fit', 'Round Num', 'Batch Num']
 t2e_keys = ['T2E', 'Errors', 'Dates', 'I', 'Q', 'Delay Times', 'Fit', 'Round Num', 'Batch Num']
@@ -50,6 +52,7 @@ t2e_keys = ['T2E', 'Errors', 'Dates', 'I', 'Q', 'Delay Times', 'Fit', 'Round Num
 res_data = create_data_dict(res_keys, save_r, Qs)
 qspec_data = create_data_dict(qspec_keys, save_r, Qs)
 rabi_data = create_data_dict(rabi_keys, save_r, Qs)
+ss_data = create_data_dict(ss_keys, save_r, Qs)
 t1_data = create_data_dict(t1_keys, save_r, Qs)
 t2r_data = create_data_dict(t2r_keys, save_r, Qs)
 t2e_data = create_data_dict(t2e_keys, save_r, Qs)
@@ -77,9 +80,9 @@ while j < n:
         res_spec   = ResonanceSpectroscopy(QubitIndex, outerFolder, j, save_figs, experiment)
         res_freqs, freq_pts, freq_center, amps = res_spec.run(experiment.soccfg, experiment.soc)
         experiment.readout_cfg['res_freq_ge'] = res_freqs
-        # offset = freq_offsets[QubitIndex] #use optimized offset values
-        # offset_res_freqs = [r + offset for r in res_freqs]
-        # experiment.readout_cfg['res_freq_ge'] = offset_res_freqs
+        offset = freq_offsets[QubitIndex] #use optimized offset values
+        offset_res_freqs = [r + offset for r in res_freqs]
+        experiment.readout_cfg['res_freq_ge'] = offset_res_freqs
         del res_spec
 
         # #-----------------Roll Signal into I---------------
@@ -101,37 +104,36 @@ while j < n:
 
         #-----------------------Rabi-----------------------
         rabi = AmplitudeRabiExperiment(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot)
-        rabi_I, rabi_Q, rabi_gains, rabi_fit, pi_amp  = rabi.run(experiment.soccfg, experiment.soc)
+        rabi_I, rabi_Q, rabi_gains, rabi_fit, pi_amp, sys_config_to_save  = rabi.run(experiment.soccfg, experiment.soc)
         experiment.qubit_cfg['pi_amp'][QubitIndex] = float(pi_amp)
         print('Pi amplitude for qubit ', QubitIndex + 1, ' is: ', float(pi_amp))
         del rabi
 
-        # #------------------Single Shot Measurements---------------
-        # ss = SingleShot(QubitIndex, outerFolder, experiment, round_num=0, save_figs=True)
-        # fid, angle, iq_list_g, iq_list_e = ss.run(experiment.soccfg, experiment.soc)
+        #------------------Single Shot Measurements---------------
+        ss = SingleShot(QubitIndex, outerFolder,  j, save_figs, experiment)
+        fid, angle, iq_list_g, iq_list_e = ss.run(experiment.soccfg, experiment.soc)
+        I_g = iq_list_g[QubitIndex][0].T[0]
+        Q_g = iq_list_g[QubitIndex][0].T[1]
+        I_e = iq_list_e[QubitIndex][0].T[0]
+        Q_e = iq_list_e[QubitIndex][0].T[1]
+
+        fid, threshold, rotation_angle, ig_new, ie_new = ss.hist_ssf(
+            data=[I_g, Q_g, I_e, Q_e], cfg=ss.config, plot=True)
+
+        # #------------------------T1-------------------------
+        # t1 = T1Measurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data)
+        # t1_est, t1_err, t1_I, t1_Q, t1_delay_times, q1_fit_exponential = t1.run(experiment.soccfg, experiment.soc)
+        # del t1
         #
-        # I_g = iq_list_g[QubitIndex][0].T[0]
-        # Q_g = iq_list_g[QubitIndex][0].T[1]
-        # I_e = iq_list_e[QubitIndex][0].T[0]
-        # Q_e = iq_list_e[QubitIndex][0].T[1]
+        # #------------------------T2R-------------------------
+        # t2r = T2RMeasurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data)
+        # t2r_est, t2r_err, t2r_I, t2r_Q, t2r_delay_times, fit_ramsey = t2r.run(experiment.soccfg, experiment.soc)
+        # del t2r
         #
-        # fid, threshold, rotation_angle, ig_new, ie_new = ss.hist_ssf(
-        #     data=[I_g, Q_g, I_e, Q_e], cfg=ss.config, plot=True)
-
-        #------------------------T1-------------------------
-        t1 = T1Measurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data)
-        t1_est, t1_err, t1_I, t1_Q, t1_delay_times, q1_fit_exponential = t1.run(experiment.soccfg, experiment.soc)
-        del t1
-
-        #------------------------T2R-------------------------
-        t2r = T2RMeasurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data)
-        t2r_est, t2r_err, t2r_I, t2r_Q, t2r_delay_times, fit_ramsey = t2r.run(experiment.soccfg, experiment.soc)
-        del t2r
-
-        #------------------------T2E-------------------------
-        t2e = T2EMeasurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data)
-        t2e_est, t2e_err, t2e_I, t2e_Q, t2e_delay_times, fit_ramsey_t2e, sys_config_to_save = t2e.run(experiment.soccfg, experiment.soc)
-        del t2e
+        # #------------------------T2E-------------------------
+        # t2e = T2EMeasurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data)
+        # t2e_est, t2e_err, t2e_I, t2e_Q, t2e_delay_times, fit_ramsey_t2e, sys_config_to_save = t2e.run(experiment.soccfg, experiment.soc)
+        # del t2e
 
         if save_data_h5:
             # ---------------------Collect Res Spec Results----------------
@@ -162,39 +164,50 @@ while j < n:
             rabi_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
             rabi_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
 
-            #---------------------Collect T1 Results----------------
-            t1_data[QubitIndex]['T1'][j - batch_num*save_r - 1] = t1_est
-            t1_data[QubitIndex]['Errors'][j - batch_num*save_r - 1] = t1_err
-            t1_data[QubitIndex]['Dates'][j - batch_num*save_r - 1] = time.mktime(datetime.datetime.now().timetuple())
-            t1_data[QubitIndex]['I'][j - batch_num*save_r - 1] = t1_I
-            t1_data[QubitIndex]['Q'][j - batch_num*save_r - 1] = t1_Q
-            t1_data[QubitIndex]['Delay Times'][j - batch_num*save_r - 1] = t1_delay_times
-            t1_data[QubitIndex]['Fit'][j - batch_num*save_r - 1] = q1_fit_exponential
-            t1_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
-            t1_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
+            # ---------------------Collect Single Shot Results----------------
+            ss_data[QubitIndex]['Fidelity'][j - batch_num * save_r - 1] = fid
+            ss_data[QubitIndex]['Angle'][j - batch_num * save_r - 1] = angle
+            ss_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = time.mktime(datetime.datetime.now().timetuple())
+            ss_data[QubitIndex]['I_g'][j - batch_num * save_r - 1] = I_g
+            ss_data[QubitIndex]['Q_g'][j - batch_num * save_r - 1] = Q_g
+            ss_data[QubitIndex]['I_e'][j - batch_num * save_r - 1] = I_e
+            ss_data[QubitIndex]['Q_e'][j - batch_num * save_r - 1] = Q_e
+            ss_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
+            ss_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
 
-            #---------------------Collect T2 Results----------------
-            t2r_data[QubitIndex]['T2'][j - batch_num*save_r - 1] = t2r_est
-            t2r_data[QubitIndex]['Errors'][j - batch_num*save_r - 1] = t2r_err
-            t2r_data[QubitIndex]['Dates'][j - batch_num*save_r - 1] = time.mktime(datetime.datetime.now().timetuple())
-            t2r_data[QubitIndex]['I'][j - batch_num*save_r - 1] = t2r_I
-            t2r_data[QubitIndex]['Q'][j - batch_num*save_r - 1] = t2r_Q
-            t2r_data[QubitIndex]['Delay Times'][j - batch_num*save_r - 1] = t2r_delay_times
-            t2r_data[QubitIndex]['Fit'][j - batch_num*save_r - 1] = fit_ramsey
-            t2r_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
-            t2r_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
-
-            #---------------------Collect T2E Results----------------
-            t2e_data[QubitIndex]['T2E'][j - batch_num*save_r - 1] = t2e_est
-            t2e_data[QubitIndex]['Errors'][j - batch_num*save_r - 1] = t2e_err
-            t2e_data[QubitIndex]['Dates'][j - batch_num*save_r - 1] = time.mktime(datetime.datetime.now().timetuple())
-            t2e_data[QubitIndex]['I'][j - batch_num*save_r - 1] = t2e_I
-            t2e_data[QubitIndex]['Q'][j - batch_num*save_r - 1] = t2e_Q
-            t2e_data[QubitIndex]['Delay Times'][j - batch_num*save_r - 1] = t2e_delay_times
-            t2e_data[QubitIndex]['Fit'][j - batch_num*save_r - 1] = fit_ramsey_t2e
-            t2e_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
-            t2e_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
-
+            # #---------------------Collect T1 Results----------------
+            # t1_data[QubitIndex]['T1'][j - batch_num*save_r - 1] = t1_est
+            # t1_data[QubitIndex]['Errors'][j - batch_num*save_r - 1] = t1_err
+            # t1_data[QubitIndex]['Dates'][j - batch_num*save_r - 1] = time.mktime(datetime.datetime.now().timetuple())
+            # t1_data[QubitIndex]['I'][j - batch_num*save_r - 1] = t1_I
+            # t1_data[QubitIndex]['Q'][j - batch_num*save_r - 1] = t1_Q
+            # t1_data[QubitIndex]['Delay Times'][j - batch_num*save_r - 1] = t1_delay_times
+            # t1_data[QubitIndex]['Fit'][j - batch_num*save_r - 1] = q1_fit_exponential
+            # t1_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
+            # t1_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
+            #
+            # #---------------------Collect T2 Results----------------
+            # t2r_data[QubitIndex]['T2'][j - batch_num*save_r - 1] = t2r_est
+            # t2r_data[QubitIndex]['Errors'][j - batch_num*save_r - 1] = t2r_err
+            # t2r_data[QubitIndex]['Dates'][j - batch_num*save_r - 1] = time.mktime(datetime.datetime.now().timetuple())
+            # t2r_data[QubitIndex]['I'][j - batch_num*save_r - 1] = t2r_I
+            # t2r_data[QubitIndex]['Q'][j - batch_num*save_r - 1] = t2r_Q
+            # t2r_data[QubitIndex]['Delay Times'][j - batch_num*save_r - 1] = t2r_delay_times
+            # t2r_data[QubitIndex]['Fit'][j - batch_num*save_r - 1] = fit_ramsey
+            # t2r_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
+            # t2r_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
+            #
+            # #---------------------Collect T2E Results----------------
+            # t2e_data[QubitIndex]['T2E'][j - batch_num*save_r - 1] = t2e_est
+            # t2e_data[QubitIndex]['Errors'][j - batch_num*save_r - 1] = t2e_err
+            # t2e_data[QubitIndex]['Dates'][j - batch_num*save_r - 1] = time.mktime(datetime.datetime.now().timetuple())
+            # t2e_data[QubitIndex]['I'][j - batch_num*save_r - 1] = t2e_I
+            # t2e_data[QubitIndex]['Q'][j - batch_num*save_r - 1] = t2e_Q
+            # t2e_data[QubitIndex]['Delay Times'][j - batch_num*save_r - 1] = t2e_delay_times
+            # t2e_data[QubitIndex]['Fit'][j - batch_num*save_r - 1] = fit_ramsey_t2e
+            # t2e_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
+            # t2e_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
+            #
             # ---------------------save last system config and expt_cfg---------------------
             saver_config = Data_H5(outerFolder)
             saver_config.save_config(sys_config_to_save, expt_cfg)
@@ -226,6 +239,12 @@ while j < n:
             del saver_rabi
             del rabi_data
 
+            # --------------------------save SS-----------------------
+            saver_ss = Data_H5(outerFolder, ss_data, batch_num, save_r)
+            saver_ss.save_to_h5('SS')
+            del saver_ss
+            del ss_data
+
             # --------------------------save t1-----------------------
             saver_t1 = Data_H5(outerFolder, t1_data, batch_num, save_r)
             saver_t1.save_to_h5('T1')
@@ -248,6 +267,7 @@ while j < n:
             res_data = create_data_dict(res_keys, save_r, Qs)
             qspec_data = create_data_dict(qspec_keys, save_r, Qs)
             rabi_data = create_data_dict(rabi_keys, save_r, Qs)
+            ss_data = create_data_dict(ss_keys, save_r, Qs)
             t1_data = create_data_dict(t1_keys, save_r, Qs)
             t2r_data = create_data_dict(t2r_keys, save_r, Qs)
             t2e_data = create_data_dict(t2e_keys, save_r, Qs)

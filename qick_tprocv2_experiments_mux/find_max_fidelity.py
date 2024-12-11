@@ -4,7 +4,7 @@ import os
 import glob
 
 # Directory where your HDF5 files are stored
-outerFolder = f"/data/QICK_data/6transmon_run4a/2024-11-21/readout_opt/Gain_Freq_Sweeps"
+outerFolder = f"/data/QICK_data/6transmon_run5/2024-12-10/readout_opt/Gain_Freq_Sweeps"
 
 def find_max_fidelity(file_path):
     with h5py.File(file_path, "r") as f:
@@ -40,7 +40,9 @@ def find_max_fidelity(file_path):
 # Loop through each HDF5 file in the folder for each qubit
 for qubit_index in range(1, 7):
     # Search for files matching the pattern with any timestamp
-    file_pattern = os.path.join(outerFolder, f"Gain_Freq_Sweep_Qubit_{qubit_index}_*.h5")
+    # file_pattern = os.path.join(outerFolder, f"Gain_Freq_Sweep_Qubit_{qubit_index}_*.h5")
+    file_pattern = os.path.join(outerFolder, f"*_Qubit_{qubit_index}_*.h5")
+
     file_list = glob.glob(file_pattern)
 
     if file_list:
