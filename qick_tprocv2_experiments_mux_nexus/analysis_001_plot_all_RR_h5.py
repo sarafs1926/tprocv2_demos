@@ -15,7 +15,7 @@ import datetime
 import ast
 import os
 
-date = '2024-12-10'
+date = '2024-12-11'
 outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/", str(datetime.date.today()))
 outerFolder_save_plots = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/", str(datetime.date.today())) + "_plots/"
 

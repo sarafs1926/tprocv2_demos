@@ -385,7 +385,7 @@ class T2EMeasurement:
         if self.fit_data:
             fit, t2e_est, t2e_err, plot_sig = self.t2_fit(delay_times, I, Q)
         else:
-            fit, t2r_est, t2r_err, plot_sig = None, None, None, None
+            fit, t2e_est, t2e_err, plot_sig = None, None, None, None
 
         if self.save_figs:
             self.plot_results(I, Q, delay_times, now, fit, t2e_est, t2e_err, plot_sig)
