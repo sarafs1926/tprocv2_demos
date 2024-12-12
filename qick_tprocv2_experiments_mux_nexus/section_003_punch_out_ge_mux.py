@@ -190,14 +190,14 @@ class TWPA_Sweep:
         frequency_sweeps = []
         gains = np.zeros((len(self.config['res_freq_ge']), num_points))
 
-        #synth = SynthHD('/dev/ttyACM0')
-        #synth[0].freqency = TWPA_freq
+        synth = SynthHD('/dev/ttyACM0')
+        synth[0].freqency = TWPA_freq
 
         for p in power_sweep:
             out_power = round(p, 3)
 
-            #synth[0].power =  out_power
-            #synth[0].enable = True
+            synth[0].power =  out_power
+            synth[0].enable = True
             time.sleep(2)
 
             #self.config['res_gain_ge'] = [power for i in range(0, len(self.config['res_freq_ge']))]
@@ -221,7 +221,7 @@ class TWPA_Sweep:
                 freq_res.append(fpts[np.argmin(amps[i])])
             resonance_vals.append(freq_res)
 
-            #synth[0].enable = False
+            synth[0].enable = False
         return resonance_vals, power_sweep, frequency_sweeps, gains
 
     def plot_center_shift(self, resonance_vals, power_sweep,attn_1, attn_2 ):
