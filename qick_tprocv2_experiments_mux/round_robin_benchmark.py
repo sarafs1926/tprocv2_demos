@@ -24,17 +24,18 @@ n= 10000
 #n=1
 save_r = 1            # how many rounds to save after
 signal = 'None'       #'I', or 'Q' depending on where the signal is (after optimization). Put 'None' if no optimization has happened
-save_figs = True    # save plots for everything as you go along the RR script?
-live_plot = True      # for live plotting open http://localhost:8097/ on firefox
+save_figs = False    # save plots for everything as you go along the RR script?
+live_plot = False      # for live plotting open http://localhost:8097/ on firefox
 fit_data = False      # fit the data here and save or plot the fits?
-save_data_h5 = False   # save all of the data to h5 files?
+save_data_h5 = True   # save all of the data to h5 files?
 outerFolder = os.path.join("/data/QICK_data/6transmon_run5/", str(datetime.date.today()))
 Qs = [0, 1, 2, 3, 4, 5] #IMPORTANT: this no longer determines which qubits we are looking at, it's just our total num of qubits. DEFINE QUBITS TO LOOK AT IN LINE 66.
 #optimization outputs
-res_leng_vals = [3, 4.00, 2.25, 2.75, 3.5, 2.75] #Final decision, for Danso at 3.5V     2.75
+res_leng_vals = [3.25, 4.00, 2.25, 2.75, 3.5, 2.75] #Final decision, for Danso at 3.5V     2.75
 # res_gain = [0.9, 0.95, 0.95, 0.95, 0.9, 0.95]
 res_gain = [1,0.95,0.85,0.95,0.9,0.9]
 freq_offsets = [0, 0.1333, -0.1333, -0.2000, -0.2000, -0.1333] #-0.2000
+q1_lowT1=True #special params for Q1 which has a low T1 right now
 
 def create_data_dict(keys, save_r, qs):
     return {Q: {key: np.empty(save_r, dtype=object) for key in keys} for Q in range(len(qs))}
@@ -63,7 +64,7 @@ angles=[]
 while j < n:
     j += 1
     #for QubitIndex in Qs:
-    for QubitIndex in [0]: #Select qubits you want to loo at by listing them inside the brackets   1,2,3,4,5
+    for QubitIndex in [0,1,2,3,4,5]: #Select qubits you want to loo at by listing them inside the brackets
         #Get the config for this qubit
         experiment = QICK_experiment(outerFolder, DAC_attenuator1 = 5, DAC_attenuator2 = 10, ADC_attenuator = 10)
 
@@ -104,7 +105,7 @@ while j < n:
         del q_spec
 
         #-----------------------Rabi-----------------------
-        rabi = AmplitudeRabiExperiment(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot)
+        rabi = AmplitudeRabiExperiment(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, q1_lowT1)
         rabi_I, rabi_Q, rabi_gains, rabi_fit, pi_amp, sys_config_to_save  = rabi.run(experiment.soccfg, experiment.soc)
         experiment.qubit_cfg['pi_amp'][QubitIndex] = float(pi_amp)
         print('Pi amplitude for qubit ', QubitIndex + 1, ' is: ', float(pi_amp))
@@ -122,17 +123,17 @@ while j < n:
             data=[I_g, Q_g, I_e, Q_e], cfg=ss.config, plot=save_figs)
 
         #------------------------T1-------------------------
-        t1 = T1Measurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data)
+        t1 = T1Measurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data, q1_lowT1)
         t1_est, t1_err, t1_I, t1_Q, t1_delay_times, q1_fit_exponential = t1.run(experiment.soccfg, experiment.soc)
         del t1
 
         #------------------------T2R-------------------------
-        t2r = T2RMeasurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data)
+        t2r = T2RMeasurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data, q1_lowT1)
         t2r_est, t2r_err, t2r_I, t2r_Q, t2r_delay_times, fit_ramsey = t2r.run(experiment.soccfg, experiment.soc)
         del t2r
 
         #------------------------T2E-------------------------
-        t2e = T2EMeasurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data)
+        t2e = T2EMeasurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data, q1_lowT1)
         t2e_est, t2e_err, t2e_I, t2e_Q, t2e_delay_times, fit_ramsey_t2e, sys_config_to_save = t2e.run(experiment.soccfg, experiment.soc)
         del t2e
 

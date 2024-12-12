@@ -27,8 +27,8 @@ class T1Program(AveragerProgramV2):
                        mask=[0, 1, 2, 3, 4, 5],
                        )
 
-        self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=4200)
-        self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma'], length=cfg['sigma'] * 5, even_length=True)
+        self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
+        self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma'], length=cfg['sigma'] * 4, even_length=False)
         self.add_pulse(ch=qubit_ch, name="qubit_pulse",
                        style="arb",
                        envelope="ramp",
@@ -47,7 +47,7 @@ class T1Program(AveragerProgramV2):
 
 
 class T1Measurement:
-    def __init__(self, QubitIndex, outerFolder, round_num, signal, save_figs, experiment = None, live_plot = None, fit_data = None):
+    def __init__(self, QubitIndex, outerFolder, round_num, signal, save_figs, experiment = None, live_plot = None, fit_data = None, q1_lowT1=None):
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
         self.expt_name = "T1_ge"
@@ -63,16 +63,20 @@ class T1Measurement:
             self.q_config = all_qubit_state(self.experiment)
             self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
             self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
+            if q1_lowT1:
+                    if self.QubitIndex==0:
+                        print("Q1 has low T1, increasing reps and rounds")
+                        # self.config["reps"] *=2
             print(f'Q {self.QubitIndex + 1} Round {self.round_num} T1 configuration: ', self.config)
 
     def run(self, soccfg, soc):
         now = datetime.datetime.now()
-        t1 = T1Program(soccfg, reps=self.exp_cfg['reps'], final_delay=self.exp_cfg['relax_delay'], cfg=self.config)
+        t1 = T1Program(soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'], cfg=self.config)
 
         if self.live_plot:
             I, Q, delay_times = self.live_plotting(t1, soc)
         else:
-            iq_list = t1.acquire(soc, soft_avgs=self.exp_cfg['rounds'], progress=True)
+            iq_list = t1.acquire(soc, soft_avgs=self.config['rounds'], progress=True)
             I = iq_list[self.QubitIndex][0, :, 0]
             Q = iq_list[self.QubitIndex][0, :, 1]
             delay_times = t1.get_time_param('wait', "t", as_array=True)

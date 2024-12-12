@@ -9,7 +9,7 @@ import copy
 import visdom
 
 class AmplitudeRabiExperiment:
-    def __init__(self, QubitIndex, outerFolder, round_num, signal, save_figs, experiment = None, live_plot = None):
+    def __init__(self, QubitIndex, outerFolder, round_num, signal, save_figs, experiment = None, live_plot = None, q1_lowT1=None):
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
         self.expt_name = "power_rabi_ge"
@@ -24,16 +24,20 @@ class AmplitudeRabiExperiment:
             self.q_config = all_qubit_state(self.experiment)
             self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
             self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
+            if q1_lowT1:
+                    if self.QubitIndex==0:
+                        print("Q1 has low T1, increasing reps and rounds")
+                        # self.config["reps"] *=2
             print(f'Q {self.QubitIndex + 1} Round {self.round_num} Rabi configuration: ', self.config)
 
 
     def run(self, soccfg, soc):
-        amp_rabi = AmplitudeRabiProgram(soccfg, reps=self.exp_cfg['reps'], final_delay=self.exp_cfg['relax_delay'], cfg=self.config)
+        amp_rabi = AmplitudeRabiProgram(soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'], cfg=self.config)
 
         if self.live_plot:
             I, Q, gains = self.live_plotting(amp_rabi, soc)
         else:
-            iq_list = amp_rabi.acquire(soc, soft_avgs=self.exp_cfg["rounds"], progress=True)
+            iq_list = amp_rabi.acquire(soc, soft_avgs=self.config["rounds"], progress=True)
             I = iq_list[self.QubitIndex][0, :, 0]
             Q = iq_list[self.QubitIndex][0, :, 1]
             gains = amp_rabi.get_pulse_param('qubit_pulse', "gain", as_array=True)
@@ -248,8 +252,8 @@ class AmplitudeRabiProgram(AveragerProgramV2):
                        mask=[0, 1, 2, 3, 4, 5],
                        )
 
-        self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=4200)
-        self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma'], length=cfg['sigma'] * 5, even_length=True)
+        self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
+        self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma'], length=cfg['sigma'] * 4, even_length=False)
         self.add_pulse(ch=qubit_ch, name="qubit_pulse",
                        style="arb",
                        envelope="ramp",
@@ -262,6 +266,6 @@ class AmplitudeRabiProgram(AveragerProgramV2):
 
     def _body(self, cfg):
         self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)
-        self.delay_auto(t=0.01, tag='waiting')
+        self.delay_auto(t=0.0, tag='waiting')
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])

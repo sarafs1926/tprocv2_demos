@@ -41,7 +41,7 @@ output_folder = "/data/QICK_data/6transmon_run5/" + prefix + "/SingleShot_Test/"
 create_folder_if_not_exists(output_folder)
 
 n = 1  # Number of rounds
-n_loops = 5  # Number of repetitions per length to average
+n_loops = 3  # Number of repetitions per length to average
 
 # List of qubits and pulse lengths to measure
 Qs = [0] #,1,2,3,4,5
@@ -54,7 +54,7 @@ res_freq_ge = [None] * 6
 j=1 #round number, from RR code. Not really used here since we just run it once for each qubit
 
 #lengs = np.linspace(0.5, 5, 19)  # increments of 0.25
-lengs = np.linspace(0.5, 7, 27) # increments of 0.25
+lengs = np.linspace(0.1, 4, 27) # increments of 0.25
 
 for QubitIndex in Qs:
     #Get the config for this qubit
@@ -82,7 +82,7 @@ for QubitIndex in Qs:
     del q_spec
 
     #-----------------------Rabi-----------------------
-    rabi = AmplitudeRabiExperiment(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot)
+    rabi = AmplitudeRabiExperiment(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, q1_lowT1=True)
     rabi_I, rabi_Q, rabi_gains, rabi_fit, pi_amp, conf  = rabi.run(experiment.soccfg, experiment.soc)
     experiment.qubit_cfg['pi_amp'][QubitIndex] = float(pi_amp)
     print('Pi amplitude for qubit ', QubitIndex + 1, ' is: ', float(pi_amp))
@@ -196,7 +196,8 @@ for QubitIndex in Qs:
 
     #---------------------Res Gain and Res Freq Sweeps------------------------
     #exit()  # use this if you only want to run the readout length sweep
-    # optimal_lengths = [2.75, 4, 2.25, 2.75, 3.5, 2.75]
+    #optimal_lengths = [2.75, 4, 2.25, 2.75, 3.5, 2.75] old
+    # optimal_lengths = [1.0, 4, 2.25, 2.75, 3.5, 2.75] #Q1 updated
     # # optimal_lengths = [3.25, 4.75, 2.50, 3.50, 4.0, 6.00] # use when you are running this part of the code separately
     # date_str = str(datetime.date.today())
     # outerFolder = f"/data/QICK_data/6transmon_run5/{date_str}/readout_opt/Gain_Freq_Sweeps/"
