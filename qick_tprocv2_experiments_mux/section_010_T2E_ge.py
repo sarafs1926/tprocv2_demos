@@ -163,8 +163,8 @@ class T2EProgram(AveragerProgramV2):
                        mask=[0, 1, 2, 3, 4, 5],
                        )
 
-        self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=4200)
-        self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma'], length=cfg['sigma'] * 5, even_length=True)
+        self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
+        self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma'], length=cfg['sigma'] * 4, even_length=False)
         self.add_pulse(ch=qubit_ch, name="qubit_pulse1",
                        style="arb",
                        envelope="ramp",
@@ -202,7 +202,7 @@ class T2EProgram(AveragerProgramV2):
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
 
 class T2EMeasurement:
-    def __init__(self, QubitIndex, outerFolder, round_num, signal, save_figs, experiment = None, live_plot = None, fit_data = None):
+    def __init__(self, QubitIndex, outerFolder, round_num, signal, save_figs, experiment = None, live_plot = None, fit_data = None, q1_lowT1=None):
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
         self.fit_data = fit_data
@@ -218,6 +218,11 @@ class T2EMeasurement:
             self.q_config = all_qubit_state(self.experiment)
             self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
             self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
+            if q1_lowT1:
+                    if self.QubitIndex==0:
+                        print("Q1 has low T1, increasing reps and rounds")
+                        self.config["reps"] *=2
+                        # self.config['ramsey_freq'] = 2 * self.config['ramsey_freq']
             print(f'Q {self.QubitIndex + 1} Round {self.round_num} T2E configuration: ', self.config)
 
     def t2_fit(self, x_data, I, Q, verbose = False, guess=None, plot=False):
@@ -368,13 +373,13 @@ class T2EMeasurement:
 
     def run(self, soccfg, soc):
         now = datetime.datetime.now()
-        ramsey = T2EProgram(soccfg, reps=self.exp_cfg['reps'], final_delay=self.exp_cfg['relax_delay'],
+        ramsey = T2EProgram(soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'],
                          cfg=self.config)
         # for live plotting open http://localhost:8097/ on firefox
         if self.live_plot:
             I, Q, delay_times = self.live_plotting(ramsey, soc)
         else:
-            iq_list = ramsey.acquire(soc, soft_avgs=self.exp_cfg['rounds'], progress=True)
+            iq_list = ramsey.acquire(soc, soft_avgs=self.config['rounds'], progress=True)
             I = iq_list[self.QubitIndex][0, :, 0]
             Q = iq_list[self.QubitIndex][0, :, 1]
             delay_times1 = ramsey.get_time_param('wait1', "t", as_array=True)
@@ -384,7 +389,7 @@ class T2EMeasurement:
         if self.fit_data:
             fit, t2e_est, t2e_err, plot_sig = self.t2_fit(delay_times, I, Q)
         else:
-            fit, t2r_est, t2r_err, plot_sig = None, None, None, None
+            fit, t2e_est, t2e_err, plot_sig = None, None, None, None
 
         if self.save_figs:
             self.plot_results(I, Q, delay_times, now, fit, t2e_est, t2e_err, plot_sig)

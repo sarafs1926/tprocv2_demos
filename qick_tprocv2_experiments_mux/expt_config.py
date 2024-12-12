@@ -23,7 +23,7 @@ expt_cfg = {
     },
 
     "qubit_spec_ge": {
-        "reps": 100, #100
+        "reps": 500, #100
         "rounds": 1, #10
         "start": list(VNA_qubit-5), # [MHz]
         "stop":  list(VNA_qubit+5), # [MHz]
@@ -42,7 +42,7 @@ expt_cfg = {
 
     "T1_ge": {
         "reps": 300, #300
-        "rounds": 2, #1
+        "rounds": 1, #1
         "start": [0.0] * 6,  # [us]
         "stop": [200,200,200,300,200,200], #[250.0] * 6,  # [us] ### Should be ~10x T1! Should change this per qubit.
         "steps": 80,
@@ -52,7 +52,7 @@ expt_cfg = {
 
     "Ramsey_ge": {
         "reps": 300, #300
-        "rounds": 2,#10
+        "rounds": 1,#10
         "start": [0.0] * 6, # [us]
         "stop":  [60] * 6, # [us]
         "steps": 100,
@@ -63,7 +63,7 @@ expt_cfg = {
 
     "SpinEcho_ge": {
         "reps": 300,
-        "rounds": 2,
+        "rounds": 1,
         "start": [0.0] * 6, # [us]
         "stop":  [60] * 6, # [us]
         "steps": 100,

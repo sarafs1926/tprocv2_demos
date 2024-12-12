@@ -1,6 +1,7 @@
 
 import datetime
 import numpy as np
+np.set_printoptions(threshold=1000000000000000)
 from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
 import math
@@ -34,7 +35,7 @@ class SingleShotProgram(AveragerProgramV2):
                        mask=[0, 1, 2, 3, 4, 5],
                        )
 
-        self.declare_gen(ch=qubit_ch, nqz=1)
+        self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
 
         self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma'], length=cfg['sigma'] * 5, even_length=True)
         self.add_pulse(ch=qubit_ch, name="qubit_pulse", ro_ch=ro_chs[0],
@@ -72,23 +73,10 @@ class SingleShotProgram_g(AveragerProgramV2):
         for ch, f, ph in zip(cfg['ro_ch'], cfg['res_freq_ge'], cfg['ro_phase']):
             self.declare_readout(ch=ch, length=cfg['res_length'], freq=f, phase=ph, gen_ch=gen_ch)
 
-
         self.add_pulse(ch=gen_ch, name="res_pulse",
                        style="const",
                        length=cfg["res_length"],
                        mask=[0, 1, 2, 3, 4, 5],
-                       )
-
-        self.declare_gen(ch=qubit_ch, nqz=1)
-
-        self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma'], length=cfg['sigma'] * 5, even_length=True)
-
-        self.add_pulse(ch=qubit_ch, name="qubit_pulse",
-                       style="arb",
-                       envelope="ramp",
-                       freq=cfg['qubit_freq_ge'],
-                       phase=cfg['qubit_phase'],
-                       gain=cfg['pi_amp'],
                        )
 
         self.add_loop("shotloop", cfg["steps"])  # number of total shots
@@ -121,9 +109,9 @@ class SingleShotProgram_e(AveragerProgramV2):
                        mask=[0, 1, 2, 3, 4, 5],
                        )
 
-        self.declare_gen(ch=qubit_ch, nqz=1, mixer_freq=4500)
+        self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
 
-        self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma'], length=cfg['sigma'] * 5, even_length=True)
+        self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma'], length=cfg['sigma'] * 4, even_length=False)
 
         self.add_pulse(ch=qubit_ch, name="qubit_pulse",
                        style="arb",
@@ -137,12 +125,12 @@ class SingleShotProgram_e(AveragerProgramV2):
 
     def _body(self, cfg):
         self.pulse(ch=self.cfg["qubit_ch"], name="qubit_pulse", t=0)  # play pulse
-        self.delay_auto(0.01)
+        self.delay_auto(0.0)
         self.pulse(ch=cfg['res_ch'], name="res_pulse", t=0)  # play probe pulse
         self.trigger(ros=cfg['ro_ch'], pins=[0], t=cfg['trig_time'])
 
 class SingleShot:
-    def __init__(self, QubitIndex, outerFolder, experiment, round_num, save_figs=False):
+    def __init__(self, QubitIndex, outerFolder, round_num, save_figs=False, experiment = None):
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
         self.expt_name = "Readout_Optimization"
@@ -151,15 +139,16 @@ class SingleShot:
         self.save_figs = save_figs
         self.experiment = experiment
 
-        self.exp_cfg = expt_cfg[self.expt_name]
-        self.q_config = all_qubit_state(self.experiment)
-        self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
+        if experiment is not None:
+            self.q_config = all_qubit_state(self.experiment)
+            self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
+            self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
+            print(f'Q {self.QubitIndex + 1} Round {self.round_num} Single Shot configuration: ', self.config)
 
         self.q1_t1 = []
         self.q1_t1_err = []
         self.dates = []
 
-        print(self.config)
 
     def fidelity_test(self, soccfg, soc):
         # Run the single shot programs (g and e)
@@ -189,28 +178,28 @@ class SingleShot:
         fid, angle = self.plot_results(iq_list_g, iq_list_e, self.QubitIndex)
         return fid, angle, iq_list_g, iq_list_e
 
-    def plot_results(self, iq_list_g, iq_list_e, QubitIndex):
+    def plot_results(self, iq_list_g, iq_list_e, QubitIndex,  fig_quality=100):
         I_g = iq_list_g[QubitIndex][0].T[0]
         Q_g = iq_list_g[QubitIndex][0].T[1]
         I_e = iq_list_e[QubitIndex][0].T[0]
         Q_e = iq_list_e[QubitIndex][0].T[1]
         print(QubitIndex)
 
-        fid, threshold, angle, ig_new, ie_new = self.hist_ssf(data=[I_g, Q_g, I_e, Q_e], cfg=self.config, plot=False)
+        fid, threshold, angle, ig_new, ie_new = self.hist_ssf(data=[I_g, Q_g, I_e, Q_e], cfg=self.config, plot=self.save_figs,  fig_quality=fig_quality)
         print('Optimal fidelity after rotation = %.3f' % fid)
         print('Optimal angle after rotation = %f' % angle)
         print(self.config)
 
         return fid, angle
 
-    def hist_ssf(self, data=None, cfg=None, plot=True):
+    def hist_ssf(self, data=None, cfg=None, plot=True,  fig_quality = 100):
 
         ig = data[0]
         qg = data[1]
         ie = data[2]
         qe = data[3]
 
-        numbins = round(math.sqrt(cfg["steps"]))
+        numbins = round(math.sqrt(float(cfg["steps"])))
 
         xg, yg = np.median(ig), np.median(qg)
         xe, ye = np.median(ie), np.median(qe)
@@ -270,17 +259,19 @@ class SingleShot:
         fid = contrast[tind]
         #axs[2].set_title(f"Fidelity = {fid * 100:.2f}%")
 
-        outerFolder_expt = os.path.join(self.outerFolder, "ss_repeat_meas")
-        self.create_folder_if_not_exists(outerFolder_expt)
-        outerFolder_expt = os.path.join(outerFolder_expt , "Q" + str(self.QubitIndex + 1))
-        self.create_folder_if_not_exists(outerFolder_expt)
-        now = datetime.datetime.now()
-        formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-        file_name = os.path.join(outerFolder_expt , f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png")
 
-        if plot == True and self.round_num == 0:
+        if plot == True:
+            outerFolder_expt = os.path.join(self.outerFolder, "ss_repeat_meas")
+            self.create_folder_if_not_exists(outerFolder_expt)
+            outerFolder_expt = os.path.join(outerFolder_expt, "Q" + str(self.QubitIndex + 1))
+            self.create_folder_if_not_exists(outerFolder_expt)
+            now = datetime.datetime.now()
+            formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
+            file_name = os.path.join(outerFolder_expt,
+                                     f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png")
+
             axs[2].set_title(f"Fidelity = {fid * 100:.2f}%")
-            fig.savefig(file_name, dpi=300, bbox_inches='tight')
+            fig.savefig(file_name,  dpi=fig_quality, bbox_inches='tight')
             plt.close(fig)
 
         return fid, threshold, theta, ig_new, ie_new

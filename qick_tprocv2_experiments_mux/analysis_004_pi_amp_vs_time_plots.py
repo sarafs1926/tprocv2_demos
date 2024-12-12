@@ -21,7 +21,7 @@ from scipy.stats import norm
 from scipy.optimize import curve_fit
 
 
-top_folder_dates = ['2024-11-21', '2024-11-23','2024-11-24','2024-11-25']
+top_folder_dates = ['2024-12-10', '2024-12-11']
 final_figure_quality = 500
 
 #---------------------------------------get data--------------------------------
@@ -105,8 +105,8 @@ mean_values = {}
 show_legends = False
 
 for folder_date in top_folder_dates:
-    outerFolder = "/data/QICK_data/6transmon_run4a/" + folder_date + "/"
-    outerFolder_save_plots = "/data/QICK_data/6transmon_run4a/" + folder_date + "_plots/"
+    outerFolder = "/data/QICK_data/6transmon_run5/" + folder_date + "/"
+    outerFolder_save_plots = "/data/QICK_data/6transmon_run5/" + folder_date + "_plots/"
 
     loader_config_instance = Data_H5(outerFolder)
     sys_config = loader_config_instance.load_config('sys_config.h5')
@@ -128,6 +128,8 @@ for folder_date in top_folder_dates:
 
         for q_key in load_data['Rabi']:
             for dataset in range(len(load_data['Rabi'][q_key].get('Dates', [])[0])):
+                if 'nan' in str(load_data['Rabi'][q_key].get('Dates', [])[0][dataset]):
+                    continue
                 date = datetime.datetime.fromtimestamp(load_data['Rabi'][q_key].get('Dates', [])[0][dataset])
                 I = process_h5_data(load_data['Rabi'][q_key].get('I', [])[0][dataset].decode())
                 Q = process_h5_data(load_data['Rabi'][q_key].get('Q', [])[0][dataset].decode())
@@ -153,9 +155,9 @@ for folder_date in top_folder_dates:
         del H5_class_instance
 
 #---------------------------------plot-----------------------------------------------------
-analysis_folder = "/data/QICK_data/6transmon_run4a/benchmark_analysis_plots/"
+analysis_folder = "/data/QICK_data/6transmon_run5/benchmark_analysis_plots/"
 create_folder_if_not_exists(analysis_folder)
-analysis_folder = "/data/QICK_data/6transmon_run4a/benchmark_analysis_plots/features_vs_time/"
+analysis_folder = "/data/QICK_data/6transmon_run5/benchmark_analysis_plots/features_vs_time/"
 create_folder_if_not_exists(analysis_folder)
 
 font = 14
