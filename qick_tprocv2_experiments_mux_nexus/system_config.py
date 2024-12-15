@@ -76,8 +76,8 @@ class QICK_experiment:
             # Changes related to the resonator output channel
             "mixer_freq": 5500, # [MHz]
             "res_freq_ge": [6187.191, 5827.678, 6074.095, 5958.673], #MHz
-            "res_gain_ge": [0.15]*4, #[1, 1, 1, 1],
-            "res_length": 10,  # [us] (1.0 for res spec)
+            "res_gain_ge": [0.4]*4, #[0.15]*4, #[1, 1, 1, 1],
+            "res_length": 6, #10,  # [us] (1.0 for res spec)
             "res_phase": [0] * 4,
             "ro_phase": [0] * 4,  # Rotation Angle From QICK Function
         }

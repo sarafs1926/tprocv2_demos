@@ -17,11 +17,11 @@ import matplotlib.pyplot as plt
 from scipy.stats import norm
 from scipy.optimize import curve_fit
 
-top_folder_dates = ['2024-11-21', '2024-11-21']
+top_folder_dates = ['2024-12-10', '2024-12-10']
 final_figure_quality = 50
 
 #---------------------------------------get data--------------------------------
-save_figs = False
+save_figs = True
 fit_saved = False
 signal = 'None'
 figure_quality = 100 #ramp this up to like 500 for presentation plots
@@ -92,24 +92,25 @@ def string_to_float_list(input_string):
         return None
 
 # ----------Load/get data------------------------
-t1_vals = {i: [] for i in range(6)}
+t1_vals = {i: [] for i in range(4)}
 rounds = []
 reps = []
 file_names = []
-date_times = {i: [] for i in range(6)}
+date_times = {i: [] for i in range(4)}
 mean_values = {}
 show_legends = False
 
 for folder_date in top_folder_dates:
-    outerFolder = "/data/QICK_data/6transmon_run4a/" + folder_date + "/"
-    outerFolder_save_plots = "/data/QICK_data/6transmon_run4a/" + folder_date + "_plots/"
+    #outerFolder = "/data/QICK_data/6transmon_run4a/" + folder_date + "/"
+    outerFolder = "/home/nexusadmin/qick/NEXUS_sandbox/Data/" + folder_date + "/"
+    outerFolder_save_plots = "/home/nexusadmin/qick/NEXUS_sandbox/Data/"  + folder_date + "_plots/"
 
     loader_config_instance = Data_H5(outerFolder)
-    sys_config = loader_config_instance.load_config('sys_config_batch2.h5')
+    sys_config = loader_config_instance.load_config('sys_config.h5')
     del loader_config_instance
 
     loader_config_instance = Data_H5(outerFolder)
-    exp_config = loader_config_instance.load_config('expt_cfg_batch2.h5')
+    exp_config = loader_config_instance.load_config('expt_cfg.h5')
     del loader_config_instance
 
     # ------------------------------------------------Load/Plot/Save T1----------------------------------------------
@@ -122,7 +123,21 @@ for folder_date in top_folder_dates:
         H5_class_instance = Data_H5(h5_file)
         load_data = H5_class_instance.load_from_h5(data_type='T1', save_r=int(save_round))
 
+        populated_keys = []
         for q_key in load_data['T1']:
+            # Access 'Dates' for the current q_key
+            dates_list = load_data['T1'][q_key].get('Dates', [[]])
+
+            # Check if any entry in 'Dates' is not NaN
+            if any(
+                    not np.isnan(date)
+                    for date in dates_list[0]  # Iterate over the first batch of dates
+            ):
+                populated_keys.append(q_key)
+
+        print(f"Populated keys: {populated_keys}")
+
+        for q_key in populated_keys:
             for dataset in range(len(load_data['T1'][q_key].get('Dates', [])[0])):
                 # T1 = load_data['T1'][q_key].get('T1', [])[0][dataset]
                 # errors = load_data['T1'][q_key].get('Errors', [])[0][dataset]
@@ -147,18 +162,19 @@ for folder_date in top_folder_dates:
         del H5_class_instance
 
 #---------------------------------plot-----------------------------------------------------
-analysis_folder = "/data/QICK_data/6transmon_run4a/benchmark_analysis_plots/"
+analysis_folder = "/home/nexusadmin/qick/NEXUS_sandbox/Data/benchmark_analysis_plots/"
 create_folder_if_not_exists(analysis_folder)
-analysis_folder = "/data/QICK_data/6transmon_run4a/benchmark_analysis_plots/features_vs_time/"
+analysis_folder = "/home/nexusadmin/qick/NEXUS_sandbox/Data/benchmark_analysis_plots/features_vs_time/"
 create_folder_if_not_exists(analysis_folder)
 
 font = 14
-titles = [f"Qubit {i+1}" for i in range(6)]
-colors = ['orange','blue','purple','green','brown','pink']
-fig, axes = plt.subplots(2, 3, figsize=(12, 8))
+titles = [f"Qubit {i+1}" for i in range(4)]
+colors = ['orange','blue','purple','green']
+#colors = ['orange','blue','purple','green','brown','pink']
+fig, axes = plt.subplots(2, 2, figsize=(12, 8))
 plt.title('T1 Values vs Time',fontsize = font)
 axes = axes.flatten()
-titles = [f"Qubit {i + 1}" for i in range(6)]
+titles = [f"Qubit {i + 1}" for i in range(4)]
 from datetime import datetime
 for i, ax in enumerate(axes):
 
