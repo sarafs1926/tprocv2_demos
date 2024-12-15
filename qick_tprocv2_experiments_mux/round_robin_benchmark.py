@@ -28,7 +28,13 @@ save_figs = False    # save plots for everything as you go along the RR script?
 live_plot = False      # for live plotting open http://localhost:8097/ on firefox
 fit_data = False      # fit the data here and save or plot the fits?
 save_data_h5 = True   # save all of the data to h5 files?
+
+increase_qubit_reps = True #if you want to increase the reps for a qubit, set to True
+qubit_to_increase_reps_for = 0 #only has impact if previous line is True
+multiply_qubit_reps_by = 2 #only has impact if the line two above is True
+
 outerFolder = os.path.join("/data/QICK_data/6transmon_run5/", str(datetime.date.today()))
+
 dictionary_qs = [0, 1, 2, 3, 4, 5] #needs to be the total number of qubits that you have
 Qs_to_look_at = [0, 1, 2, 3, 4, 5] #only list the qubits you want to do the RR for
 
@@ -38,10 +44,6 @@ res_leng_vals = [3.25, 4.00, 2.25, 2.75, 3.5, 2.75] #Final decision, for Danso a
 # res_gain = [0.9, 0.95, 0.95, 0.95, 0.9, 0.95]
 res_gain = [1,0.95,0.85,0.95,0.9,0.9]
 freq_offsets = [0, 0.1333, -0.1333, -0.2000, -0.2000, -0.1333] #-0.2000
-increase_qubit_reps = True #if you want to increase the reps for a qubit, set to True
-qubit_to_increase_reps_for = 0 #only has impact if previous line is True
-multiply_qubit_reps_by = 2 #only has impact if the line two above is True
-
 
 ####################################################### RR #############################################################
 
