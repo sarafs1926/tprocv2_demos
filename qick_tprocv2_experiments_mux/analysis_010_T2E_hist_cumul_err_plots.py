@@ -1,8 +1,6 @@
 import numpy as np
 import os
 import sys
-sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
-
 from section_002_res_spec_ge_mux import ResonanceSpectroscopy
 from section_004_qubit_spec_ge import QubitSpectroscopy
 from section_006_amp_rabi_ge import AmplitudeRabiExperiment
@@ -10,7 +8,6 @@ from section_007_T1_ge import T1Measurement
 from section_008_save_data_to_h5 import Data_H5
 from section_009_T2R_ge import T2RMeasurement
 from section_010_T2E_ge import T2EMeasurement
-#from expt_config import *
 import glob
 import re
 import datetime
@@ -18,9 +15,11 @@ import ast
 import os
 import matplotlib.pyplot as plt
 from scipy.stats import norm
+import json
+import h5py
 from scipy.optimize import curve_fit
 
-top_folder_dates = ['2024-12-10', '2024-12-11', '2024-12-12', '2024-12-13']
+top_folder_dates =  ['2024-12-14','2024-12-15'] #['2024-12-10', '2024-12-11', '2024-12-12', '2024-12-13']
 final_figure_quality = 500
 
 #---------------------------------------get data--------------------------------
@@ -28,6 +27,9 @@ save_figs = False
 fit_saved = False
 signal = 'None'
 figure_quality = 100 #ramp this up to like 500 for presentation plots
+run_number = 2
+run_name = '6transmon_run5'
+number_of_qubits = 6
 
 #---------definitions---------
 def datetime_to_unix(dt):
@@ -105,19 +107,20 @@ def string_to_float_list(input_string):
         return None
 
 # ----------Load/get data from T1------------------------
-t2_vals = {i: [] for i in range(6)}
-t2_errs = {i: [] for i in range(6)}
+t2e_vals = {i: [] for i in range(number_of_qubits)}
+t2e_errs = {i: [] for i in range(number_of_qubits)}
 qubit_for_this_index = []
 rounds = []
 reps = []
 file_names = []
-dates = {i: [] for i in range(6)}
+dates = {i: [] for i in range(number_of_qubits)}
 mean_values = {}
+std_values = {}
 show_legends = False
 
 for folder_date in top_folder_dates:
-    outerFolder = "/data/QICK_data/6transmon_run5/" + folder_date + "/"
-    outerFolder_save_plots = "/data/QICK_data/6transmon_run5/" + folder_date + "_plots/"
+    outerFolder = f"/data/QICK_data/{run_name}/" + folder_date + "/"
+    outerFolder_save_plots = f"/data/QICK_data/{run_name}/" + folder_date + "_plots/"
 
     loader_config_instance = Data_H5(outerFolder)
     sys_config = loader_config_instance.load_config('sys_config.h5')
@@ -152,7 +155,12 @@ for folder_date in top_folder_dates:
                 if len(I) > 0:
                     T2E_class_instance = T2EMeasurement(q_key, outerFolder_save_plots, round_num, signal, save_figs,
                                                        fit_data=True)
-                    fitted, T2E, T2E_err, plot_sig = T2E_class_instance.t2_fit(delay_times, I, Q)
+                    try:
+                        fitted, T2E, T2E_err, plot_sig = T2E_class_instance.t2_fit(delay_times, I, Q)
+                    except Exception as e:
+                        print("Error fitting:", e)
+                        continue
+
                     T2E_cfg = ast.literal_eval(exp_config['SpinEcho_ge'].decode())
                     if T2E < 0:
                         print("The value is negative, continuing...")
@@ -160,8 +168,8 @@ for folder_date in top_folder_dates:
                     if T2E > 1000:
                         print("The value is above 1000 us, this is a bad fit, continuing...")
                         continue
-                    t2_vals[q_key].extend([T2E])  # Store T1 values
-                    t2_errs[q_key].extend([T2E_err])  # Store T1 error values
+                    t2e_vals[q_key].extend([T2E])  # Store T1 values
+                    t2e_errs[q_key].extend([T2E_err])  # Store T1 error values
                     dates[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])  # Decode bytes to string
 
                     del T2E_class_instance
@@ -169,19 +177,19 @@ for folder_date in top_folder_dates:
         del H5_class_instance
 
 #---------------------------------plot-----------------------------------------------------
-analysis_folder = "/data/QICK_data/6transmon_run5/benchmark_analysis_plots/"
+analysis_folder = f"/data/QICK_data/{run_name}/benchmark_analysis_plots/"
 create_folder_if_not_exists(analysis_folder)
-analysis_folder = "/data/QICK_data/6transmon_run5/benchmark_analysis_plots/T2E/"
+analysis_folder = f"/data/QICK_data/{run_name}/benchmark_analysis_plots/T2E/"
 create_folder_if_not_exists(analysis_folder)
 
 fig, axes = plt.subplots(2, 3, figsize=(12, 8))
 axes = axes.flatten()
 font = 14
-titles = [f"Qubit {i+1}" for i in range(6)]
-gaussian_xvals =  {i: [] for i in range(0, 6)}
-gaussian_yvals =  {i: [] for i in range(0, 6)}
-gaussian_colors = {i: [] for i in range(0, 6)}
-gaussian_dates = {i: [] for i in range(0, 6)}
+titles = [f"Qubit {i+1}" for i in range(number_of_qubits)]
+gaussian_xvals =  {i: [] for i in range(0, number_of_qubits)}
+gaussian_yvals =  {i: [] for i in range(0, number_of_qubits)}
+gaussian_colors = {i: [] for i in range(0, number_of_qubits)}
+gaussian_dates = {i: [] for i in range(0, number_of_qubits)}
 colors = ['orange','blue','purple','green','brown','pink']
 for i, ax in enumerate(axes):
     if len(dates[i])>1:
@@ -190,20 +198,21 @@ for i, ax in enumerate(axes):
         date_label = ''
 
 
-    if len(t2_vals[i]) >1:
-        optimal_bin_num = optimal_bins(t2_vals[i])
+    if len(t2e_vals[i]) >1:
+        optimal_bin_num = optimal_bins(t2e_vals[i])
 
         # Fit a Gaussian to the raw data instead of the histogram
         # get the mean and standard deviation of the data
-        mu_1, std_1 = norm.fit(t2_vals[i])
+        mu_1, std_1 = norm.fit(t2e_vals[i])
         mean_values[f"Qubit {i + 1}"] = mu_1  # Store the mean value for each qubit
+        std_values[f"Qubit {i + 1}"] = std_1
 
         # Generate x values for plotting a gaussian based on this mean and standard deviation
-        x_1 = np.linspace(min(t2_vals[i]), max(t2_vals[i]), optimal_bin_num)
+        x_1 = np.linspace(min(t2e_vals[i]), max(t2e_vals[i]), optimal_bin_num)
         p_1 = norm.pdf(x_1, mu_1, std_1)
 
         # Calculate histogram data for t1_vals[i]
-        hist_data_1, bins_1 = np.histogram(t2_vals[i], bins=optimal_bin_num)
+        hist_data_1, bins_1 = np.histogram(t2e_vals[i], bins=optimal_bin_num)
         bin_centers_1 = (bins_1[:-1] + bins_1[1:]) / 2
 
         # Scale the Gaussian curve to match the histogram
@@ -217,10 +226,10 @@ for i, ax in enumerate(axes):
         ax.plot(x_1, p_1 * (np.diff(bins_1) * hist_data_1.sum()), 'b--', linewidth=2, color=colors[i])
 
         # Plot histogram and Gaussian fit for t1_vals[i]
-        ax.hist(t2_vals[i], bins=optimal_bin_num, alpha=0.7,color=colors[i], edgecolor='black', label=date_label)
+        ax.hist(t2e_vals[i], bins=optimal_bin_num, alpha=0.7, color=colors[i], edgecolor='black', label=date_label)
 
         #make a fuller gaussian to make smoother lotting for cumulative plot
-        x_1_full = np.linspace(min(t2_vals[i]), max(t2_vals[i]), 2000)
+        x_1_full = np.linspace(min(t2e_vals[i]), max(t2e_vals[i]), 2000)
         p_1_full = norm.pdf(x_1_full, mu_1, std_1)
 
         gaussian_xvals[i].append(x_1_full)
@@ -245,14 +254,14 @@ plt.savefig( analysis_folder + 'hists.pdf', transparent=True, dpi=final_figure_q
 
 fig, ax = plt.subplots(1, 1, figsize=(12, 8))
 plt.title('Cumulative Distribution',fontsize = font)
-for i in range(0, len(t2_vals)):
+for i in range(0, len(t2e_vals)):
     if len(dates[i])>1:
         date_label = dates[i][0]
     else:
         date_label = ''
 
-    if len(t2_vals[i]) > 1:
-        t1_vals_sorted = np.sort(t2_vals[i])
+    if len(t2e_vals[i]) > 1:
+        t1_vals_sorted = np.sort(t2e_vals[i])
         len_samples = len(t1_vals_sorted)
         var = np.linspace(1,len_samples,len_samples)/ len_samples
 
@@ -276,7 +285,7 @@ plt.savefig(analysis_folder + 'cumulative.pdf', transparent=True, dpi=final_figu
 fig, axes = plt.subplots(2, 3, figsize=(12, 8))
 plt.title('Fit Error vs T2E Time',fontsize = font)
 axes = axes.flatten()
-titles = [f"Qubit {i + 1}" for i in range(6)]
+titles = [f"Qubit {i + 1}" for i in range(number_of_qubits)]
 for i, ax in enumerate(axes):
 
     if len(dates[i])>1:
@@ -284,7 +293,7 @@ for i, ax in enumerate(axes):
     else:
         date_label = ''
     ax.set_title(titles[i], fontsize = font)
-    ax.scatter(t2_vals[i],t2_errs[i], label = date_label, color = colors[i])
+    ax.scatter(t2e_vals[i], t2e_errs[i], label = date_label, color = colors[i])
     if show_legends:
         ax.legend(edgecolor='black')
     ax.set_xlabel('T2E (us)', fontsize = font)
@@ -292,5 +301,18 @@ for i, ax in enumerate(axes):
     ax.tick_params(axis='both', which='major', labelsize=font)
 plt.tight_layout()
 plt.savefig(analysis_folder + 'errs.pdf', transparent=True, dpi=final_figure_quality)
-
 #plt.show()
+
+############## save run statistics to the run_stats folder so we can compare/plot to previous runs later ###############
+run_stats_folder = f"run_stats/run{run_number}/"
+create_folder_if_not_exists(run_stats_folder)
+filename = os.path.join(run_stats_folder, 'experiment_data.h5')
+
+# Open the existing HDF5 file in append mode and add t2 data
+with h5py.File(filename, 'a') as hf:
+    # Save t2_vals and t2_errs if they don't already exist
+    hf.attrs['t2e_vals'] = json.dumps(t2e_vals)
+    hf.attrs['t2e_errs'] = json.dumps(t2e_errs)
+
+    hf.attrs['t2e_mean_values'] = json.dumps(mean_values)
+    hf.attrs['t2e_std_values'] = json.dumps(std_values)

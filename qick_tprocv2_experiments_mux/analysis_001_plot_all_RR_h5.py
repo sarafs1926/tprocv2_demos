@@ -18,13 +18,16 @@ sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/
 
 
 date = '2024-12-10'
-outerFolder = "/data/QICK_data/6transmon_run5/" + date + "/"
-outerFolder_save_plots = "/data/QICK_data/6transmon_run5/" + date + "_plots/"
-
 save_figs = True
 fit_saved = False
 signal = 'None'
 figure_quality = 100 #ramp this up to like 500 for presentation plots
+run_name = '6transmon_run5'
+number_of_qubits = 6
+
+outerFolder = f"/data/QICK_data/{run_name}/" + date + "/"
+outerFolder_save_plots = f"/data/QICK_data/{run_name}/" + date + "_plots/"
+
 
 loader_config_instance = Data_H5(outerFolder)
 sys_config = loader_config_instance.load_config('sys_config.h5') #_batch2

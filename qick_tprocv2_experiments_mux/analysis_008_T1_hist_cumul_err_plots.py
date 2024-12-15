@@ -1,8 +1,6 @@
 import numpy as np
 import os
 import sys
-sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
-
 from section_002_res_spec_ge_mux import ResonanceSpectroscopy
 from section_004_qubit_spec_ge import QubitSpectroscopy
 from section_006_amp_rabi_ge import AmplitudeRabiExperiment
@@ -10,7 +8,6 @@ from section_007_T1_ge import T1Measurement
 from section_008_save_data_to_h5 import Data_H5
 from section_009_T2R_ge import T2RMeasurement
 from section_010_T2E_ge import T2EMeasurement
-#from expt_config import *
 import glob
 import re
 import datetime
@@ -18,17 +15,23 @@ import ast
 import os
 import matplotlib.pyplot as plt
 from scipy.stats import norm
+import json
+import h5py
 from scipy.optimize import curve_fit
 
 
-top_folder_dates = ['2024-12-10', '2024-12-11', '2024-12-12', '2024-12-13']
+top_folder_dates = ['2024-12-14','2024-12-15'] #['2024-12-10', '2024-12-11', '2024-12-12', '2024-12-13']
 final_figure_quality = 50
+run_number = 2 #starting from first run with qubits
+run_notes = 'Added filters to the mixing chamber plate' #please make it brief for the plot
 
 #---------------------------------------get data--------------------------------
 save_figs = False
 fit_saved = False
 signal = 'None'
 figure_quality = 500 #ramp this up to like 500 for presentation plots
+run_name = '6transmon_run5'
+number_of_qubits = 6
 
 #---------definitions---------
 def datetime_to_unix(dt):
@@ -106,19 +109,20 @@ def string_to_float_list(input_string):
         return None
 
 # ----------Load/get data from T1------------------------
-t1_vals = {i: [] for i in range(6)}
-t1_errs = {i: [] for i in range(6)}
+t1_vals = {i: [] for i in range(number_of_qubits)}
+t1_errs = {i: [] for i in range(number_of_qubits)}
 qubit_for_this_index = []
 rounds = []
 reps = []
 file_names = []
-dates = {i: [] for i in range(6)}
+dates = {i: [] for i in range(number_of_qubits)}
 mean_values = {}
+std_values = {}
 show_legends = False
 
 for folder_date in top_folder_dates:
-    outerFolder = "/data/QICK_data/6transmon_run5/" + folder_date + "/"
-    outerFolder_save_plots = "/data/QICK_data/6transmon_run5/" + folder_date + "_plots/"
+    outerFolder = f"/data/QICK_data/{run_name}/" + folder_date + "/"
+    outerFolder_save_plots = f"/data/QICK_data/{run_name}/" + folder_date + "_plots/"
 
     loader_config_instance = Data_H5(outerFolder)
     sys_config = loader_config_instance.load_config('sys_config.h5')
@@ -171,26 +175,25 @@ for folder_date in top_folder_dates:
         del H5_class_instance
 
 #---------------------------------plot-----------------------------------------------------
-analysis_folder = "/data/QICK_data/6transmon_run5/benchmark_analysis_plots/"
+analysis_folder = f"/data/QICK_data/{run_name}/benchmark_analysis_plots/"
 create_folder_if_not_exists(analysis_folder)
-analysis_folder = "/data/QICK_data/6transmon_run5/benchmark_analysis_plots/T1/"
+analysis_folder = f"/data/QICK_data/{run_name}/benchmark_analysis_plots/T1/"
 create_folder_if_not_exists(analysis_folder)
 
 fig, axes = plt.subplots(2, 3, figsize=(12, 8))
 axes = axes.flatten()
 font = 14
-titles = [f"Qubit {i+1}" for i in range(6)]
-gaussian_xvals =  {i: [] for i in range(0, 6)}
-gaussian_yvals =  {i: [] for i in range(0, 6)}
-gaussian_colors = {i: [] for i in range(0, 6)}
-gaussian_dates = {i: [] for i in range(0, 6)}
+titles = [f"Qubit {i+1}" for i in range(number_of_qubits)]
+gaussian_xvals =  {i: [] for i in range(0, number_of_qubits)}
+gaussian_yvals =  {i: [] for i in range(0, number_of_qubits)}
+gaussian_colors = {i: [] for i in range(0, number_of_qubits)}
+gaussian_dates = {i: [] for i in range(0, number_of_qubits)}
 colors = ['orange','blue','purple','green','brown','pink']
 for i, ax in enumerate(axes):
     if len(dates[i])>1:
         date_label = dates[i][0]
     else:
         date_label = ''
-
 
     if len(t1_vals[i]) >1:
         optimal_bin_num = optimal_bins(t1_vals[i])
@@ -199,6 +202,7 @@ for i, ax in enumerate(axes):
         # get the mean and standard deviation of the data
         mu_1, std_1 = norm.fit(t1_vals[i])
         mean_values[f"Qubit {i + 1}"] = mu_1  # Store the mean value for each qubit
+        std_values[f"Qubit {i + 1}"] = std_1  # Store the standard deviation value for each qubit
 
         # Generate x values for plotting a gaussian based on this mean and standard deviation
         x_1 = np.linspace(min(t1_vals[i]), max(t1_vals[i]), optimal_bin_num)
@@ -221,7 +225,7 @@ for i, ax in enumerate(axes):
         # Plot histogram and Gaussian fit for t1_vals[i]
         ax.hist(t1_vals[i], bins=optimal_bin_num, alpha=0.7,color=colors[i], edgecolor='black', label=date_label)
 
-        #make a fuller gaussian to make smoother lotting for cumulative plot
+        #make a fuller gaussian to make smoother plotting for cumulative plot
         x_1_full = np.linspace(min(t1_vals[i]), max(t1_vals[i]), 2000)
         p_1_full = norm.pdf(x_1_full, mu_1, std_1)
 
@@ -278,7 +282,7 @@ plt.savefig(analysis_folder + 'cumulative.pdf', transparent=True, dpi=final_figu
 fig, axes = plt.subplots(2, 3, figsize=(12, 8))
 plt.title('Fit Error vs T1 Time',fontsize = font)
 axes = axes.flatten()
-titles = [f"Qubit {i + 1}" for i in range(6)]
+titles = [f"Qubit {i + 1}" for i in range(number_of_qubits)]
 for i, ax in enumerate(axes):
 
     if len(dates[i])>1:
@@ -296,3 +300,32 @@ plt.tight_layout()
 plt.savefig(analysis_folder + 'errs.pdf', transparent=True, dpi=final_figure_quality)
 
 #plt.show()
+
+############## save run statistics to the run_stats folder so we can compare/plot to previous runs later ###############
+
+# t1_vals and t1_errs are lists each containing N lists with data, where N is number of qubits
+# std_values and mean_values are dictionaries each with the mean/std values for each qubit
+# run_number is an int, it starts from the first run with qubits
+# run_notes is a string containing brief information about updates to the setup this run
+# last_date is the last date and time saved, use this to say what date the run was on
+
+last_date = gaussian_dates[max(gaussian_dates.keys())][-1] if gaussian_dates[max(gaussian_dates.keys())] else None
+
+run_stats_folder = f"run_stats/run{run_number}/"
+create_folder_if_not_exists(run_stats_folder)
+filename = run_stats_folder + 'experiment_data.h5'
+
+with h5py.File(filename, 'w') as hf:
+    # Save dictionaries as JSON strings in attributes
+    hf.attrs['t1_vals'] = json.dumps(t1_vals)
+    hf.attrs['t1_errs'] = json.dumps(t1_errs)
+
+    hf.attrs['t1_std_values'] = json.dumps(std_values)
+    hf.attrs['t1_mean_values'] = json.dumps(mean_values)
+
+    # Save run_number as an attribute
+    hf.attrs['run_number'] = run_number
+
+    # Save run_notes and last_date as attributes
+    hf.attrs['run_notes'] = run_notes
+    hf.attrs['last_date'] = last_date

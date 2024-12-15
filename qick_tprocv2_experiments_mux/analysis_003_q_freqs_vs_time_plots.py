@@ -29,6 +29,8 @@ save_figs = False
 fit_saved = False
 signal = 'None'
 figure_quality = 100 #ramp this up to like 500 for presentation plots
+run_name = '6transmon_run5'
+number_of_qubits = 6
 
 #---------definitions---------
 def datetime_to_unix(dt):
@@ -106,17 +108,17 @@ def string_to_float_list(input_string):
         return None
 
 # ----------Load/get data------------------------
-qubit_frequencies = {i: [] for i in range(6)}
+qubit_frequencies = {i: [] for i in range(number_of_qubits)}
 rounds = []
 reps = []
 file_names = []
-date_times = {i: [] for i in range(6)}
+date_times = {i: [] for i in range(number_of_qubits)}
 mean_values = {}
 show_legends = False
 
 for folder_date in top_folder_dates:
-    outerFolder = "/data/QICK_data/6transmon_run5/" + folder_date + "/"
-    outerFolder_save_plots = "/data/QICK_data/6transmon_run5/" + folder_date + "_plots/"
+    outerFolder = f"/data/QICK_data/{run_name}/" + folder_date + "/"
+    outerFolder_save_plots = f"/data/QICK_data/{run_name}/" + folder_date + "_plots/"
 
     loader_config_instance = Data_H5(outerFolder)
     sys_config = loader_config_instance.load_config('sys_config.h5')
@@ -165,18 +167,18 @@ for folder_date in top_folder_dates:
 
 
 #---------------------------------plot-----------------------------------------------------
-analysis_folder = "/data/QICK_data/6transmon_run5/benchmark_analysis_plots/"
+analysis_folder = f"/data/QICK_data/{run_name}/benchmark_analysis_plots/"
 create_folder_if_not_exists(analysis_folder)
-analysis_folder = "/data/QICK_data/6transmon_run5/benchmark_analysis_plots/features_vs_time/"
+analysis_folder = f"/data/QICK_data/{run_name}/benchmark_analysis_plots/features_vs_time/"
 create_folder_if_not_exists(analysis_folder)
 
 font = 14
-titles = [f"Qubit {i+1}" for i in range(6)]
+titles = [f"Qubit {i+1}" for i in range(number_of_qubits)]
 colors = ['orange','blue','purple','green','brown','pink']
 fig, axes = plt.subplots(2, 3, figsize=(12, 8))
 plt.title('Qubit Frequencies vs Time',fontsize = font)
 axes = axes.flatten()
-titles = [f"Qubit {i + 1}" for i in range(6)]
+titles = [f"Qubit {i + 1}" for i in range(number_of_qubits)]
 from datetime import datetime
 for i, ax in enumerate(axes):
 
