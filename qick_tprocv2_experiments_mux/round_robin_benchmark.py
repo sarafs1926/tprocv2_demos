@@ -19,8 +19,9 @@ from system_config import QICK_experiment
 from section_003_punch_out_ge_mux import PunchOut
 from expt_config import expt_cfg
 
+################################################ Run Configurations ####################################################
+
 n= 10000
-#n=1
 save_r = 1            # how many rounds to save after
 signal = 'None'       #'I', or 'Q' depending on where the signal is (after optimization). Put'None' if no optimization
 save_figs = False    # save plots for everything as you go along the RR script?
@@ -28,8 +29,11 @@ live_plot = False      # for live plotting open http://localhost:8097/ on firefo
 fit_data = False      # fit the data here and save or plot the fits?
 save_data_h5 = True   # save all of the data to h5 files?
 outerFolder = os.path.join("/data/QICK_data/6transmon_run5/", str(datetime.date.today()))
-Qs = [0, 1, 2, 3, 4, 5] #IMPORTANT: this no longer determines which qubits we are looking at, it's just our total num of qubits. DEFINE QUBITS TO LOOK AT IN LINE 66.
-#optimization outputs
+dictionary_qs = [0, 1, 2, 3, 4, 5] #needs to be the total number of qubits that you have
+Qs_to_look_at = [0, 1, 2, 3, 4, 5] #only list the qubits you want to do the RR for
+
+################################################ optimization outputs ##################################################
+
 res_leng_vals = [3.25, 4.00, 2.25, 2.75, 3.5, 2.75] #Final decision, for Danso at 3.5V     2.75
 # res_gain = [0.9, 0.95, 0.95, 0.95, 0.9, 0.95]
 res_gain = [1,0.95,0.85,0.95,0.9,0.9]
@@ -37,6 +41,9 @@ freq_offsets = [0, 0.1333, -0.1333, -0.2000, -0.2000, -0.1333] #-0.2000
 increase_qubit_reps = True #if you want to increase the reps for a qubit, set to True
 qubit_to_increase_reps_for = 0 #only has impact if previous line is True
 multiply_qubit_reps_by = 2 #only has impact if the line two above is True
+
+
+####################################################### RR #############################################################
 
 def create_data_dict(keys, save_r, qs):
     return {Q: {key: np.empty(save_r, dtype=object) for key in keys} for Q in range(len(qs))}
@@ -51,21 +58,20 @@ t2r_keys = ['T2', 'Errors', 'Dates', 'I', 'Q', 'Delay Times', 'Fit', 'Round Num'
 t2e_keys = ['T2E', 'Errors', 'Dates', 'I', 'Q', 'Delay Times', 'Fit', 'Round Num', 'Batch Num']
 
 #initialize a dictionary to store those values
-res_data = create_data_dict(res_keys, save_r, Qs)
-qspec_data = create_data_dict(qspec_keys, save_r, Qs)
-rabi_data = create_data_dict(rabi_keys, save_r, Qs)
-ss_data = create_data_dict(ss_keys, save_r, Qs)
-t1_data = create_data_dict(t1_keys, save_r, Qs)
-t2r_data = create_data_dict(t2r_keys, save_r, Qs)
-t2e_data = create_data_dict(t2e_keys, save_r, Qs)
+res_data = create_data_dict(res_keys, save_r, dictionary_qs)
+qspec_data = create_data_dict(qspec_keys, save_r, dictionary_qs)
+rabi_data = create_data_dict(rabi_keys, save_r, dictionary_qs)
+ss_data = create_data_dict(ss_keys, save_r, dictionary_qs)
+t1_data = create_data_dict(t1_keys, save_r, dictionary_qs)
+t2r_data = create_data_dict(t2r_keys, save_r, dictionary_qs)
+t2e_data = create_data_dict(t2e_keys, save_r, dictionary_qs)
 
 batch_num=0
 j = 0
 angles=[]
 while j < n:
     j += 1
-    #for QubitIndex in Qs:
-    for QubitIndex in [0,1,2,3,4,5]: #Select qubits you want to loo at by listing them inside the brackets
+    for QubitIndex in Qs_to_look_at:
         #Get the config for this qubit
         experiment = QICK_experiment(outerFolder, DAC_attenuator1 = 5, DAC_attenuator2 = 10, ADC_attenuator = 10)
 
@@ -286,13 +292,13 @@ while j < n:
             del t2e_data
 
             # reset all dictionaries to none for safety
-            res_data = create_data_dict(res_keys, save_r, Qs)
-            qspec_data = create_data_dict(qspec_keys, save_r, Qs)
-            rabi_data = create_data_dict(rabi_keys, save_r, Qs)
-            ss_data = create_data_dict(ss_keys, save_r, Qs)
-            t1_data = create_data_dict(t1_keys, save_r, Qs)
-            t2r_data = create_data_dict(t2r_keys, save_r, Qs)
-            t2e_data = create_data_dict(t2e_keys, save_r, Qs)
+            res_data = create_data_dict(res_keys, save_r, dictionary_qs)
+            qspec_data = create_data_dict(qspec_keys, save_r, dictionary_qs)
+            rabi_data = create_data_dict(rabi_keys, save_r, dictionary_qs)
+            ss_data = create_data_dict(ss_keys, save_r, dictionary_qs)
+            t1_data = create_data_dict(t1_keys, save_r, dictionary_qs)
+            t2r_data = create_data_dict(t2r_keys, save_r, dictionary_qs)
+            t2e_data = create_data_dict(t2e_keys, save_r, dictionary_qs)
 
 
 

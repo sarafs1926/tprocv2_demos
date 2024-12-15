@@ -57,6 +57,7 @@ if len(run_number_list) > 1:
     t2r_err = {}
     t2e_data = {}
     t2e_err = {}
+    run_notes_all = []
 
     qubit_list = None
 
@@ -85,6 +86,7 @@ if len(run_number_list) > 1:
                 t2e_data[qb] = []
                 t2e_err[qb] = []
 
+
         #get the data for this run and append to list for saving and plotting
         for qb in qubit_list:
             t1_data[qb].append(t1_means[qb])
@@ -93,6 +95,7 @@ if len(run_number_list) > 1:
             t2r_err[qb].append(t2r_stds[qb])
             t2e_data[qb].append(t2e_means[qb])
             t2e_err[qb].append(t2e_stds[qb])
+        run_notes_all.append(run_notes)
 
     #make one figure with subplots, one per qubit
     fig, axes = plt.subplots(nrows=len(qubit_list), ncols=1, sharex=True, figsize=(6, 4*len(qubit_list)))
@@ -111,34 +114,42 @@ if len(run_number_list) > 1:
         ax.set_title(qb)
         ax.legend()
 
-        # -1 grabs the most recent run, because we only have one run and note right now. update this next run
-        note_x = x[-1]
+        highest_points = []
+        for idx in range(len(x)):
+            highest_point = max(
+                t1_data[qb][idx] + t1_err[qb][idx],
+                t2r_data[qb][idx] + t2r_err[qb][idx],
+                t2e_data[qb][idx] + t2e_err[qb][idx]
+            )
+            highest_points.append(highest_point)
 
-
-        #find the max err bar height at the last run, from (T1, T2R, T2E)
-        highest_point = max(
-            t1_data[qb][-1] + t1_err[qb][-1],
-            t2r_data[qb][-1] + t2r_err[qb][-1],
-            t2e_data[qb][-1] + t2e_err[qb][-1])
-
-        #extend top of y-axis limit so the note is fully visible above the highest error bar.
+        # Adjust the y-axis limit to ensure all notes are visible
         current_ylim = ax.get_ylim()
-        new_upper_limit = max(current_ylim[1], highest_point * 1.3) #add 30% padding above, change if you want
+        max_point = max(highest_points)
+        new_upper_limit = max(current_ylim[1], max_point * 1.3)
         ax.set_ylim(current_ylim[0], new_upper_limit)
 
-        #put the note above the
-        ax.annotate(
-            run_notes,
-            xy=(note_x, highest_point),
-            xytext=(0, 10), #offset by some amount, 10 right now, to go a little higher than the top of err bar
-            textcoords='offset points',
-            ha='center',
-            va='bottom',
-            bbox=dict(boxstyle='round', facecolor='lightblue', edgecolor='black', alpha=0.7)
-            # arrowprops=dict(facecolor='black', shrink=0.05)  #if you want a fancy arrow
-        )
+        # Annotate for each x-value with the corresponding note
+        for idx, x_val in enumerate(x):
+            words = run_notes_all[idx].split()
+            plotting_note = '\n'.join(
+                ' '.join(words[i:i + 2]) for i in range(0, len(words), 2)) #adapt this to enter after every nth word
 
-
+            ax.annotate(
+                plotting_note,  # run_notes should be a list of the same length as x
+                xy=(x_val, highest_points[idx]),
+                xytext=(0, 10),  # vertical offset in points
+                textcoords='offset points',
+                ha='center',
+                va='bottom',
+                bbox=dict(
+                    boxstyle='round',
+                    facecolor='lightblue',
+                    edgecolor='black',
+                    alpha=1 #how see through the background is
+                )
+                # arrowprops=dict(facecolor='black', shrink=0.05)  #if you want a fancy arrow
+            )
 
     #set the bottom plot's x-axis label (shared for all) only do it for the bottom
     axes[-1].set_xlabel('Run Number')
