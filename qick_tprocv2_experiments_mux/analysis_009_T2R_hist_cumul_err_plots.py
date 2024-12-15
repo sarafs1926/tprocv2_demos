@@ -20,7 +20,7 @@ import h5py
 from scipy.optimize import curve_fit
 
 
-top_folder_dates =  ['2024-12-14','2024-12-15'] #['2024-12-10', '2024-12-11', '2024-12-12', '2024-12-13']
+top_folder_dates =  ['2024-12-10', '2024-12-11', '2024-12-12', '2024-12-13', '2024-12-14', '2024-12-15']
 final_figure_quality = 500
 
 #---------------------------------------get data--------------------------------
@@ -137,6 +137,7 @@ for folder_date in top_folder_dates:
     for h5_file in h5_files:
         save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
         H5_class_instance = Data_H5(h5_file)
+        #save_round = save_round.split('(')[0]
         load_data = H5_class_instance.load_from_h5(data_type='T2', save_r=int(save_round))
 
         for q_key in load_data['T2']:

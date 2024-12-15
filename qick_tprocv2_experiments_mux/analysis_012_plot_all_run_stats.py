@@ -2,6 +2,7 @@ import h5py
 import json
 import matplotlib.pyplot as plt
 import os
+from matplotlib.ticker import MaxNLocator
 
 def create_folder_if_not_exists(folder):
     """Creates a folder at the given path if it doesn't already exist."""
@@ -47,7 +48,7 @@ def load_from_h5(filename):
         't2e_mean_values': t2e_mean_values,
     }
 
-run_number_list = [2]  # Example: if you have more runs, e.g., [1, 2, 3]
+run_number_list = [1,2]  # Example: if you have more runs, e.g., [1, 2, 3]
 
 if len(run_number_list) > 1:
     t1_data = {}
@@ -111,8 +112,11 @@ if len(run_number_list) > 1:
 
     #set the bottom plot's x-axis label (shared for all) only do it for the bottom
     axes[-1].set_xlabel('Run Number')
+    axes[-1].xaxis.set_major_locator(MaxNLocator(integer=True))
     plt.tight_layout()
-    plt.show()
+    analysis_folder = "/data/QICK_data/6transmon_run5/benchmark_analysis_plots/"
+    create_folder_if_not_exists(analysis_folder)
+    plt.savefig(analysis_folder + 'compare_runs.pdf', dpi=500)
 
 elif len(run_number_list) == 1:
     #only 1 data point per qubit
@@ -148,7 +152,8 @@ elif len(run_number_list) == 1:
 
     #set the bottom plot's x-axis label (shared for all) only do it for the bottom
     axes[-1].set_xlabel('Run Number')
+    axes[-1].xaxis.set_major_locator(MaxNLocator(integer=True))
     plt.tight_layout()
     analysis_folder = "/data/QICK_data/6transmon_run5/benchmark_analysis_plots/"
     create_folder_if_not_exists(analysis_folder)
-    plt.savefig(analysis_folder + 'compare_runs.pdf')
+    plt.savefig(analysis_folder + 'compare_runs.pdf', dpi=500)
