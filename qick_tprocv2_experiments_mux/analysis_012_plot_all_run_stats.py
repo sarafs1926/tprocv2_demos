@@ -72,6 +72,7 @@ if len(run_number_list) > 1:
         t2r_stds = loaded_data['t2r_std_values']
         t2e_means = loaded_data['t2e_mean_values']
         t2e_stds = loaded_data['t2e_std_values']
+        run_notes = loaded_data['run_notes']
 
         #on the first run do this to make all of the lists and such
         if qubit_list is None:
@@ -110,6 +111,35 @@ if len(run_number_list) > 1:
         ax.set_title(qb)
         ax.legend()
 
+        # -1 grabs the most recent run, because we only have one run and note right now. update this next run
+        note_x = x[-1]
+
+
+        #find the max err bar height at the last run, from (T1, T2R, T2E)
+        highest_point = max(
+            t1_data[qb][-1] + t1_err[qb][-1],
+            t2r_data[qb][-1] + t2r_err[qb][-1],
+            t2e_data[qb][-1] + t2e_err[qb][-1])
+
+        #extend top of y-axis limit so the note is fully visible above the highest error bar.
+        current_ylim = ax.get_ylim()
+        new_upper_limit = max(current_ylim[1], highest_point * 1.3) #add 30% padding above, change if you want
+        ax.set_ylim(current_ylim[0], new_upper_limit)
+
+        #put the note above the
+        ax.annotate(
+            run_notes,
+            xy=(note_x, highest_point),
+            xytext=(0, 10), #offset by some amount, 10 right now, to go a little higher than the top of err bar
+            textcoords='offset points',
+            ha='center',
+            va='bottom',
+            bbox=dict(boxstyle='round', facecolor='lightblue', edgecolor='black', alpha=0.7)
+            # arrowprops=dict(facecolor='black', shrink=0.05)  #if you want a fancy arrow
+        )
+
+
+
     #set the bottom plot's x-axis label (shared for all) only do it for the bottom
     axes[-1].set_xlabel('Run Number')
     axes[-1].xaxis.set_major_locator(MaxNLocator(integer=True))
@@ -131,6 +161,7 @@ elif len(run_number_list) == 1:
     t2r_stds = loaded_data['t2r_std_values']
     t2e_means = loaded_data['t2e_mean_values']
     t2e_stds = loaded_data['t2e_std_values']
+    run_notes = loaded_data['run_notes']
 
     qubit_list = list(t1_means.keys())
     x = [r]
@@ -149,6 +180,23 @@ elif len(run_number_list) == 1:
         ax.set_ylabel('Time (µs)')
         ax.set_title(qb)
         ax.legend()
+
+        # -1 grabs the most recent run, because we only have one run and note right now. update this next run
+        note_x = x[-1]
+        # grab the T1 value and put the note above that
+        note_y = t1_means[qb][-1]
+
+        #add the note and make the background colored and pretty
+        ax.annotate(
+            run_notes,
+            xy=(note_x, note_y),
+            xytext=(0, 20),  # offset text 20 points above the data point
+            textcoords='offset points',
+            ha='center',
+            va='bottom',
+            bbox=dict(boxstyle='round', facecolor='lightblue', edgecolor='black', alpha=0.7),
+            #arrowprops=dict(facecolor='black', shrink=0.05)
+        )
 
     #set the bottom plot's x-axis label (shared for all) only do it for the bottom
     axes[-1].set_xlabel('Run Number')

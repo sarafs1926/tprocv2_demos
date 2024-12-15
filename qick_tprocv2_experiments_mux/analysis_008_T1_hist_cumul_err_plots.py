@@ -23,7 +23,7 @@ from scipy.optimize import curve_fit
 top_folder_dates = ['2024-12-10', '2024-12-11', '2024-12-12', '2024-12-13', '2024-12-14', '2024-12-15']
 final_figure_quality = 50
 run_number = 2 #starting from first run with qubits
-run_notes = 'Added filters to the mixing chamber plate' #please make it brief for the plot
+run_notes = 'Added eccosorb filters' #please make it brief for the plot
 
 #---------------------------------------get data--------------------------------
 save_figs = False
