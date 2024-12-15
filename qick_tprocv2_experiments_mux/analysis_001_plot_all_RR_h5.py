@@ -181,6 +181,7 @@ for h5_file in h5_files:
 
                 qspec_class_instance = QubitSpectroscopy(q_key, outerFolder_save_plots, round_num, signal, save_figs)
                 q_spec_cfg = ast.literal_eval(exp_config['qubit_spec_ge'].decode())
+                #print('q_spec_cfg: ', q_spec_cfg)
                 qspec_class_instance.plot_results(I, Q, freqs, q_spec_cfg, figure_quality)
                 del qspec_class_instance
 

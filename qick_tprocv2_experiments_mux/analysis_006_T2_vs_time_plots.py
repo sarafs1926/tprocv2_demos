@@ -21,7 +21,7 @@ from scipy.stats import norm
 from scipy.optimize import curve_fit
 
 
-top_folder_dates = ['2024-12-10', '2024-12-11']
+top_folder_dates = ['2024-12-10', '2024-12-11', '2024-12-12', '2024-12-13']
 final_figure_quality = 500
 
 #---------------------------------------get data--------------------------------
@@ -31,6 +31,16 @@ signal = 'None'
 figure_quality = 100 #ramp this up to like 500 for presentation plots
 
 #---------definitions---------
+def datetime_to_unix(dt):
+    # Convert to Unix timestamp
+    unix_timestamp = int(dt.timestamp())
+    return unix_timestamp
+
+def unix_to_datetime(unix_timestamp):
+    # Convert the Unix timestamp to a datetime object
+    dt = datetime.fromtimestamp(unix_timestamp)
+    return dt
+
 def create_folder_if_not_exists(folder):
     """Creates a folder at the given path if it doesn't already exist."""
     if not os.path.exists(folder):
@@ -142,8 +152,17 @@ for folder_date in top_folder_dates:
                 if len(I) > 0:
                     T2_class_instance = T2RMeasurement(q_key, outerFolder_save_plots, round_num, signal, save_figs,
                                                        fit_data=True)
-                    fitted, t2r_est, t2r_err, plot_sig = T2_class_instance.t2_fit(delay_times, I, Q)
+                    try:
+                        fitted, t2r_est, t2r_err, plot_sig = T2_class_instance.t2_fit(delay_times, I, Q)
+                    except:
+                        continue
                     T2_cfg = ast.literal_eval(exp_config['Ramsey_ge'].decode())
+                    if t2r_est < 0:
+                        print("The value is negative, continuing...")
+                        continue
+                    if t2r_est > 1000:
+                        print("The value is above 1000 us, this is a bad fit, continuing...")
+                        continue
                     t2_vals[q_key].extend([t2r_est])
                     date_times[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])
 

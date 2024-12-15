@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import norm
 from scipy.optimize import curve_fit
 
-top_folder_dates = ['2024-12-10', '2024-12-11']
+top_folder_dates = ['2024-12-10', '2024-12-11', '2024-12-12', '2024-12-13']
 final_figure_quality = 500
 
 #---------------------------------------get data--------------------------------
@@ -30,6 +30,16 @@ signal = 'None'
 figure_quality = 100 #ramp this up to like 500 for presentation plots
 
 #---------definitions---------
+def datetime_to_unix(dt):
+    # Convert to Unix timestamp
+    unix_timestamp = int(dt.timestamp())
+    return unix_timestamp
+
+def unix_to_datetime(unix_timestamp):
+    # Convert the Unix timestamp to a datetime object
+    dt = datetime.fromtimestamp(unix_timestamp)
+    return dt
+
 def create_folder_if_not_exists(folder):
     """Creates a folder at the given path if it doesn't already exist."""
     if not os.path.exists(folder):
@@ -144,6 +154,12 @@ for folder_date in top_folder_dates:
                                                        fit_data=True)
                     fitted, T2E, T2E_err, plot_sig = T2E_class_instance.t2_fit(delay_times, I, Q)
                     T2E_cfg = ast.literal_eval(exp_config['SpinEcho_ge'].decode())
+                    if T2E < 0:
+                        print("The value is negative, continuing...")
+                        continue
+                    if T2E > 1000:
+                        print("The value is above 1000 us, this is a bad fit, continuing...")
+                        continue
                     t2_vals[q_key].extend([T2E])  # Store T1 values
                     t2_errs[q_key].extend([T2E_err])  # Store T1 error values
                     dates[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])  # Decode bytes to string

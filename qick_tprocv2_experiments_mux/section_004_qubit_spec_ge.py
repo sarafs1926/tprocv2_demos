@@ -64,11 +64,20 @@ class QubitSpectroscopy:
             viz.line(X=freqs, Y=Q, opts=dict(height=400, width=700, title='Qubit Spectroscopy Q', showlegend=True, xlabel='expt_pts'),win='QSpec_Q')
         return I, Q, freqs
 
-    def plot_results(self, I, Q, freqs, config = None, fig_quality = 100):
+    def plot_results(self, I, Q, freqs, config=None, fig_quality=100):
         freqs = np.array(freqs)
         freq_q = freqs[np.argmax(I)]
 
-        # Plot the data and fits
+        mean_I, mean_Q, I_fit, Q_fit, largest_amp_curve_mean, largest_amp_curve_fwhm = self.fit_lorenzian(I, Q, freqs,
+                                                                                                          freq_q)
+
+        # Check if the returned values are all None
+        if (mean_I is None and mean_Q is None and I_fit is None and Q_fit is None
+                and largest_amp_curve_mean is None and largest_amp_curve_fwhm is None):
+            # If so, return None for the values in this definition as well
+            return None, None, None
+
+        # If we get here, the fit was successful and we can proceed with plotting
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
         plt.rcParams.update({'font.size': 18})
 
@@ -85,25 +94,28 @@ class QubitSpectroscopy:
         ax2.tick_params(axis='both', which='major', labelsize=16)
         ax2.legend()
 
-        # Calculate the middle of the plot area
-        plot_middle = (ax1.get_position().x0 + ax1.get_position().x1) / 2
-
-        mean_I, mean_Q, I_fit, Q_fit, largest_amp_curve_mean, largest_amp_curve_fwhm = self.fit_lorenzian(I, Q, freqs, freq_q)
-
+        # Plot the fits
         ax1.plot(freqs, I_fit, 'r--', label='Lorentzian Fit')
         ax1.axvline(largest_amp_curve_mean, color='orange', linestyle='--', linewidth=2)
 
         ax2.plot(freqs, Q_fit, 'r--', label='Lorentzian Fit')
         ax2.axvline(largest_amp_curve_mean, color='orange', linestyle='--', linewidth=2)
 
+        # Calculate the middle of the plot area
+        plot_middle = (ax1.get_position().x0 + ax1.get_position().x1) / 2
+
         # Add title, centered on the plot area
-        if config is not None: #then its been passed to this definition, so use that
+        if config is not None:  # then its been passed to this definition, so use that
             fig.text(plot_middle, 0.98,
-                     f"Qubit Spectroscopy Q{self.QubitIndex + 1}, %.2f MHz" % largest_amp_curve_mean + f" FWHM: {round(largest_amp_curve_fwhm, 1)}" + f", {config['reps']}*{config['rounds']} avgs",
+                     f"Qubit Spectroscopy Q{self.QubitIndex + 1}, %.2f MHz" % largest_amp_curve_mean +
+                     f" FWHM: {round(largest_amp_curve_fwhm, 1)}" +
+                     f", {config['reps']}*{config['rounds']} avgs",
                      fontsize=24, ha='center', va='top')
         else:
             fig.text(plot_middle, 0.98,
-                     f"Qubit Spectroscopy Q{self.QubitIndex + 1}, %.2f MHz" % largest_amp_curve_mean + f" FWHM: {round(largest_amp_curve_fwhm, 1)}" + f", {self.config['reps']}*{self.config['rounds']} avgs",
+                     f"Qubit Spectroscopy Q{self.QubitIndex + 1}, %.2f MHz" % largest_amp_curve_mean +
+                     f" FWHM: {round(largest_amp_curve_fwhm, 1)}" +
+                     f", {self.config['reps']}*{self.config['rounds']} avgs",
                      fontsize=24, ha='center', va='top')
 
         # Adjust spacing
@@ -118,8 +130,9 @@ class QubitSpectroscopy:
             self.create_folder_if_not_exists(outerFolder_expt)
             now = datetime.datetime.now()
             formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-            file_name = os.path.join(outerFolder_expt, f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png")
-            fig.savefig(file_name, dpi=fig_quality, bbox_inches='tight')  # , facecolor='white'
+            file_name = os.path.join(outerFolder_expt, f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" +
+                                     f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png")
+            fig.savefig(file_name, dpi=fig_quality, bbox_inches='tight')
         plt.close(fig)
         return largest_amp_curve_mean, I_fit, Q_fit
 
@@ -156,61 +169,67 @@ class QubitSpectroscopy:
         return corresponding_x, max_average_difference
 
     def fit_lorenzian(self, I, Q, freqs, freq_q):
-        # guesses
-        initial_guess_I = [freq_q, 1, np.max(I), np.min(I)]  # x guess (which is very off here), amplitude guess, offset
-        initial_guess_Q = [freq_q, 1, np.max(Q), np.min(Q)]
+        try:
+            # guesses
+            initial_guess_I = [freq_q, 1, np.max(I),
+                               np.min(I)]  # x guess (which is very off here), amplitude guess, offset
+            initial_guess_Q = [freq_q, 1, np.max(Q), np.min(Q)]
 
-        # fitting the Lorentzian
-        params_I, _ = curve_fit(self.lorentzian, freqs, I, p0=initial_guess_I)
-        params_Q, _ = curve_fit(self.lorentzian, freqs, Q, p0=initial_guess_Q)
+            # fitting the Lorentzian
+            params_I, _ = curve_fit(self.lorentzian, freqs, I, p0=initial_guess_I)
+            params_Q, _ = curve_fit(self.lorentzian, freqs, Q, p0=initial_guess_Q)
 
-        x_max_diff_I, max_diff_I = self.max_offset_difference_with_x(freqs, I, params_I[3])
-        x_max_diff_Q, max_diff_Q = self.max_offset_difference_with_x(freqs, Q, params_Q[3])
+            x_max_diff_I, max_diff_I = self.max_offset_difference_with_x(freqs, I, params_I[3])
+            x_max_diff_Q, max_diff_Q = self.max_offset_difference_with_x(freqs, Q, params_Q[3])
 
-        # guesses
-        initial_guess_I = [x_max_diff_I, 1, np.max(I),
-                           np.min(I)]  # x guess (which is now accurate), amplitude guess, offset
-        initial_guess_Q = [x_max_diff_Q, 1, np.max(Q), np.min(Q)]
+            # refined guesses
+            initial_guess_I = [x_max_diff_I, 1, np.max(I), np.min(I)]
+            initial_guess_Q = [x_max_diff_Q, 1, np.max(Q), np.min(Q)]
 
-        # fitting the Lorentzian
-        params_I, _ = curve_fit(self.lorentzian, freqs, I, p0=initial_guess_I)
-        params_Q, _ = curve_fit(self.lorentzian, freqs, Q, p0=initial_guess_Q)
+            # fitting the Lorentzian again with refined guesses
+            params_I, _ = curve_fit(self.lorentzian, freqs, I, p0=initial_guess_I)
+            params_Q, _ = curve_fit(self.lorentzian, freqs, Q, p0=initial_guess_Q)
 
-        # make line from the fits
-        I_fit = self.lorentzian(freqs, *params_I)
-        Q_fit = self.lorentzian(freqs, *params_Q)
+            # make line from the fits
+            I_fit = self.lorentzian(freqs, *params_I)
+            Q_fit = self.lorentzian(freqs, *params_Q)
 
-        mean_I = params_I[0]  # the mean which is from f0 from the fitted parameters for I
-        mean_Q = params_Q[0]  # the mean which is from f0 from the fitted parameters for Q
+            mean_I = params_I[0]  # the mean from fitted parameters for I
+            mean_Q = params_Q[0]  # the mean from fitted parameters for Q
 
-        # find which fit has the widest curve, becasue data is so noisy im going to assume a thin curve is fitting to a noise peak if there is nothing there
-        fwhm_I = 2 * params_I[1]
-        fwhm_Q = 2 * params_Q[1]
+            # find which fit has the widest curve
+            fwhm_I = 2 * params_I[1]
+            fwhm_Q = 2 * params_Q[1]
 
-        # Calculate maximum amplitudes and use this to determine which has best signal
-        amp_I_fit = abs(np.max(I_fit) - np.min(I_fit))
-        amp_Q_fit = abs(np.max(Q_fit) - np.min(Q_fit))
+            # Calculate maximum amplitudes
+            amp_I_fit = abs(np.max(I_fit) - np.min(I_fit))
+            amp_Q_fit = abs(np.max(Q_fit) - np.min(Q_fit))
 
-        # Determine which fit has the highest amplitude if signal is not specified
-        largest_amp_curve_mean = None
-        largest_amp_curve_fwhm = None
-        if 'None' in self.signal:
-            if amp_I_fit > amp_Q_fit:
+            # Determine which curve to choose
+            largest_amp_curve_mean = None
+            largest_amp_curve_fwhm = None
+            if 'None' in self.signal:
+                if amp_I_fit > amp_Q_fit:
+                    largest_amp_curve_mean = mean_I
+                    largest_amp_curve_fwhm = fwhm_I
+                else:
+                    largest_amp_curve_mean = mean_Q
+                    largest_amp_curve_fwhm = fwhm_Q
+            elif 'I' in self.signal:
                 largest_amp_curve_mean = mean_I
                 largest_amp_curve_fwhm = fwhm_I
-            else:
+            elif 'Q' in self.signal:
                 largest_amp_curve_mean = mean_Q
                 largest_amp_curve_fwhm = fwhm_Q
-        elif 'I' in self.signal:
-            largest_amp_curve_mean = mean_I
-            largest_amp_curve_fwhm = fwhm_I
-        elif 'Q' in self.signal:
-            largest_amp_curve_mean = mean_Q
-            largest_amp_curve_fwhm = fwhm_Q
-        else:
-            print('Invalid signal passed, please do I Q or None')
+            else:
+                print('Invalid signal passed, please do I, Q, or None')
 
-        return mean_I, mean_Q, I_fit, Q_fit, largest_amp_curve_mean, largest_amp_curve_fwhm
+            return mean_I, mean_Q, I_fit, Q_fit, largest_amp_curve_mean, largest_amp_curve_fwhm
+
+        except Exception as e:
+            print("Error fitting Lorentzian in QSpec:", e)
+            # Return None for all values if fitting fails
+            return None, None, None, None, None, None
 
     def create_folder_if_not_exists(self, folder_path):
         import os
