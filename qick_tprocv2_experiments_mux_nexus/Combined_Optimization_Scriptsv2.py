@@ -55,7 +55,7 @@ j=1 #round number, from RR code. Not really used here since we just run it once 
 
 #lengs = np.linspace(0.5, 5, 19)  # increments of 0.25
 #engs = np.linspace(0.5, 7, 27) # increments of 0.25
-lengs = np.linspace(0.1, 15, 31) #increments of 0.25
+lengs = np.linspace(0.1, 10, 21) #increments of 0.25
 for QubitIndex in Qs:
     #Get the config for this qubit
     experiment = QICK_experiment(outerFolder, DAC_attenuator1 = 5, DAC_attenuator2 = 10, ADC_attenuator = 10)

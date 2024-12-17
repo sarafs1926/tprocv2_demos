@@ -13,7 +13,7 @@ outerFolder = f"/data/QICK_data/6transmon_run4a/{date_str}/readout_opt/Gain_Freq
 os.makedirs(outerFolder, exist_ok=True)
 
 # Reference frequencies for each resonator in MHz
-res_freq_ge = [6191.439, 6216.0, 6292.261, 6405.79, 6432.899, 6468.501]
+res_freq_ge = [6187.191, 5827.678, 6074.095, 5958.673], #MHz #[6191.439, 6216.0, 6292.261, 6405.79, 6432.899, 6468.501]
 
 optimal_lengths = [2.53, 9.66, 3.50, 4.75, 4.57, 6.60]
 

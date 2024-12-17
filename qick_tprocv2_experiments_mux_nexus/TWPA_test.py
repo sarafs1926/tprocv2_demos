@@ -14,8 +14,8 @@ outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/", str(date
 experiment = QICK_experiment(outerFolder)
 TWPA_sweep   = TWPA_Sweep(outerFolder, experiment)
 
-TWPA_freq = 7.47e9    #7.9159e9    #7.8613e9    #7.47e9
-start_power, stop_power, num_points = -20, -10, 10
+TWPA_freq = 7.47e9 #7.9159e9    #7.9159e9    #7.8613e9    #7.47e9
+start_power, stop_power, num_points = -13, -13, 5 #7.45e9, 7.99e9, 5
 TWPA_sweep.run(experiment.soccfg, experiment.soc, start_power, stop_power, TWPA_freq, num_points, att_1, att_2, plot_Center_shift = True, plot_res_sweeps = True, plot_gains = True)
 
 del TWPA_sweep

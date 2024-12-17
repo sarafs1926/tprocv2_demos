@@ -183,7 +183,7 @@ class TWPA_Sweep:
 
         return
 
-    def sweep_power(self, soccfg, soc, fpts, start_power, stop_power, TWPA_freq, num_points):
+    def sweep_power(self, soccfg, soc, fpts, start_power, stop_power, TWPA_set, num_points):
         power_sweep = np.linspace(start_power, stop_power, num_points)
 
         resonance_vals = []
@@ -191,12 +191,12 @@ class TWPA_Sweep:
         gains = np.zeros((len(self.config['res_freq_ge']), num_points))
 
         synth = SynthHD('/dev/ttyACM0')
-        synth[0].freqency = TWPA_freq
+        synth[0].frequency = TWPA_set
 
         for p in power_sweep:
             out_power = round(p, 3)
 
-            synth[0].power =  out_power
+            synth[0].power = out_power
             synth[0].enable = True
             time.sleep(2)
 
@@ -222,6 +222,7 @@ class TWPA_Sweep:
             resonance_vals.append(freq_res)
 
             synth[0].enable = False
+            #time.sleep(10)
         return resonance_vals, power_sweep, frequency_sweeps, gains
 
     def plot_center_shift(self, resonance_vals, power_sweep,attn_1, attn_2 ):
@@ -280,17 +281,17 @@ class TWPA_Sweep:
                 plt.xlabel("Frequency (MHz)", fontweight='normal')
                 plt.ylabel("Amplitude (a.u)", fontweight='normal')
                 plt.title(f"Resonator {i + 1}", pad=10)
-                plt.legend(loc='upper left', fontsize='6', title='Pump Power (dBm)')
+                plt.legend(loc='upper left', fontsize='6', title='Pump Freq (GHz)')
 
         # Add a main title to the figure
-        plt.suptitle(f"Resonance At Various TWPA Powers, {TWPA_freq/(1e9)} GHz", fontsize=24, y=0.95)
+        plt.suptitle(f"Resonance At Various TWPA Freq, {TWPA_freq/(1e9)} GHz") #{TWPA_freq/(1e9)} GHz", fontsize=24, y=0.95)
 
         plt.tight_layout(pad=2.0)
         outerFolder_expt = os.path.join(self.outerFolder, 'TWPA_opt')
         self.experiment.create_folder_if_not_exists(outerFolder_expt)
         now = datetime.datetime.now()
         formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-        file_name = os.path.join(outerFolder_expt, f"{formatted_datetime}_TWPApower_res_sweep.png")
+        file_name = os.path.join(outerFolder_expt, f"{formatted_datetime}_TWPAfreq_res_sweep.png")
         plt.savefig(file_name, dpi=300)
         plt.close()
         return
@@ -313,19 +314,19 @@ class TWPA_Sweep:
                 plt.subplot(2, 2, i + 1)
                 plt.scatter(power_sweep, gains[i])
 
-                plt.xlabel("TWPA Pump Power (dBm)", fontweight='normal')
-                plt.ylabel("Gain (a.u)", fontweight='normal')
+                plt.xlabel("TWPA Pump Freq (GHz)", fontweight='normal')
+                plt.ylabel("Peak height (a.u)", fontweight='normal')
                 plt.title(f"Resonator {i + 1}", pad=10)
 
         # Add a main title to the figure
-        plt.suptitle(f"Resonance At Various TWPA Powers, {TWPA_freq/(1e9)} GHz", fontsize=24, y=0.95)
+        plt.suptitle(f"Resonance At Various TWPA Freq, {TWPA_freq/(1e9)} GHz") #{TWPA_freq/(1e9)} GHz", fontsize=24, y=0.95)
 
         plt.tight_layout(pad=2.0)
         outerFolder_expt = os.path.join(self.outerFolder, 'TWPA_opt')
         self.experiment.create_folder_if_not_exists(outerFolder_expt)
         now = datetime.datetime.now()
         formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-        file_name = os.path.join(outerFolder_expt, f"{formatted_datetime}_TWPApower_gains.png")
+        file_name = os.path.join(outerFolder_expt, f"{formatted_datetime}_TWPAfreq_heights.png")
         plt.savefig(file_name, dpi=300)
         plt.close()
         for q in range(len(self.config['res_freq_ge'])):
