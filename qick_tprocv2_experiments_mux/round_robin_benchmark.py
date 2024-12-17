@@ -141,7 +141,7 @@ while j < n:
         I_e = iq_list_e[QubitIndex][0].T[0]
         Q_e = iq_list_e[QubitIndex][0].T[1]
 
-        fid, threshold, ngle, ig_new, ie_new = ss.hist_ssf(
+        fid, threshold, angle, ig_new, ie_new = ss.hist_ssf(
             data=[I_g, Q_g, I_e, Q_e], cfg=ss.config, plot=save_figs)
 
         ###################################################### T1 ######################################################
