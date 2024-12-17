@@ -9,7 +9,8 @@ import copy
 import visdom
 
 class AmplitudeRabiExperiment:
-    def __init__(self, QubitIndex, outerFolder, round_num, signal, save_figs, experiment = None, live_plot = None, q1_lowT1=None):
+    def __init__(self, QubitIndex, outerFolder, round_num, signal, save_figs, experiment = None, live_plot = None,
+                 increase_qubit_reps = False, qubit_to_increase_reps_for = None, multiply_qubit_reps_by = 0):
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
         self.expt_name = "power_rabi_ge"
@@ -24,10 +25,10 @@ class AmplitudeRabiExperiment:
             self.q_config = all_qubit_state(self.experiment)
             self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
             self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
-            if q1_lowT1:
-                    if self.QubitIndex==0:
-                        print("Q1 has low T1, increasing reps and rounds")
-                        # self.config["reps"] *=2
+            if increase_qubit_reps:
+                    if self.QubitIndex==qubit_to_increase_reps_for:
+                        print(f"Increasing reps for {self.Qubit} by {multiply_qubit_reps_by} times")
+                        self.config["reps"] *= multiply_qubit_reps_by
             print(f'Q {self.QubitIndex + 1} Round {self.round_num} Rabi configuration: ', self.config)
 
 
@@ -72,101 +73,107 @@ class AmplitudeRabiExperiment:
         return a * np.cos(2. * np.pi * b * x - c * 2 * np.pi) + d
 
     def plot_results(self, I, Q, gains, config = None, fig_quality = 100):
-        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
-        plt.rcParams.update({'font.size': 18})
+        try:
+            fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
+            plt.rcParams.update({'font.size': 18})
 
-        plot_middle = (ax1.get_position().x0 + ax1.get_position().x1) / 2
+            plot_middle = (ax1.get_position().x0 + ax1.get_position().x1) / 2
 
-        q1_a_guess_I = (np.max(I) - np.min(I)) / 2
-        q1_d_guess_I = np.mean(I)
-        q1_a_guess_Q = (np.max(Q) - np.min(Q)) / 2
-        q1_d_guess_Q = np.mean(Q)
-        q1_b_guess = 1 / gains[-1]
-        q1_c_guess = 0
+            q1_a_guess_I = (np.max(I) - np.min(I)) / 2
+            q1_d_guess_I = np.mean(I)
+            q1_a_guess_Q = (np.max(Q) - np.min(Q)) / 2
+            q1_d_guess_Q = np.mean(Q)
+            q1_b_guess = 1 / gains[-1]
+            q1_c_guess = 0
 
-        q1_guess_I = [q1_a_guess_I, q1_b_guess, q1_c_guess, q1_d_guess_I]
-        q1_popt_I, q1_pcov_I = curve_fit(self.cosine, gains, I, maxfev=100000, p0=q1_guess_I)
-        q1_fit_cosine_I = self.cosine(gains, *q1_popt_I)
+            q1_guess_I = [q1_a_guess_I, q1_b_guess, q1_c_guess, q1_d_guess_I]
+            q1_popt_I, q1_pcov_I = curve_fit(self.cosine, gains, I, maxfev=100000, p0=q1_guess_I)
+            q1_fit_cosine_I = self.cosine(gains, *q1_popt_I)
 
-        q1_guess_Q = [q1_a_guess_Q, q1_b_guess, q1_c_guess, q1_d_guess_Q]
-        q1_popt_Q, q1_pcov_Q = curve_fit(self.cosine, gains, Q, maxfev=100000, p0=q1_guess_Q)
-        q1_fit_cosine_Q = self.cosine(gains, *q1_popt_Q)
+            q1_guess_Q = [q1_a_guess_Q, q1_b_guess, q1_c_guess, q1_d_guess_Q]
+            q1_popt_Q, q1_pcov_Q = curve_fit(self.cosine, gains, Q, maxfev=100000, p0=q1_guess_Q)
+            q1_fit_cosine_Q = self.cosine(gains, *q1_popt_Q)
 
-        first_three_avg_I = np.mean(q1_fit_cosine_I[:3])
-        last_three_avg_I = np.mean(q1_fit_cosine_I[-3:])
-        first_three_avg_Q = np.mean(q1_fit_cosine_Q[:3])
-        last_three_avg_Q = np.mean(q1_fit_cosine_Q[-3:])
+            first_three_avg_I = np.mean(q1_fit_cosine_I[:3])
+            last_three_avg_I = np.mean(q1_fit_cosine_I[-3:])
+            first_three_avg_Q = np.mean(q1_fit_cosine_Q[:3])
+            last_three_avg_Q = np.mean(q1_fit_cosine_Q[-3:])
 
-        best_signal_fit = None
-        pi_amp = None
-        if 'Q' in self.signal:
-            best_signal_fit = q1_fit_cosine_Q
-            # figure out if you should take the min or the max value of the fit to say where pi_amp should be
-            if last_three_avg_Q > first_three_avg_Q:
-                pi_amp = gains[np.argmax(best_signal_fit)]
-            else:
-                pi_amp = gains[np.argmin(best_signal_fit)]
-        if 'I' in self.signal:
-            best_signal_fit = q1_fit_cosine_I
-            # figure out if you should take the min or the max value of the fit to say where pi_amp should be
-            if last_three_avg_I > first_three_avg_I:
-                pi_amp = gains[np.argmax(best_signal_fit)]
-            else:
-                pi_amp = gains[np.argmin(best_signal_fit)]
-        if 'None' in self.signal:
-            # choose the best signal depending on which has a larger magnitude
-            if abs(first_three_avg_Q - last_three_avg_Q) > abs(first_three_avg_I - last_three_avg_I):
+            best_signal_fit = None
+            pi_amp = None
+            if 'Q' in self.signal:
                 best_signal_fit = q1_fit_cosine_Q
                 # figure out if you should take the min or the max value of the fit to say where pi_amp should be
                 if last_three_avg_Q > first_three_avg_Q:
                     pi_amp = gains[np.argmax(best_signal_fit)]
                 else:
                     pi_amp = gains[np.argmin(best_signal_fit)]
-            else:
+            if 'I' in self.signal:
                 best_signal_fit = q1_fit_cosine_I
                 # figure out if you should take the min or the max value of the fit to say where pi_amp should be
                 if last_three_avg_I > first_three_avg_I:
                     pi_amp = gains[np.argmax(best_signal_fit)]
                 else:
                     pi_amp = gains[np.argmin(best_signal_fit)]
-        else:
-            print('Invalid signal passed, please do I Q or None')
+            if 'None' in self.signal:
+                # choose the best signal depending on which has a larger magnitude
+                if abs(first_three_avg_Q - last_three_avg_Q) > abs(first_three_avg_I - last_three_avg_I):
+                    best_signal_fit = q1_fit_cosine_Q
+                    # figure out if you should take the min or the max value of the fit to say where pi_amp should be
+                    if last_three_avg_Q > first_three_avg_Q:
+                        pi_amp = gains[np.argmax(best_signal_fit)]
+                    else:
+                        pi_amp = gains[np.argmin(best_signal_fit)]
+                else:
+                    best_signal_fit = q1_fit_cosine_I
+                    # figure out if you should take the min or the max value of the fit to say where pi_amp should be
+                    if last_three_avg_I > first_three_avg_I:
+                        pi_amp = gains[np.argmax(best_signal_fit)]
+                    else:
+                        pi_amp = gains[np.argmin(best_signal_fit)]
+            else:
+                print('Invalid signal passed, please do I Q or None')
 
 
-        ax2.plot(gains, q1_fit_cosine_Q, '-', color='red', linewidth=3, label="Fit")
-        ax1.plot(gains, q1_fit_cosine_I, '-', color='red', linewidth=3, label="Fit")
+            ax2.plot(gains, q1_fit_cosine_Q, '-', color='red', linewidth=3, label="Fit")
+            ax1.plot(gains, q1_fit_cosine_I, '-', color='red', linewidth=3, label="Fit")
 
-        if config is not None:
-            fig.text(plot_middle, 0.98,
-                     f"Rabi Q{self.QubitIndex + 1}_"  + f", {config['reps']}*{config['rounds']} avgs",
-                     fontsize=24, ha='center', va='top') #f", {config['sigma'] * 1000} ns sigma" need to add in all qqubit sigmas to save exp_cfg before putting htis back
-        else:
-            fig.text(plot_middle, 0.98,
-                     f"Rabi Q{self.QubitIndex + 1}_" f", {self.config['sigma'] * 1000} ns sigma" + f", {self.config['reps']}*{self.config['rounds']} avgs",
-                     fontsize=24, ha='center', va='top')
+            if config is not None:
+                fig.text(plot_middle, 0.98,
+                         f"Rabi Q{self.QubitIndex + 1}_"  + f", {config['reps']}*{config['rounds']} avgs",
+                         fontsize=24, ha='center', va='top') #f", {config['sigma'] * 1000} ns sigma" need to add in all qqubit sigmas to save exp_cfg before putting htis back
+            else:
+                fig.text(plot_middle, 0.98,
+                         f"Rabi Q{self.QubitIndex + 1}_" f", {self.config['sigma'] * 1000} ns sigma" + f", {self.config['reps']}*{self.config['rounds']} avgs",
+                         fontsize=24, ha='center', va='top')
 
-        ax1.plot(gains, I, label="Gain (a.u.)", linewidth=2)
-        ax1.set_ylabel("I Amplitude (a.u.)", fontsize=20)
-        ax1.tick_params(axis='both', which='major', labelsize=16)
+            ax1.plot(gains, I, label="Gain (a.u.)", linewidth=2)
+            ax1.set_ylabel("I Amplitude (a.u.)", fontsize=20)
+            ax1.tick_params(axis='both', which='major', labelsize=16)
 
-        ax2.plot(gains, Q, label="Q", linewidth=2)
-        ax2.set_xlabel("Gain (a.u.)", fontsize=20)
-        ax2.set_ylabel("Q Amplitude (a.u.)", fontsize=20)
-        ax2.tick_params(axis='both', which='major', labelsize=16)
+            ax2.plot(gains, Q, label="Q", linewidth=2)
+            ax2.set_xlabel("Gain (a.u.)", fontsize=20)
+            ax2.set_ylabel("Q Amplitude (a.u.)", fontsize=20)
+            ax2.tick_params(axis='both', which='major', labelsize=16)
 
-        plt.tight_layout()
-        plt.subplots_adjust(top=0.93)
+            plt.tight_layout()
+            plt.subplots_adjust(top=0.93)
 
-        if self.save_figs:
-            outerFolder_expt = os.path.join(self.outerFolder, self.expt_name)
-            self.create_folder_if_not_exists(outerFolder_expt)
-            now = datetime.datetime.now()
-            formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
-            file_name = os.path.join(outerFolder_expt, f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png")
-            fig.savefig(file_name, dpi=fig_quality, bbox_inches='tight')
-        plt.close(fig)
+            if self.save_figs:
+                outerFolder_expt = os.path.join(self.outerFolder, self.expt_name)
+                self.create_folder_if_not_exists(outerFolder_expt)
+                now = datetime.datetime.now()
+                formatted_datetime = now.strftime("%Y-%m-%d_%H-%M-%S")
+                file_name = os.path.join(outerFolder_expt, f"R_{self.round_num}_" + f"Q_{self.QubitIndex + 1}_" + f"{formatted_datetime}_" + self.expt_name + f"_q{self.QubitIndex + 1}.png")
+                fig.savefig(file_name, dpi=fig_quality, bbox_inches='tight')
+            plt.close(fig)
+            return best_signal_fit, pi_amp
 
-        return best_signal_fit, pi_amp
+        except Exception as e:
+            print("Error fitting cosine:", e)
+            # Return None if the fit didn't work
+            return None, None
+
 
     def get_results(self, I, Q, gains):
 

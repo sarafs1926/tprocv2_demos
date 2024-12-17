@@ -193,7 +193,9 @@ class T2RProgram(AveragerProgramV2):
 
 
 class T2RMeasurement:
-    def __init__(self, QubitIndex, outerFolder, round_num, signal, save_figs, experiment = None, live_plot = None, fit_data = None, q1_lowT1=None):
+    def __init__(self, QubitIndex, outerFolder, round_num, signal, save_figs, experiment = None, live_plot = None,
+                 fit_data = None, increase_qubit_reps = False, qubit_to_increase_reps_for = None,
+                 multiply_qubit_reps_by = 0):
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
         self.fit_data = fit_data
@@ -209,11 +211,11 @@ class T2RMeasurement:
             self.q_config = all_qubit_state(self.experiment)
             self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
             self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
-            if q1_lowT1:
-                    if self.QubitIndex==0:
-                        print("Q1 has low T1, increasing reps and rounds")
-                        self.config["reps"] *=2
-                        # self.config['ramsey_freq'] = 2 * self.config['ramsey_freq']
+            if increase_qubit_reps:
+                    if self.QubitIndex==qubit_to_increase_reps_for:
+                        print(f"Increasing reps for {self.Qubit} by {multiply_qubit_reps_by} times")
+                        self.config["reps"] *=multiply_qubit_reps_by
+                        #self.config['ramsey_freq'] = 2 * self.config['ramsey_freq']
             print(f'Q {self.QubitIndex + 1} Round {self.round_num} T2R configuration: ', self.config)
 
     def t2_fit(self, x_data, I, Q, verbose = False, guess=None, plot=False):

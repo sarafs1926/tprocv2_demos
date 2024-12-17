@@ -23,7 +23,7 @@ expt_cfg = {
     },
 
     "qubit_spec_ge": {
-        "reps": 500, #100
+        "reps": 700, #500 #100
         "rounds": 1, #10
         "start": list(VNA_qubit-5), # [MHz]
         "stop":  list(VNA_qubit+5), # [MHz]
@@ -51,7 +51,7 @@ expt_cfg = {
     },
 
     "Ramsey_ge": {
-        "reps": 300, #300
+        "reps": 500, #300
         "rounds": 1,#10
         "start": [0.0] * 6, # [us]
         "stop":  [60] * 6, # [us]
@@ -62,7 +62,7 @@ expt_cfg = {
     },
 
     "SpinEcho_ge": {
-        "reps": 300,
+        "reps": 500,
         "rounds": 1,
         "start": [0.0] * 6, # [us]
         "stop":  [60] * 6, # [us]

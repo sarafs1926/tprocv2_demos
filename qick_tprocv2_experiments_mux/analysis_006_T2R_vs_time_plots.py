@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import norm
 from scipy.optimize import curve_fit
 
-class T1VsTime:
+class T2rVsTime:
     def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
                  signal, run_name):
         self.save_figs = save_figs
@@ -75,7 +75,6 @@ class T1VsTime:
 
         return result
 
-
     def process_h5_data(self, data):
         # Check if the data is a byte string; decode if necessary.
         if isinstance(data, bytes):
@@ -108,9 +107,8 @@ class T1VsTime:
 
     def run(self):
         import datetime
-
         # ----------Load/get data------------------------
-        t1_vals = {i: [] for i in range(self.number_of_qubits)}
+        t2_vals = {i: [] for i in range(self.number_of_qubits)}
         rounds = []
         reps = []
         file_names = []
@@ -129,50 +127,52 @@ class T1VsTime:
             exp_config = loader_config_instance.load_config('expt_cfg.h5')
             del loader_config_instance
 
-            # ------------------------------------------------Load/Plot/Save T1----------------------------------------------
-            outerFolder_expt = outerFolder + "/Data_h5/T1_ge/"
+            # -------------------------------------------------------Load/Plot/Save T2------------------------------------------
+            outerFolder_expt = outerFolder + "/Data_h5/T2_ge/"
             h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
 
             for h5_file in h5_files:
-
                 save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
                 H5_class_instance = Data_H5(h5_file)
-                load_data = H5_class_instance.load_from_h5(data_type='T1', save_r=int(save_round))
+                load_data = H5_class_instance.load_from_h5(data_type='T2', save_r=int(save_round))
 
-                for q_key in load_data['T1']:
-                    for dataset in range(len(load_data['T1'][q_key].get('Dates', [])[0])):
-                        if 'nan' in str(load_data['T1'][q_key].get('Dates', [])[0][dataset]):
+                for q_key in load_data['T2']:
+                    for dataset in range(len(load_data['T2'][q_key].get('Dates', [])[0])):
+                        if 'nan' in str(load_data['T2'][q_key].get('Dates', [])[0][dataset]):
                             continue
-                        # T1 = load_data['T1'][q_key].get('T1', [])[0][dataset]
-                        # errors = load_data['T1'][q_key].get('Errors', [])[0][dataset]
-                        date = datetime.datetime.fromtimestamp(load_data['T1'][q_key].get('Dates', [])[0][dataset])
-                        I = self.process_h5_data(load_data['T1'][q_key].get('I', [])[0][dataset].decode())
-                        Q = self.process_h5_data(load_data['T1'][q_key].get('Q', [])[0][dataset].decode())
-                        delay_times = self.process_h5_data(load_data['T1'][q_key].get('Delay Times', [])[0][dataset].decode())
-                        # fit = load_data['T1'][q_key].get('Fit', [])[0][dataset]
-                        round_num = load_data['T1'][q_key].get('Round Num', [])[0][dataset]
-                        batch_num = load_data['T1'][q_key].get('Batch Num', [])[0][dataset]
+                        # T2 = load_data['T2'][q_key].get('T2', [])[0][dataset]
+                        # errors = load_data['T2'][q_key].get('Errors', [])[0][dataset]
+                        date = datetime.datetime.fromtimestamp(load_data['T2'][q_key].get('Dates', [])[0][dataset])
+                        I = self.process_h5_data(load_data['T2'][q_key].get('I', [])[0][dataset].decode())
+                        Q = self.process_h5_data(load_data['T2'][q_key].get('Q', [])[0][dataset].decode())
+                        delay_times = self.process_h5_data(load_data['T2'][q_key].get('Delay Times', [])[0][dataset].decode())
+                        # fit = load_data['T2'][q_key].get('Fit', [])[0][dataset]
+                        round_num = load_data['T2'][q_key].get('Round Num', [])[0][dataset]
+                        batch_num = load_data['T2'][q_key].get('Batch Num', [])[0][dataset]
 
                         if len(I) > 0:
-                            T1_class_instance = T1Measurement(q_key, outerFolder_save_plots, round_num, self.signal, self.save_figs,
-                                                              fit_data=True)
-                            T1_spec_cfg = ast.literal_eval(exp_config['T1_ge'].decode())
-                            q1_fit_exponential, T1_err, T1_est, plot_sig = T1_class_instance.t1_fit(I, Q, delay_times)
-                            if T1_est < 0:
+                            T2_class_instance = T2RMeasurement(q_key, outerFolder_save_plots, round_num, self.signal,
+                                                               self.save_figs, fit_data=True)
+                            try:
+                                fitted, t2r_est, t2r_err, plot_sig = T2_class_instance.t2_fit(delay_times, I, Q)
+                            except:
+                                continue
+                            T2_cfg = ast.literal_eval(exp_config['Ramsey_ge'].decode())
+                            if t2r_est < 0:
                                 print("The value is negative, continuing...")
                                 continue
-                            if T1_est > 1000:
+                            if t2r_est > 1000:
                                 print("The value is above 1000 us, this is a bad fit, continuing...")
                                 continue
-                            t1_vals[q_key].extend([T1_est])
+                            t2_vals[q_key].extend([t2r_est])
                             date_times[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])
 
-                            del T1_class_instance
+                            del T2_class_instance
 
                 del H5_class_instance
-        return date_times, t1_vals
+        return date_times, t2_vals
 
-    def plot(self, date_times, t1_vals, show_legends):
+    def plot(self, date_times, t2_vals, show_legends):
         #---------------------------------plot-----------------------------------------------------
         analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
         self.create_folder_if_not_exists(analysis_folder)
@@ -183,7 +183,7 @@ class T1VsTime:
         titles = [f"Qubit {i+1}" for i in range(self.number_of_qubits)]
         colors = ['orange','blue','purple','green','brown','pink']
         fig, axes = plt.subplots(2, 3, figsize=(12, 8))
-        plt.title('T1 Values vs Time',fontsize = font)
+        plt.title('T2 Values vs Time',fontsize = font)
         axes = axes.flatten()
         titles = [f"Qubit {i + 1}" for i in range(self.number_of_qubits)]
         from datetime import datetime
@@ -192,7 +192,7 @@ class T1VsTime:
             ax.set_title(titles[i], fontsize = font)
 
             x = date_times[i]
-            y = t1_vals[i]
+            y = t2_vals[i]
 
             # Convert strings to datetime objects.
             datetime_objects = [datetime.strptime(date_string, "%Y-%m-%d %H:%M:%S") for date_string in x]
@@ -218,10 +218,10 @@ class T1VsTime:
             if show_legends:
                 ax.legend(edgecolor='black')
             ax.set_xlabel('Time (Days)', fontsize=font-2)
-            ax.set_ylabel('T1 (us)', fontsize=font-2)
+            ax.set_ylabel('T2 (us)', fontsize=font-2)
             ax.tick_params(axis='both', which='major', labelsize=8)
 
         plt.tight_layout()
-        plt.savefig(analysis_folder + 'T1_vals.pdf', transparent=True, dpi=self.final_figure_quality)
+        plt.savefig(analysis_folder + 'T2_vals.pdf', transparent=True, dpi=self.final_figure_quality)
 
         #plt.show()
