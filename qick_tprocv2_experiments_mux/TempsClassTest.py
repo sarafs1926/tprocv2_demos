@@ -1,12 +1,6 @@
-from section_002_res_spec_ge_mux import ResonanceSpectroscopy
 from section_004_qubit_spec_ge import QubitSpectroscopy
-from section_006_amp_rabi_ge import AmplitudeRabiExperiment
-from section_007_T1_ge import T1Measurement
 from section_008_save_data_to_h5 import Data_H5
 from section_005_single_shot_ge import SingleShot
-from section_009_T2R_ge import T2RMeasurement
-from section_010_T2E_ge import T2EMeasurement
-#from expt_config import *
 import glob
 import re
 import datetime
@@ -20,77 +14,21 @@ from sklearn.mixture import GaussianMixture
 import matplotlib.pyplot as plt
 import math
 
-date = '2024-12-16'
-outerFolder = "/data/QICK_data/6transmon_run5/" + date + "/"
-outerFolder_save_plots = "/data/QICK_data/6transmon_run5/" + date + "_plots/"
+sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
 
-save_figs = True
-fit_saved = False
-signal = 'None'
-figure_quality = 100 #ramp this up to like 500 for presentation plots
-
-
-class TempCalcAndPlots:
-    def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-                 signal, run_name, exp_config, outerFolder):
+class Temperature_Results:
+    def __init__(self, date, figure_quality, save_figs, fit_saved, signal, run_name, number_of_qubits, outerFolder,
+                 outerFolder_save_plots):
+        #self.exp_cfg = None
+        self.date = date
+        self.figure_quality = figure_quality
         self.save_figs = save_figs
         self.fit_saved = fit_saved
         self.signal = signal
-        self.figure_quality = figure_quality
         self.run_name = run_name
         self.number_of_qubits = number_of_qubits
-        self.final_figure_quality = final_figure_quality
-        self.top_folder_dates = top_folder_dates
-        self.exp_config = exp_config
         self.outerFolder = outerFolder
-        self.temperature_folder = os.path.join(self.outerFolder, "Temperatures")
-
-        # Create the folder if it doesn't exist
-        if not os.path.exists(self.temperature_folder):
-            os.makedirs(self.temperature_folder)
-
-    def calculate_qubit_temperature(self, frequency_mhz, ground_state_population, excited_state_population):
-        k_B = 1.380649e-23  # Boltzmann constant in J/K
-        h = 6.62607015e-34  # Planck's constant in J·s
-        frequency_hz = frequency_mhz * 1e6
-        T = (h * frequency_hz) / (k_B * np.log(ground_state_population / excited_state_population))
-        return T
-
-
-    def fit_double_gaussian_with_full_coverage(self, iq_data):
-        gmm = GaussianMixture(n_components=2)
-        gmm.fit(iq_data.reshape(-1, 1))
-
-        means = gmm.means_.flatten()
-        covariances = np.sqrt(gmm.covariances_).flatten()
-        weights = gmm.weights_
-
-        ground_gaussian = np.argmin(means)
-        excited_gaussian = 1 - ground_gaussian
-
-        # Generate x values to approximate the crossing point
-        x_vals = np.linspace(means[ground_gaussian] - 3 * covariances[ground_gaussian],
-                             means[excited_gaussian] + 3 * covariances[excited_gaussian], 1000)
-
-        # Calculate Gaussian fits for each x value
-        ground_gaussian_fit = weights[ground_gaussian] * (1 / (np.sqrt(2 * np.pi) * covariances[ground_gaussian])) * np.exp(
-            -0.5 * ((x_vals - means[ground_gaussian]) / covariances[ground_gaussian]) ** 2)
-        excited_gaussian_fit = weights[excited_gaussian] * (
-                    1 / (np.sqrt(2 * np.pi) * covariances[excited_gaussian])) * np.exp(
-            -0.5 * ((x_vals - means[excited_gaussian]) / covariances[excited_gaussian]) ** 2)
-
-        # Find the x value where the two Gaussian functions are closest
-        crossing_point = x_vals[np.argmin(np.abs(ground_gaussian_fit - excited_gaussian_fit))]
-
-        labels = gmm.predict(iq_data.reshape(-1, 1))
-
-        ground_data = iq_data[(labels == ground_gaussian) & (iq_data < crossing_point)]
-        excited_data = iq_data[(labels == excited_gaussian) & (iq_data > crossing_point)]
-
-        ground_state_population = len(ground_data) / len(iq_data)
-        excited_state_population_overlap = len(excited_data) / len(iq_data)
-
-        return ground_state_population, excited_state_population_overlap, gmm, means, covariances, weights, crossing_point, ground_gaussian, excited_gaussian, ground_data, excited_data, iq_data
+        self.outerFolder_save_plots = outerFolder_save_plots
 
     def process_string_of_nested_lists(self, data):
         # Remove extra whitespace and non-numeric characters.
@@ -104,11 +42,11 @@ class TempCalcAndPlots:
         matches = re.findall(pattern, cleaned_data)
         result = []
         for match in matches:
-            numbers = [float(x.strip('[').strip(']').replace("'", "").replace(" ", "").replace("  ", "")) for x in match.split()] # Convert strings to integers
+            numbers = [float(x.strip('[').strip(']').replace("'", "").replace(" ", "").replace("  ", "")) for x in
+                       match.split()]  # Convert strings to integers
             result.append(numbers)
 
         return result
-
 
     def process_h5_data(self, data):
         # Check if the data is a byte string; decode if necessary.
@@ -141,17 +79,70 @@ class TempCalcAndPlots:
             return None
 
     def run(self):
-        # ----------------------------------------------Load/Plot/Save QSpec------------------------------------
-        outerFolder_expt = outerFolder + "/Data_h5/QSpec_ge/"
-        h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
+        loader_config_instance = Data_H5(self.outerFolder)
+        sys_config = loader_config_instance.load_config('sys_config.h5')  # _batch2
+        del loader_config_instance
 
+        loader_config_instance = Data_H5(self.outerFolder)
+        exp_config = loader_config_instance.load_config('expt_cfg.h5')  # _batch2
+        self.exp_cfg = exp_config
+
+        #self.load_plot_save_ss(exp_config)
+        del loader_config_instance
+
+
+    def calculate_qubit_temperature(self, frequency_mhz, ground_state_population, excited_state_population):
+        k_B = 1.380649e-23  # Boltzmann constant in J/K
+        h = 6.62607015e-34  # Planck's constant in J·s
+        frequency_hz = frequency_mhz * 1e6
+        T = (h * frequency_hz) / (k_B * np.log(ground_state_population / excited_state_population))
+        return T
+
+    def fit_double_gaussian_with_full_coverage(self, iq_data):
+        gmm = GaussianMixture(n_components=2)
+        gmm.fit(iq_data.reshape(-1, 1))
+
+        means = gmm.means_.flatten()
+        covariances = np.sqrt(gmm.covariances_).flatten()
+        weights = gmm.weights_
+
+        ground_gaussian = np.argmin(means)
+        excited_gaussian = 1 - ground_gaussian
+
+        # Generate x values to approximate the crossing point
+        x_vals = np.linspace(means[ground_gaussian] - 3 * covariances[ground_gaussian],
+                             means[excited_gaussian] + 3 * covariances[excited_gaussian], 1000)
+
+        # Calculate Gaussian fits for each x value
+        ground_gaussian_fit = weights[ground_gaussian] * (
+                    1 / (np.sqrt(2 * np.pi) * covariances[ground_gaussian])) * np.exp(
+            -0.5 * ((x_vals - means[ground_gaussian]) / covariances[ground_gaussian]) ** 2)
+        excited_gaussian_fit = weights[excited_gaussian] * (
+                1 / (np.sqrt(2 * np.pi) * covariances[excited_gaussian])) * np.exp(
+            -0.5 * ((x_vals - means[excited_gaussian]) / covariances[excited_gaussian]) ** 2)
+
+        # Find the x value where the two Gaussian functions are closest
+        crossing_point = x_vals[np.argmin(np.abs(ground_gaussian_fit - excited_gaussian_fit))]
+
+        labels = gmm.predict(iq_data.reshape(-1, 1))
+
+        ground_data = iq_data[(labels == ground_gaussian) & (iq_data < crossing_point)]
+        excited_data = iq_data[(labels == excited_gaussian) & (iq_data > crossing_point)]
+
+        ground_state_population = len(ground_data) / len(iq_data)
+        excited_state_population_overlap = len(excited_data) / len(iq_data)
+
+        return ground_state_population, excited_state_population_overlap, gmm, means, covariances, weights, crossing_point, ground_gaussian, excited_gaussian, ground_data, excited_data, iq_data
+
+    # ----------------------------------------------Load/Plot/Save QSpec------------------------------------
+    def load_plot_save_q_spec(self):
+        self.outerFolder_expt = self.outerFolder + "/Data_h5/QSpec_ge/"
+        h5_files = glob.glob(os.path.join(self.outerFolder_expt, "*.h5"))
         qubit_frequencies = []
-
         for h5_file in h5_files:
-            #print(h5_file)
             save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
             H5_class_instance = Data_H5(h5_file)
-            load_data = H5_class_instance.load_from_h5(data_type=  'QSpec', save_r = int(save_round))
+            load_data = H5_class_instance.load_from_h5(data_type='QSpec', save_r=int(save_round))
 
             populated_keys = []
             for q_key in load_data['QSpec']:
@@ -172,16 +163,25 @@ class TempCalcAndPlots:
                     date = datetime.datetime.fromtimestamp(load_data['QSpec'][q_key].get('Dates', [])[0][dataset])
                     I = self.process_h5_data(load_data['QSpec'][q_key].get('I', [])[0][dataset].decode())
                     Q = self.process_h5_data(load_data['QSpec'][q_key].get('Q', [])[0][dataset].decode())
-                    #I_fit = load_data['QSpec'][q_key].get('I Fit', [])[0][dataset]
-                    #Q_fit = load_data['QSpec'][q_key].get('Q Fit', [])[0][dataset]
+                    # I_fit = load_data['QSpec'][q_key].get('I Fit', [])[0][dataset]
+                    # Q_fit = load_data['QSpec'][q_key].get('Q Fit', [])[0][dataset]
                     freqs = self.process_h5_data(load_data['QSpec'][q_key].get('Frequencies', [])[0][dataset].decode())
                     round_num = load_data['QSpec'][q_key].get('Round Num', [])[0][dataset]
                     batch_num = load_data['QSpec'][q_key].get('Batch Num', [])[0][dataset]
 
-                    if len(I)>0:
+                    if len(I) > 0:
+                        qspec_class_instance = QubitSpectroscopy(q_key, self.outerFolder_save_plots, round_num,
+                                                                 self.signal, self.save_figs)
 
-                        qspec_class_instance = QubitSpectroscopy(q_key, outerFolder_save_plots, round_num, signal, save_figs)
-                        q_spec_cfg = ast.literal_eval(self.exp_config['qubit_spec_ge'].decode())
+                        # Ensure exp_cfg is loaded
+                        if not hasattr(self, 'exp_cfg') or self.exp_cfg is None:
+                            loader_config_instance = Data_H5(self.outerFolder)
+                            self.exp_cfg = loader_config_instance.load_config('expt_cfg.h5')
+                            del loader_config_instance
+
+                        q_spec_cfg = ast.literal_eval(self.exp_cfg['qubit_spec_ge'].decode())
+                        # print('q_spec_cfg: ', q_spec_cfg)
+                        #qspec_class_instance.plot_results(I, Q, freqs, q_spec_cfg, self.figure_quality)
                         largest_amp_curve_mean, I_fit, Q_fit = qspec_class_instance.get_results(I, Q, freqs)
 
                         qubit_frequencies.append({
@@ -191,24 +191,30 @@ class TempCalcAndPlots:
                             'largest_amp_curve_mean': largest_amp_curve_mean
                         })
 
-                        #qspec_class_instance.plot_results(I, Q, freqs, q_spec_cfg, figure_quality)
                         del qspec_class_instance
 
             del H5_class_instance
-        print(qubit_frequencies)
 
-        # ------------------------------------------------Load/Plot/Save SS---------------------------------------
-        outerFolder_expt = outerFolder + "/Data_h5/SS_ge/"
-        h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
+        print('qubit_frequencies: ', qubit_frequencies)
+        return qubit_frequencies
+    # ------------------------------------------------Load/Plot/Save SS---------------------------------------
+    def load_plot_save_ss(self):
+        qubit_frequencies = self.load_plot_save_q_spec()
+        temperature_folder = os.path.join(self.outerFolder, "Temperatures")
+        if not os.path.exists(temperature_folder):
+            os.makedirs(temperature_folder)
 
+        outerFolder_expt = self.outerFolder + "/Data_h5/SS_ge/"
+        h5_files = glob.glob(os.path.join(self.outerFolder_expt, "*.h5"))
         # Initialize a dictionary to store temperatures for each qubit
-        qubit_temperatures = {i: [] for i in range(6)}  # Assuming there are 6 qubits
+        qubit_temperatures = {i: [] for i in range(self.number_of_qubits)}  # Assuming there are 6 qubits
+
 
         for h5_file in h5_files:
-            #print(h5_file)
+
             save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
             H5_class_instance = Data_H5(h5_file)
-            load_data = H5_class_instance.load_from_h5(data_type=  'SS', save_r = int(save_round))
+            load_data = H5_class_instance.load_from_h5(data_type='SS', save_r=int(save_round))
 
             populated_keys = []
             for q_key in load_data['SS']:
@@ -225,14 +231,12 @@ class TempCalcAndPlots:
             print(f"Populated keys: {populated_keys}")
 
             for q_key in populated_keys:
-                # Within each qubit loop, create a folder for the specific qubit
-                qubit_folder = os.path.join(self.temperature_folder, f"Qubit_{q_key + 1}")
+                qubit_folder = os.path.join(temperature_folder, f"Qubit_{q_key + 1}")
                 if not os.path.exists(qubit_folder):
                     os.makedirs(qubit_folder)
-                #print('h5 file: ', h5_file, '\n', 'key: ', q_key)
                 for dataset in range(len(load_data['SS'][q_key].get('Dates', [])[0])):
                     timestamp = load_data['SS'][q_key].get('Dates', [])[0][dataset]
-                    date= datetime.datetime.fromtimestamp(load_data['SS'][q_key].get('Dates', [])[0][dataset])
+                    date = datetime.datetime.fromtimestamp(load_data['SS'][q_key].get('Dates', [])[0][dataset])
                     angle = load_data['SS'][q_key].get('Angle', [])[0][dataset]
                     fidelity = load_data['SS'][q_key].get('Fidelity', [])[0][dataset]
                     I_g = self.process_h5_data(load_data['SS'][q_key].get('I_g', [])[0][dataset].decode())
@@ -247,28 +251,30 @@ class TempCalcAndPlots:
                     I_e = np.array(I_e)
                     Q_e = np.array(Q_e)
 
-                    if len(Q_g)>0:
-                        ss_class_instance = SingleShot(q_key, outerFolder_save_plots, round_num, save_figs)
-                        ss_cfg = ast.literal_eval(self.exp_config['Readout_Optimization'].decode())
+                    if len(Q_g) > 0:
+                        ss_class_instance = SingleShot(q_key, self.outerFolder_save_plots, round_num, self.save_figs)
+                        ss_cfg = ast.literal_eval(self.exp_cfg['Readout_Optimization'].decode())
                         #ss_class_instance.hist_ssf(data=[I_g, Q_g, I_e, Q_e], cfg=ss_cfg, plot=True)
                         fid, threshold, rotation_angle, ig_new, ie_new = ss_class_instance.hist_ssf(
                             data=[I_g, Q_g, I_e, Q_e], cfg=ss_cfg, plot=False)
 
                         # Extract the relevant portion of the file name for matching
-                        base_h5_file = "_".join(h5_file.split('/')[-1].split('_')[:2])  # Extract up to 2024-12-11_11-45-27
-                        #print(f"Base H5 File for Matching: {base_h5_file}")
+                        base_h5_file = "_".join(
+                            h5_file.split('/')[-1].split('_')[:2])  # Extract up to 2024-12-11_11-45-27
+                        # print(f"Base H5 File for Matching: {base_h5_file}")
 
                         qubit_frequency = [
                             entry['largest_amp_curve_mean']
                             for entry in qubit_frequencies
                             if
-                            "_".join(entry['h5_file'].split('/')[-1].split('_')[:2]) == base_h5_file and entry['q_key'] == q_key
+                            "_".join(entry['h5_file'].split('/')[-1].split('_')[:2]) == base_h5_file and entry[
+                                'q_key'] == q_key
                         ]
                         if len(qubit_frequency) == 0:
                             print(f"No match found for h5_file: {base_h5_file}, q_key: {q_key}. Skipping.")
                             continue
 
-                        qubit_frequency = qubit_frequency[0] #there should only be one value inside this list
+                        qubit_frequency = qubit_frequency[0]  # there should only be one value inside this list
                         ground_state_population, excited_state_population_overlap, gmm, means, covariances, weights, crossing_point, ground_gaussian, excited_gaussian, ground_data, excited_data, iq_data = self.fit_double_gaussian_with_full_coverage(
                             ig_new)
                         temperature_k = self.calculate_qubit_temperature(qubit_frequency, ground_state_population,
@@ -279,7 +285,7 @@ class TempCalcAndPlots:
                         print(f"Excited state (leakage) population: {excited_state_population_overlap}")
                         print(f"Qubit {q_key + 1} Temperature: {temperature_mk:.2f} mK", "\n")
 
-                        qubit_temperatures[q_key].append((temperature_mk, timestamp))#save temps for each qubit
+                        qubit_temperatures[q_key].append((temperature_mk, timestamp))  # save temps for each qubit
 
                         # Plotting double gaussian distributions and fitting
                         xlims = [np.min(ig_new), np.max(ig_new)]
@@ -311,14 +317,17 @@ class TempCalcAndPlots:
                         # Generate x values for plotting Gaussian components
                         x = np.linspace(xlims[0], xlims[1], 1000)
                         ground_gaussian_fit = scaling_factor_ground * (
-                                weights[ground_gaussian] / (np.sqrt(2 * np.pi) * covariances[ground_gaussian])) * np.exp(
+                                weights[ground_gaussian] / (
+                                    np.sqrt(2 * np.pi) * covariances[ground_gaussian])) * np.exp(
                             -0.5 * ((x - means[ground_gaussian]) / covariances[ground_gaussian]) ** 2)
                         excited_gaussian_fit = scaling_factor_excited * (
-                                weights[excited_gaussian] / (np.sqrt(2 * np.pi) * covariances[excited_gaussian])) * np.exp(
+                                weights[excited_gaussian] / (
+                                    np.sqrt(2 * np.pi) * covariances[excited_gaussian])) * np.exp(
                             -0.5 * ((x - means[excited_gaussian]) / covariances[excited_gaussian]) ** 2)
 
                         plt.plot(x, ground_gaussian_fit, label='Ground Gaussian Fit', color='blue', linewidth=2)
-                        plt.plot(x, excited_gaussian_fit, label='Excited (leakage) Gaussian Fit', color='red', linewidth=2)
+                        plt.plot(x, excited_gaussian_fit, label='Excited (leakage) Gaussian Fit', color='red',
+                                 linewidth=2)
                         plt.axvline(crossing_point, color='black', linestyle='--', linewidth=1,
                                     label=f'Crossing Point ({crossing_point:.2f})')
 
@@ -342,16 +351,18 @@ class TempCalcAndPlots:
                         #     alpha=0.2, color="green", label="All IQ Data Region", zorder=1
                         # )
 
-                        plt.title(f"Fidelity Histogram and Double Gaussian Fit ; Qubit {q_key + 1}; Fidelity = {fidelity * 100:.2f}%")
+                        plt.title(
+                            f"Fidelity Histogram and Double Gaussian Fit ; Qubit {q_key + 1}; Fidelity = {fidelity * 100:.2f}%")
                         plt.xlabel('$I_g$', fontsize=14)
                         # plt.ylabel('Probability Density', fontsize=14)
                         plt.legend()
-                        #plt.show()
+                        # plt.show()
 
                         # Save the plot to the Temperatures folder
-                        plot_filename = os.path.join(qubit_folder, f"Qubit{q_key + 1}_Fidelityhist_gaussianfit_Dataset{dataset}_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.png")
+                        plot_filename = os.path.join(qubit_folder,
+                                                     f"Qubit{q_key + 1}_Fidelityhist_gaussianfit_Dataset{dataset}_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.png")
                         plt.savefig(plot_filename)
-                        #print(f"Plot saved to {plot_filename}")
+                        # print(f"Plot saved to {plot_filename}")
                         plt.close()
 
                         # Cleanup
@@ -363,17 +374,22 @@ class TempCalcAndPlots:
                         del ss_class_instance
 
             del H5_class_instance
+            return qubit_temperatures
 
-        #------------------------------------------Histograms--------------------------------------------------------
-        # Create a new folder to store temperature histograms
-        temp_histograms_folder = os.path.join(self.temperature_folder, "Temps_Histograms")
+    def temperature_plots(self, qubit_temperatures):
+        # ------------------------------------------Histograms--------------------------------------------------------
+
+        temperature_folder = os.path.join(self.outerFolder, "Temperatures")
+        if not os.path.exists(temperature_folder):
+            os.makedirs(temperature_folder)
+
+        temp_histograms_folder = os.path.join(temperature_folder, "Temps_Histograms")
         if not os.path.exists(temp_histograms_folder):
             os.makedirs(temp_histograms_folder)
 
-
         # After the loop is complete, create the subplots for temperature histograms
         plt.figure(figsize=(15, 10))
-        colors = ['orange','blue','purple','green','brown','pink']
+        colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
         for qubit_id, temperatures in qubit_temperatures.items():
             temperatures = [temp[0] for temp in qubit_temperatures[qubit_id]]
             plt.subplot(2, 3, qubit_id + 1)
@@ -385,16 +401,17 @@ class TempCalcAndPlots:
 
         # Adjust layout and save the figure
         plt.tight_layout()
-        hist_plot_filename = os.path.join(temp_histograms_folder, f"Temperature_Distributions_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.png")
+        hist_plot_filename = os.path.join(temp_histograms_folder,
+                                          f"Temperature_Distributions_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.png")
         plt.savefig(hist_plot_filename)
         print(f"Temperature histograms saved to {hist_plot_filename}")
 
         # Cleanup
         plt.close()
 
-        #------------------------------------------Scatter Plots---------------------------------------------------
+        # ------------------------------------------Scatter Plots---------------------------------------------------
         # Create a new folder to store temperature scatter plots
-        temp_scatter_folder = os.path.join(self.temperature_folder, "Temps_Scatter")
+        temp_scatter_folder = os.path.join(temperature_folder, "Temps_Scatter")
         if not os.path.exists(temp_scatter_folder):
             os.makedirs(temp_scatter_folder)
 
@@ -404,7 +421,8 @@ class TempCalcAndPlots:
         for qubit_id, data in qubit_temperatures.items():
             if data:  # Check if there's data for the qubit
                 temperatures, timestamps = zip(*data)  # Unpack temperatures and timestamps
-                timestamps = [datetime.datetime.fromtimestamp(ts) for ts in timestamps]  # Convert timestamps to datetime
+                timestamps = [datetime.datetime.fromtimestamp(ts) for ts in
+                              timestamps]  # Convert timestamps to datetime
 
                 ax = plt.subplot(2, 3, qubit_id + 1)  # Capture the subplot into 'ax'
                 ax.scatter(timestamps, temperatures, color=colors[qubit_id], alpha=0.7, edgecolor='black')
@@ -414,16 +432,18 @@ class TempCalcAndPlots:
                 ax.grid(alpha=0.3)
 
                 # Format x-axis to show full timestamps
-                date_formatter = DateFormatter('%m-%d %H:%M') # Customize date and time format
+                date_formatter = DateFormatter('%m-%d %H:%M')  # Customize date and time format
                 ax.xaxis.set_major_formatter(date_formatter)
                 plt.xticks(rotation=45)
 
-
         # Adjust layout and save the figure
         plt.tight_layout()
-        scatter_plot_filename = os.path.join(temp_scatter_folder, f"Temperature_Over_Time_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.png")
+        scatter_plot_filename = os.path.join(temp_scatter_folder,
+                                             f"Temperature_Over_Time_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.png")
         plt.savefig(scatter_plot_filename)
         print(f"Temperature scatter plots saved to {scatter_plot_filename}")
 
         # Cleanup
         plt.close()
+
+

@@ -1,10 +1,20 @@
 import json
 import h5py
+import os
 
 class SaveRunData:
-    def __init__(self, gaussian_dates, t1_vals, t1_errs, t1_std_values, t1_mean_values, t2r_vals, t2r_errs,
+    def __init__(self, run_number, run_notes):
+        self.run_number = run_number
+        self.run_notes = run_notes
+
+    def create_folder_if_not_exists(self, folder):
+        """Creates a folder at the given path if it doesn't already exist."""
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+
+    def run(self,gaussian_dates, t1_vals, t1_errs, t1_std_values, t1_mean_values, t2r_vals, t2r_errs,
                  t2r_mean_values, t2r_std_values, t2e_vals, t2e_errs, t2e_mean_values, t2e_std_values):
-        ############## save run statistics to the run_stats folder so we can compare/plot to previous runs later ###############
+        ######## save run statistics to the run_stats folder so we can compare/plot to previous runs later #############
 
         # t1_vals and t1_errs are lists each containing N lists with data, where N is number of qubits
         # std_values and mean_values are dictionaries each with the mean/std values for each qubit

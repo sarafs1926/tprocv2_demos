@@ -22,7 +22,7 @@ from scipy.optimize import curve_fit
 
 class QubitFreqsVsTime:
     def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-                 signal, run_name):
+                 signal, run_name, exp_config):
         self.save_figs = save_figs
         self.fit_saved = fit_saved
         self.signal = signal
@@ -31,6 +31,7 @@ class QubitFreqsVsTime:
         self.number_of_qubits = number_of_qubits
         self.final_figure_quality = final_figure_quality
         self.top_folder_dates = top_folder_dates
+        self.exp_config = exp_config
 
     def datetime_to_unix(self, dt):
         # Convert to Unix timestamp
@@ -118,14 +119,6 @@ class QubitFreqsVsTime:
             outerFolder = f"/data/QICK_data/{self.run_name}/" + folder_date + "/"
             outerFolder_save_plots = f"/data/QICK_data/{self.run_name}/" + folder_date + "_plots/"
 
-            loader_config_instance = Data_H5(outerFolder)
-            sys_config = loader_config_instance.load_config('sys_config.h5')
-            del loader_config_instance
-
-            loader_config_instance = Data_H5(outerFolder)
-            exp_config = loader_config_instance.load_config('expt_cfg.h5')
-            del loader_config_instance
-
             # ------------------------------------------Load/Plot/Save Q Spec------------------------------------
             outerFolder_expt = outerFolder + "/Data_h5/QSpec_ge/"
             h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
@@ -152,7 +145,7 @@ class QubitFreqsVsTime:
                         if len(I) > 0:
                             qspec_class_instance = QubitSpectroscopy(q_key, outerFolder_save_plots, round_num, self.signal,
                                                                      self.save_figs)
-                            q_spec_cfg = ast.literal_eval(exp_config['qubit_spec_ge'].decode())
+                            q_spec_cfg = ast.literal_eval(self.exp_config['qubit_spec_ge'].decode())
                             largest_amp_curve_mean, I_fit, Q_fit = qspec_class_instance.get_results(I, Q, freqs)
 
                             qubit_frequencies[q_key].extend([largest_amp_curve_mean])

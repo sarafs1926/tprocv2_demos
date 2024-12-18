@@ -19,7 +19,7 @@ from scipy.optimize import curve_fit
 
 class T1HistCumulErrPlots:
     def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-                 signal, run_name, run_notes, run_number):
+                 signal, run_name, run_notes, run_number, exp_config):
         self.save_figs = save_figs
         self.fit_saved = fit_saved
         self.signal = signal
@@ -30,6 +30,7 @@ class T1HistCumulErrPlots:
         self.top_folder_dates = top_folder_dates
         self.run_notes = run_notes
         self.run_number = run_number
+        self.exp_config = exp_config
 
     def datetime_to_unix(self, dt):
         # Convert to Unix timestamp
@@ -118,13 +119,6 @@ class T1HistCumulErrPlots:
             outerFolder = f"/data/QICK_data/{self.run_name}/" + folder_date + "/"
             outerFolder_save_plots = f"/data/QICK_data/{self.run_name}/" + folder_date + "_plots/"
 
-            loader_config_instance = Data_H5(outerFolder)
-            sys_config = loader_config_instance.load_config('sys_config.h5')
-            del loader_config_instance
-
-            loader_config_instance = Data_H5(outerFolder)
-            exp_config = loader_config_instance.load_config('expt_cfg.h5')
-            del loader_config_instance
 
             outerFolder_expt = outerFolder + "/Data_h5/T1_ge/"
             h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
@@ -151,7 +145,7 @@ class T1HistCumulErrPlots:
                         if len(I)>0:
                             T1_class_instance = T1Measurement(q_key, outerFolder_save_plots, round_num, self.signal,
                                                               self.save_figs, fit_data = True)
-                            T1_spec_cfg = ast.literal_eval(exp_config['T1_ge'].decode())
+                            T1_spec_cfg = ast.literal_eval(self.exp_config['T1_ge'].decode())
                             q1_fit_exponential, T1_err, T1, plot_sig = T1_class_instance.t1_fit(I, Q, delay_times)
                             if T1 < 0:
                                 print("The value is negative, continuing...")

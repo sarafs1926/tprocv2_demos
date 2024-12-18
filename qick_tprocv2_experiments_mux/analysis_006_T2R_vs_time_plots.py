@@ -22,7 +22,7 @@ from scipy.optimize import curve_fit
 
 class T2rVsTime:
     def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-                 signal, run_name):
+                 signal, run_name, exp_config):
         self.save_figs = save_figs
         self.fit_saved = fit_saved
         self.signal = signal
@@ -31,6 +31,7 @@ class T2rVsTime:
         self.number_of_qubits = number_of_qubits
         self.final_figure_quality = final_figure_quality
         self.top_folder_dates = top_folder_dates
+        self.exp_config = exp_config
 
     def datetime_to_unix(self, dt):
         # Convert to Unix timestamp
@@ -119,14 +120,6 @@ class T2rVsTime:
             outerFolder = f"/data/QICK_data/{self.run_name}/" + folder_date + "/"
             outerFolder_save_plots = f"/data/QICK_data/{self.run_name}/" + folder_date + "_plots/"
 
-            loader_config_instance = Data_H5(outerFolder)
-            sys_config = loader_config_instance.load_config('sys_config.h5')
-            del loader_config_instance
-
-            loader_config_instance = Data_H5(outerFolder)
-            exp_config = loader_config_instance.load_config('expt_cfg.h5')
-            del loader_config_instance
-
             # -------------------------------------------------------Load/Plot/Save T2------------------------------------------
             outerFolder_expt = outerFolder + "/Data_h5/T2_ge/"
             h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
@@ -157,7 +150,7 @@ class T2rVsTime:
                                 fitted, t2r_est, t2r_err, plot_sig = T2_class_instance.t2_fit(delay_times, I, Q)
                             except:
                                 continue
-                            T2_cfg = ast.literal_eval(exp_config['Ramsey_ge'].decode())
+                            T2_cfg = ast.literal_eval(self.exp_config['Ramsey_ge'].decode())
                             if t2r_est < 0:
                                 print("The value is negative, continuing...")
                                 continue

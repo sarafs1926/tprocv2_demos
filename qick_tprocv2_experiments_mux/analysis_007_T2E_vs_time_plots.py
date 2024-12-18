@@ -22,7 +22,7 @@ from scipy.optimize import curve_fit
 
 class T2eVsTime:
     def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-                 signal, run_name):
+                 signal, run_name, exp_config):
         self.save_figs = save_figs
         self.fit_saved = fit_saved
         self.signal = signal
@@ -31,6 +31,7 @@ class T2eVsTime:
         self.number_of_qubits = number_of_qubits
         self.final_figure_quality = final_figure_quality
         self.top_folder_dates = top_folder_dates
+        self.exp_config = exp_config
 
     def datetime_to_unix(self, dt):
         # Convert to Unix timestamp
@@ -120,14 +121,6 @@ class T2eVsTime:
             outerFolder = f"/data/QICK_data/{self.run_name}/" + folder_date + "/"
             outerFolder_save_plots = f"/data/QICK_data/{self.run_name}/" + folder_date + "_plots/"
 
-            loader_config_instance = Data_H5(outerFolder)
-            sys_config = loader_config_instance.load_config('sys_config.h5')
-            del loader_config_instance
-
-            loader_config_instance = Data_H5(outerFolder)
-            exp_config = loader_config_instance.load_config('expt_cfg.h5')
-            del loader_config_instance
-
             # -------------------------------------------------------Load/Plot/Save T2E------------------------------------------
             outerFolder_expt = outerFolder + "/Data_h5/T2E_ge/"
             h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
@@ -155,7 +148,7 @@ class T2eVsTime:
                             T2E_class_instance = T2EMeasurement(q_key, outerFolder_save_plots, round_num, self.signal, self.save_figs,
                                                                fit_data=True)
                             fitted, t2e_est, t2e_err, plot_sig = T2E_class_instance.t2_fit(delay_times, I, Q)
-                            T2E_cfg = ast.literal_eval(exp_config['SpinEcho_ge'].decode())
+                            T2E_cfg = ast.literal_eval(self.exp_config['SpinEcho_ge'].decode())
                             if t2e_est < 0:
                                 print("The value is negative, continuing...")
                                 continue
