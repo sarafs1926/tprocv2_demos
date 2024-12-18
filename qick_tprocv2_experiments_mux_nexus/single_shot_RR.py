@@ -19,14 +19,14 @@ def create_folder_if_not_exists(folder_path):
 
 # Where to save data
 prefix = str(datetime.date.today())
-output_folder = "/data/QICK_data/6transmon_run4a/" + prefix + "/SingleShot_Test/"
+output_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{prefix}/SingleShot_Test" #"/data/QICK_data/6transmon_run4a/" + prefix + "/SingleShot_Test/"
 create_folder_if_not_exists(output_folder)
 
 n = 1  # Number of rounds
 n_loops = 5  # Number of repetitions per length to average
 
 # List of qubits and pulse lengths to measure
-Qs = [2,3]
+Qs = [0]
 
 lengs = np.linspace(0.5, 5, 19) # increments of 0.25
 

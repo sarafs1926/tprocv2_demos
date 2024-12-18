@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import norm
 from scipy.optimize import curve_fit
 
-top_folder_dates = ['2024-11-21', '2024-11-21']
+top_folder_dates = ['2024-12-10', '2024-12-10']
 final_figure_quality = 50
 
 #---------------------------------------get data--------------------------------
@@ -101,15 +101,15 @@ mean_values = {}
 show_legends = False
 
 for folder_date in top_folder_dates:
-    outerFolder = "/data/QICK_data/6transmon_run4a/" + folder_date + "/"
-    outerFolder_save_plots = "/data/QICK_data/6transmon_run4a/" + folder_date + "_plots/"
+    outerFolder = "/home/nexusadmin/qick/NEXUS_sandbox/Data/" + folder_date + "/"
+    outerFolder_save_plots = "/home/nexusadmin/qick/NEXUS_sandbox/Data/" + folder_date + "_plots/"
 
     loader_config_instance = Data_H5(outerFolder)
-    sys_config = loader_config_instance.load_config('sys_config_batch2.h5')
+    sys_config = loader_config_instance.load_config('sys_config.h5')
     del loader_config_instance
 
     loader_config_instance = Data_H5(outerFolder)
-    exp_config = loader_config_instance.load_config('expt_cfg_batch2.h5')
+    exp_config = loader_config_instance.load_config('expt_cfg.h5')
     del loader_config_instance
 
     # -------------------------------------------------------Load/Plot/Save T2E------------------------------------------
@@ -147,18 +147,18 @@ for folder_date in top_folder_dates:
         del H5_class_instance
 
 #---------------------------------plot-----------------------------------------------------
-analysis_folder = "/data/QICK_data/6transmon_run4a/benchmark_analysis_plots/"
+analysis_folder = "/home/nexusadmin/qick/NEXUS_sandbox/Data/benchmark_analysis_plots/"
 create_folder_if_not_exists(analysis_folder)
-analysis_folder = "/data/QICK_data/6transmon_run4a/benchmark_analysis_plots/features_vs_time/"
+analysis_folder = "/home/nexusadmin/qick/NEXUS_sandbox/Data/benchmark_analysis_plots/features_vs_time/"
 create_folder_if_not_exists(analysis_folder)
 
 font = 14
-titles = [f"Qubit {i+1}" for i in range(6)]
-colors = ['orange','blue','purple','green','brown','pink']
-fig, axes = plt.subplots(2, 3, figsize=(12, 8))
+titles = [f"Qubit {i+1}" for i in range(4)]
+colors = ['orange','blue','purple','green']
+fig, axes = plt.subplots(2, 2, figsize=(12, 8))
 plt.title('T2E Values vs Time',fontsize = font)
 axes = axes.flatten()
-titles = [f"Qubit {i + 1}" for i in range(6)]
+titles = [f"Qubit {i + 1}" for i in range(4)]
 from datetime import datetime
 for i, ax in enumerate(axes):
 

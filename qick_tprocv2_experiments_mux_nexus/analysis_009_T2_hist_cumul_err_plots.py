@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import norm
 from scipy.optimize import curve_fit
 
-top_folder_dates = ['2024-11-21', '2024-11-21']
+top_folder_dates = ['2024-12-10', '2024-12-10']
 final_figure_quality = 50
 
 #---------------------------------------get data--------------------------------
@@ -91,26 +91,26 @@ def string_to_float_list(input_string):
         return None
 
 # ----------Load/get data from T1------------------------
-t2_vals = {i: [] for i in range(6)}
-t2_errs = {i: [] for i in range(6)}
+t2_vals = {i: [] for i in range(4)}
+t2_errs = {i: [] for i in range(4)}
 qubit_for_this_index = []
 rounds = []
 reps = []
 file_names = []
-dates = {i: [] for i in range(6)}
+dates = {i: [] for i in range(4)}
 mean_values = {}
 show_legends = False
 
 for folder_date in top_folder_dates:
-    outerFolder = "/data/QICK_data/6transmon_run4a/" + folder_date + "/"
-    outerFolder_save_plots = "/data/QICK_data/6transmon_run4a/" + folder_date + "_plots/"
+    outerFolder = "/home/nexusadmin/qick/NEXUS_sandbox/Data/" + folder_date + "/"
+    outerFolder_save_plots = "/home/nexusadmin/qick/NEXUS_sandbox/Data/" + folder_date + "_plots/"
 
     loader_config_instance = Data_H5(outerFolder)
-    sys_config = loader_config_instance.load_config('sys_config_batch2.h5')
+    sys_config = loader_config_instance.load_config('sys_config.h5')
     del loader_config_instance
 
     loader_config_instance = Data_H5(outerFolder)
-    exp_config = loader_config_instance.load_config('expt_cfg_batch2.h5')
+    exp_config = loader_config_instance.load_config('expt_cfg.h5')
     del loader_config_instance
 
     outerFolder_expt = outerFolder + "/Data_h5/T2_ge/"
@@ -121,7 +121,21 @@ for folder_date in top_folder_dates:
         H5_class_instance = Data_H5(h5_file)
         load_data = H5_class_instance.load_from_h5(data_type='T2', save_r=int(save_round))
 
+        populated_keys = []
         for q_key in load_data['T2']:
+            # Access 'Dates' for the current q_key
+            dates_list = load_data['T2'][q_key].get('Dates', [[]])
+
+            # Check if any entry in 'Dates' is not NaN
+            if any(
+                    not np.isnan(date)
+                    for date in dates_list[0]  # Iterate over the first batch of dates
+            ):
+                populated_keys.append(q_key)
+
+        print(f"Populated keys: {populated_keys}")
+
+        for q_key in populated_keys:
             for dataset in range(len(load_data['T2'][q_key].get('Dates', [])[0])):
                 # T2 = load_data['T2'][q_key].get('T2', [])[0][dataset]
                 # errors = load_data['T2'][q_key].get('Errors', [])[0][dataset]
@@ -150,20 +164,20 @@ for folder_date in top_folder_dates:
         del H5_class_instance
 
 #---------------------------------plot-----------------------------------------------------
-analysis_folder = "/data/QICK_data/6transmon_run4a/benchmark_analysis_plots/"
+analysis_folder = "/home/nexusadmin/qick/NEXUS_sandbox/Data/benchmark_analysis_plots/"
 create_folder_if_not_exists(analysis_folder)
-analysis_folder = "/data/QICK_data/6transmon_run4a/benchmark_analysis_plots/T2/"
+analysis_folder = "/home/nexusadmin/qick/NEXUS_sandbox/Data/benchmark_analysis_plots/T2/"
 create_folder_if_not_exists(analysis_folder)
 
-fig, axes = plt.subplots(2, 3, figsize=(12, 8))
+fig, axes = plt.subplots(2, 2, figsize=(12, 8))
 axes = axes.flatten()
 font = 14
-titles = [f"Qubit {i+1}" for i in range(6)]
-gaussian_xvals =  {i: [] for i in range(0, 6)}
-gaussian_yvals =  {i: [] for i in range(0, 6)}
-gaussian_colors = {i: [] for i in range(0, 6)}
-gaussian_dates = {i: [] for i in range(0, 6)}
-colors = ['orange','blue','purple','green','brown','pink']
+titles = [f"Qubit {i+1}" for i in range(4)]
+gaussian_xvals =  {i: [] for i in range(0, 4)}
+gaussian_yvals =  {i: [] for i in range(0, 4)}
+gaussian_colors = {i: [] for i in range(0, 4)}
+gaussian_dates = {i: [] for i in range(0, 4)}
+colors = ['orange','blue','purple','green']
 for i, ax in enumerate(axes):
     if len(dates[i])>1:
         date_label = dates[i][0]
@@ -254,10 +268,10 @@ plt.savefig(analysis_folder + 'cumulative.png', transparent=True, dpi=final_figu
 
 
 
-fig, axes = plt.subplots(2, 3, figsize=(12, 8))
+fig, axes = plt.subplots(2, 2, figsize=(12, 8))
 plt.title('Fit Error vs T2 Time',fontsize = font)
 axes = axes.flatten()
-titles = [f"Qubit {i + 1}" for i in range(6)]
+titles = [f"Qubit {i + 1}" for i in range(4)]
 for i, ax in enumerate(axes):
 
     if len(dates[i])>1:
