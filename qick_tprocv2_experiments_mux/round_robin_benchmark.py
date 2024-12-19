@@ -21,13 +21,13 @@ from expt_config import expt_cfg
 
 ################################################ Run Configurations ####################################################
 
-n= 1
+n= 100000
 save_r = 1            # how many rounds to save after
 signal = 'None'       #'I', or 'Q' depending on where the signal is (after optimization). Put'None' if no optimization
-save_figs = True    # save plots for everything as you go along the RR script?
+save_figs = False    # save plots for everything as you go along the RR script?
 live_plot = False      # for live plotting open http://localhost:8097/ on firefox
 fit_data = False      # fit the data here and save or plot the fits?
-save_data_h5 = False   # save all of the data to h5 files?
+save_data_h5 = True   # save all of the data to h5 files?
 
 increase_qubit_reps = True #if you want to increase the reps for a qubit, set to True
 qubit_to_increase_reps_for = 0 #only has impact if previous line is True

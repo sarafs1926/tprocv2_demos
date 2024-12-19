@@ -9,9 +9,11 @@ from analysis_008_T1_hist_cumul_err_plots import T1HistCumulErrPlots
 from analysis_009_T2R_hist_cumul_err_plots import T2rHistCumulErrPlots
 from analysis_010_T2E_hist_cumul_err_plots import T2eHistCumulErrPlots
 from analysis_011_save_run_data import SaveRunData
-from analysis_014_plot_all_run_stats import CompareRuns
 from analysis_012_update_saved_run_data_notes import UpdateNote
 from analysis_013_temperature_calcsandplots import TempCalcAndPlots
+from analysis_014_plot_all_run_stats import CompareRuns
+from analysis_015_metrics_vs_temp import (ResonatorFreqVsTemp, QubitFreqsVsTemp,
+                                          PiAmpsVsTemp, T1VsTemp, T2rVsTemp, T2eVsTemp)
 from section_008_save_data_to_h5 import Data_H5
 from analysis_000_load_configs import LoadConfigs
 
@@ -113,8 +115,38 @@ sys_config, exp_config = config_loader.run()
 # run_number_list = [1,2]
 # comparing_runs = CompareRuns(run_number_list)
 # comparing_runs.run()
+#
+# ############################################### 14: Qubit Temperature Plots ############################################
+# temps = TempCalcAndPlots(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
+#                  signal, run_name, exp_config, outerFolder)
+# temps.run()
 
-############################################### 14: Qubit Temperature Plots ############################################
-temps = TempCalcAndPlots(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-                 signal, run_name, exp_config, outerFolder)
-temps.run()
+########################################## 15: Metrics Vs Temperature Plots ############################################
+res_spec_vs_temp = ResonatorFreqVsTemp(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates,
+                                       save_figs, fit_saved, signal, run_name, exp_config)
+date_times, res_freqs = res_spec_vs_temp.run()
+res_spec_vs_temp.plot(date_times, res_freqs, show_legends)
+
+q_spec_vs_temp = QubitFreqsVsTemp(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates,
+                                  save_figs, fit_saved, signal, run_name, exp_config)
+date_times, q_freqs = q_spec_vs_temp.run()
+
+pi_amps_vs_temp = PiAmpsVsTemp(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs,
+                               fit_saved,signal, run_name, exp_config)
+date_times, pi_amps = pi_amps_vs_temp.run()
+pi_amps_vs_temp.plot(date_times, pi_amps, show_legends)
+
+t1_vs_temp = T1VsTemp(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
+                 signal, run_name, exp_config)
+date_times, t1_vals = t1_vs_temp.run()
+t1_vs_temp.plot(date_times, t1_vals, show_legends)
+
+t2r_vs_temp = T2rVsTemp(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
+                 signal, run_name, exp_config)
+date_times, t2r_vals = t2r_vs_temp.run()
+t2r_vs_temp.plot(date_times, t2r_vals, show_legends)
+
+t2e_vs_temp = T2eVsTemp(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
+                 signal, run_name, exp_config)
+date_times, t2e_vals = t2e_vs_temp.run()
+t2e_vs_temp.plot(date_times, t2e_vals, show_legends)
