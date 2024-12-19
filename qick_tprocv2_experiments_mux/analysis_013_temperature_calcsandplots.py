@@ -427,3 +427,316 @@ class TempCalcAndPlots:
 
         # Cleanup
         plt.close()
+
+    def get_temps(self):
+        # ----------------------------------------------Load/Plot/Save QSpec------------------------------------
+        outerFolder_expt = outerFolder + "/Data_h5/QSpec_ge/"
+        h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
+
+        qubit_frequencies = []
+
+        for h5_file in h5_files:
+            #print(h5_file)
+            save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
+            H5_class_instance = Data_H5(h5_file)
+            load_data = H5_class_instance.load_from_h5(data_type=  'QSpec', save_r = int(save_round))
+
+            populated_keys = []
+            for q_key in load_data['QSpec']:
+                # Access 'Dates' for the current q_key
+                dates_list = load_data['QSpec'][q_key].get('Dates', [[]])
+
+                # Check if any entry in 'Dates' is not NaN
+                if any(
+                        not np.isnan(date)
+                        for date in dates_list[0]  # Iterate over the first batch of dates
+                ):
+                    populated_keys.append(q_key)
+
+            print(f"Populated keys: {populated_keys}")
+
+            for q_key in populated_keys:
+                for dataset in range(len(load_data['QSpec'][q_key].get('Dates', [])[0])):
+                    date = datetime.datetime.fromtimestamp(load_data['QSpec'][q_key].get('Dates', [])[0][dataset])
+                    I = self.process_h5_data(load_data['QSpec'][q_key].get('I', [])[0][dataset].decode())
+                    Q = self.process_h5_data(load_data['QSpec'][q_key].get('Q', [])[0][dataset].decode())
+                    #I_fit = load_data['QSpec'][q_key].get('I Fit', [])[0][dataset]
+                    #Q_fit = load_data['QSpec'][q_key].get('Q Fit', [])[0][dataset]
+                    freqs = self.process_h5_data(load_data['QSpec'][q_key].get('Frequencies', [])[0][dataset].decode())
+                    round_num = load_data['QSpec'][q_key].get('Round Num', [])[0][dataset]
+                    batch_num = load_data['QSpec'][q_key].get('Batch Num', [])[0][dataset]
+
+                    if len(I)>0:
+
+                        qspec_class_instance = QubitSpectroscopy(q_key, outerFolder_save_plots, round_num, signal, save_figs)
+                        q_spec_cfg = ast.literal_eval(self.exp_config['qubit_spec_ge'].decode())
+                        largest_amp_curve_mean, I_fit, Q_fit = qspec_class_instance.get_results(I, Q, freqs)
+
+                        qubit_frequencies.append({
+                            'h5_file': h5_file,
+                            'q_key': q_key,
+                            'date': date,
+                            'largest_amp_curve_mean': largest_amp_curve_mean
+                        })
+
+                        #qspec_class_instance.plot_results(I, Q, freqs, q_spec_cfg, figure_quality)
+                        del qspec_class_instance
+
+            del H5_class_instance
+        print(qubit_frequencies)
+
+        # ------------------------------------------------Load/Plot/Save SS---------------------------------------
+        outerFolder_expt = outerFolder + "/Data_h5/SS_ge/"
+        h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
+
+        # Initialize a dictionary to store temperatures for each qubit
+        qubit_temperatures = {i: [] for i in range(6)}  # Assuming there are 6 qubits
+        qubit_temp_dates = {i: [] for i in range(6)}  # Assuming there are 6 qubits
+
+        for h5_file in h5_files:
+            #print(h5_file)
+            save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
+            H5_class_instance = Data_H5(h5_file)
+            load_data = H5_class_instance.load_from_h5(data_type=  'SS', save_r = int(save_round))
+
+            populated_keys = []
+            for q_key in load_data['SS']:
+                # Access 'Dates' for the current q_key
+                dates_list = load_data['SS'][q_key].get('Dates', [[]])
+
+                # Check if any entry in 'Dates' is not NaN
+                if any(
+                        not np.isnan(date)
+                        for date in dates_list[0]  # Iterate over the first batch of dates
+                ):
+                    populated_keys.append(q_key)
+
+
+            for q_key in populated_keys:
+                # Within each qubit loop, create a folder for the specific qubit
+                qubit_folder = os.path.join(self.temperature_folder, f"Qubit_{q_key + 1}")
+                if not os.path.exists(qubit_folder):
+                    os.makedirs(qubit_folder)
+                #print('h5 file: ', h5_file, '\n', 'key: ', q_key)
+                for dataset in range(len(load_data['SS'][q_key].get('Dates', [])[0])):
+                    timestamp = load_data['SS'][q_key].get('Dates', [])[0][dataset]
+                    date= datetime.datetime.fromtimestamp(load_data['SS'][q_key].get('Dates', [])[0][dataset])
+                    angle = load_data['SS'][q_key].get('Angle', [])[0][dataset]
+                    fidelity = load_data['SS'][q_key].get('Fidelity', [])[0][dataset]
+                    I_g = self.process_h5_data(load_data['SS'][q_key].get('I_g', [])[0][dataset].decode())
+                    Q_g = self.process_h5_data(load_data['SS'][q_key].get('Q_g', [])[0][dataset].decode())
+                    I_e = self.process_h5_data(load_data['SS'][q_key].get('I_e', [])[0][dataset].decode())
+                    Q_e = self.process_h5_data(load_data['SS'][q_key].get('Q_e', [])[0][dataset].decode())
+                    round_num = load_data['SS'][q_key].get('Round Num', [])[0][dataset]
+                    batch_num = load_data['SS'][q_key].get('Batch Num', [])[0][dataset]
+
+                    I_g = np.array(I_g)
+                    Q_g = np.array(Q_g)
+                    I_e = np.array(I_e)
+                    Q_e = np.array(Q_e)
+
+                    if len(Q_g)>0:
+
+                        ss_class_instance = SingleShot(q_key, outerFolder_save_plots, round_num, save_figs)
+                        ss_cfg = ast.literal_eval(self.exp_config['Readout_Optimization'].decode())
+                        #ss_class_instance.hist_ssf(data=[I_g, Q_g, I_e, Q_e], cfg=ss_cfg, plot=True)
+                        fid, threshold, rotation_angle, ig_new, ie_new = ss_class_instance.hist_ssf(
+                            data=[I_g, Q_g, I_e, Q_e], cfg=ss_cfg, plot=False)
+
+                        # Extract the relevant portion of the file name for matching
+                        base_h5_file = "_".join(h5_file.split('/')[-1].split('_')[:2])  # Extract up to 2024-12-11_11-45-27
+                        #print(f"Base H5 File for Matching: {base_h5_file}")
+
+                        qubit_frequency = [
+                            entry['largest_amp_curve_mean']
+                            for entry in qubit_frequencies
+                            if
+                            "_".join(entry['h5_file'].split('/')[-1].split('_')[:2]) == base_h5_file and entry['q_key'] == q_key
+                        ]
+                        if len(qubit_frequency) == 0:
+                            print(f"No match found for h5_file: {base_h5_file}, q_key: {q_key}. Skipping.")
+                            continue
+
+                        qubit_frequency = qubit_frequency[0] #there should only be one value inside this list
+                        ground_state_population, excited_state_population_overlap, gmm, means, covariances, weights, crossing_point, ground_gaussian, excited_gaussian, ground_data, excited_data, iq_data = self.fit_double_gaussian_with_full_coverage(
+                            ig_new)
+                        temperature_k = self.calculate_qubit_temperature(qubit_frequency, ground_state_population,
+                                                                    excited_state_population_overlap)
+                        temperature_mk = temperature_k * 1e3
+
+                        qubit_temperatures[q_key].extend([temperature_mk])#save temps for each qubit
+                        qubit_temp_dates[q_key].extend([date])
+
+        return qubit_temperatures, qubit_temp_dates
+
+    def get_ssf(self):
+        # ----------------------------------------------Load/Plot/Save QSpec------------------------------------
+        outerFolder_expt = outerFolder + "/Data_h5/QSpec_ge/"
+        h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
+
+        qubit_frequencies = []
+
+        for h5_file in h5_files:
+
+            save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
+            H5_class_instance = Data_H5(h5_file)
+            load_data = H5_class_instance.load_from_h5(data_type=  'QSpec', save_r = int(save_round))
+
+            populated_keys = []
+            for q_key in load_data['QSpec']:
+                # Access 'Dates' for the current q_key
+                dates_list = load_data['QSpec'][q_key].get('Dates', [[]])
+
+                # Check if any entry in 'Dates' is not NaN
+                if any(
+                        not np.isnan(date)
+                        for date in dates_list[0]  # Iterate over the first batch of dates
+                ):
+                    populated_keys.append(q_key)
+
+
+            for q_key in populated_keys:
+                for dataset in range(len(load_data['QSpec'][q_key].get('Dates', [])[0])):
+                    date = datetime.datetime.fromtimestamp(load_data['QSpec'][q_key].get('Dates', [])[0][dataset])
+                    I = self.process_h5_data(load_data['QSpec'][q_key].get('I', [])[0][dataset].decode())
+                    Q = self.process_h5_data(load_data['QSpec'][q_key].get('Q', [])[0][dataset].decode())
+                    #I_fit = load_data['QSpec'][q_key].get('I Fit', [])[0][dataset]
+                    #Q_fit = load_data['QSpec'][q_key].get('Q Fit', [])[0][dataset]
+                    freqs = self.process_h5_data(load_data['QSpec'][q_key].get('Frequencies', [])[0][dataset].decode())
+                    round_num = load_data['QSpec'][q_key].get('Round Num', [])[0][dataset]
+                    batch_num = load_data['QSpec'][q_key].get('Batch Num', [])[0][dataset]
+
+                    if len(I)>0:
+
+                        qspec_class_instance = QubitSpectroscopy(q_key, outerFolder_save_plots, round_num, signal, save_figs)
+                        q_spec_cfg = ast.literal_eval(self.exp_config['qubit_spec_ge'].decode())
+                        largest_amp_curve_mean, I_fit, Q_fit = qspec_class_instance.get_results(I, Q, freqs)
+
+                        qubit_frequencies.append({
+                            'h5_file': h5_file,
+                            'q_key': q_key,
+                            'date': date,
+                            'largest_amp_curve_mean': largest_amp_curve_mean
+                        })
+
+                        del qspec_class_instance
+
+            del H5_class_instance
+
+        # ------------------------------------------------Load/Plot/Save SS---------------------------------------
+        outerFolder_expt = outerFolder + "/Data_h5/SS_ge/"
+        h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
+
+        # Initialize a dictionary to store temperatures for each qubit
+        qubit_ssf = {i: [] for i in range(6)}  # Assuming there are 6 qubits
+        qubit_ssf_dates = {i: [] for i in range(6)}  # Assuming there are 6 qubits
+
+        for h5_file in h5_files:
+            #print(h5_file)
+            save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
+            H5_class_instance = Data_H5(h5_file)
+            load_data = H5_class_instance.load_from_h5(data_type=  'SS', save_r = int(save_round))
+
+            populated_keys = []
+            for q_key in load_data['SS']:
+                # Access 'Dates' for the current q_key
+                dates_list = load_data['SS'][q_key].get('Dates', [[]])
+
+                # Check if any entry in 'Dates' is not NaN
+                if any(
+                        not np.isnan(date)
+                        for date in dates_list[0]  # Iterate over the first batch of dates
+                ):
+                    populated_keys.append(q_key)
+
+
+            for q_key in populated_keys:
+                # Within each qubit loop, create a folder for the specific qubit
+                qubit_folder = os.path.join(self.temperature_folder, f"Qubit_{q_key + 1}")
+                if not os.path.exists(qubit_folder):
+                    os.makedirs(qubit_folder)
+                #print('h5 file: ', h5_file, '\n', 'key: ', q_key)
+                for dataset in range(len(load_data['SS'][q_key].get('Dates', [])[0])):
+                    timestamp = load_data['SS'][q_key].get('Dates', [])[0][dataset]
+                    date= datetime.datetime.fromtimestamp(load_data['SS'][q_key].get('Dates', [])[0][dataset])
+                    angle = load_data['SS'][q_key].get('Angle', [])[0][dataset]
+                    fidelity = load_data['SS'][q_key].get('Fidelity', [])[0][dataset]
+                    I_g = self.process_h5_data(load_data['SS'][q_key].get('I_g', [])[0][dataset].decode())
+                    Q_g = self.process_h5_data(load_data['SS'][q_key].get('Q_g', [])[0][dataset].decode())
+                    I_e = self.process_h5_data(load_data['SS'][q_key].get('I_e', [])[0][dataset].decode())
+                    Q_e = self.process_h5_data(load_data['SS'][q_key].get('Q_e', [])[0][dataset].decode())
+                    round_num = load_data['SS'][q_key].get('Round Num', [])[0][dataset]
+                    batch_num = load_data['SS'][q_key].get('Batch Num', [])[0][dataset]
+
+                    I_g = np.array(I_g)
+                    Q_g = np.array(Q_g)
+                    I_e = np.array(I_e)
+                    Q_e = np.array(Q_e)
+
+                    if len(Q_g)>0:
+
+                        ss_class_instance = SingleShot(q_key, outerFolder_save_plots, round_num, save_figs)
+                        ss_cfg = ast.literal_eval(self.exp_config['Readout_Optimization'].decode())
+                        #ss_class_instance.hist_ssf(data=[I_g, Q_g, I_e, Q_e], cfg=ss_cfg, plot=True)
+                        fid, threshold, rotation_angle, ig_new, ie_new = ss_class_instance.hist_ssf(
+                            data=[I_g, Q_g, I_e, Q_e], cfg=ss_cfg, plot=False)
+
+                        # Extract the relevant portion of the file name for matching
+                        base_h5_file = "_".join(h5_file.split('/')[-1].split('_')[:2])  # Extract up to 2024-12-11_11-45-27
+                        #print(f"Base H5 File for Matching: {base_h5_file}")
+
+                        qubit_frequency = [
+                            entry['largest_amp_curve_mean']
+                            for entry in qubit_frequencies
+                            if
+                            "_".join(entry['h5_file'].split('/')[-1].split('_')[:2]) == base_h5_file and entry['q_key'] == q_key
+                        ]
+                        if len(qubit_frequency) == 0:
+                            print(f"No match found for h5_file: {base_h5_file}, q_key: {q_key}. Skipping.")
+                            continue
+
+
+                        qubit_ssf[q_key].extend([fidelity])#save temps for each qubit
+                        qubit_ssf_dates[q_key].extend([date])
+
+        return qubit_ssf, qubit_ssf_dates
+
+    def get_filtered_pi_amps(self,qubit_temp_dates, pi_amp_dates, pi_amps):
+        from bisect import bisect_right
+
+        # Create a new dictionary to store filtered pi_amps
+        filtered_pi_amps = {i: [] for i in range(6)}
+
+        for i in range(6):
+            # Extract corresponding lists
+            qt_dates = qubit_temp_dates[i]
+            from datetime import datetime
+            date_format = "%Y-%m-%d %H:%M:%S"
+
+            pi_amp_dates = {
+                i: [
+                    datetime.strptime(date_str, date_format) if isinstance(date_str, str) else date_str
+                    for date_str in dates
+                ]
+                for i, dates in pi_amp_dates.items()
+            }
+            pa_dates = pi_amp_dates[i]
+            p_amps = pi_amps[i]
+
+            # Ensure pi_amp_dates and pi_amps are paired and sorted by pa_dates
+            pa_dates, p_amps = zip(*sorted(zip(pa_dates, p_amps)))
+            pa_dates = list(pa_dates)
+            p_amps = list(p_amps)
+
+
+            for qt_d in qt_dates:
+                # Find the position for qt_d in pa_dates
+                idx = bisect_right(pa_dates, qt_d) - 1
+                # idx should now point to the closest pi_amp_date before or equal to qt_d
+                if idx >= 0 and pa_dates[idx] <= qt_d:
+                    filtered_pi_amps[i].append(p_amps[idx])
+                else:
+                    # If none are before qt_d, we skip. Alternatively, you could append None.
+                    pass
+
+        return filtered_pi_amps

@@ -147,13 +147,17 @@ class T2eVsTime:
                         if len(I) > 0:
                             T2E_class_instance = T2EMeasurement(q_key, outerFolder_save_plots, round_num, self.signal, self.save_figs,
                                                                fit_data=True)
-                            fitted, t2e_est, t2e_err, plot_sig = T2E_class_instance.t2_fit(delay_times, I, Q)
+                            try:
+                                fitted, t2e_est, t2e_err, plot_sig = T2E_class_instance.t2_fit(delay_times, I, Q)
+                            except Exception as e:
+                                print(f"good fit not found, error: {e}")
+                                continue
                             T2E_cfg = ast.literal_eval(self.exp_config['SpinEcho_ge'].decode())
                             if t2e_est < 0:
                                 print("The value is negative, continuing...")
                                 continue
-                            if t2e_est > 1000:
-                                print("The value is above 1000 us, this is a bad fit, continuing...")
+                            if t2e_est > 50:
+                                print("The value is above 50 us, this is a bad fit, continuing...")
                                 continue
                             t2e_vals[q_key].extend([t2e_est])
                             date_times[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])

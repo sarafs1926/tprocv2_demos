@@ -154,8 +154,8 @@ class T2rVsTime:
                             if t2r_est < 0:
                                 print("The value is negative, continuing...")
                                 continue
-                            if t2r_est > 1000:
-                                print("The value is above 1000 us, this is a bad fit, continuing...")
+                            if t2r_est > 50:
+                                print("The value is above 50 us, this is a bad fit, continuing...")
                                 continue
                             t2_vals[q_key].extend([t2r_est])
                             date_times[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])
@@ -197,6 +197,8 @@ class T2rVsTime:
             # Unpack them back into separate lists, in order from latest to most recent.
             sorted_x, sorted_y = zip(*combined)
             ax.scatter(sorted_x, sorted_y, color=colors[i])
+            # print(len(sorted_y))
+            # print(len(sorted_x))
 
             sorted_x = np.asarray(sorted(x))
 
