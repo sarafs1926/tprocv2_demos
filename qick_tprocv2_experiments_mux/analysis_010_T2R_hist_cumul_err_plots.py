@@ -239,7 +239,7 @@ class T2rHistCumulErrPlots:
                 if show_legends:
                     ax.legend()
                 ax.set_title(titles[i] + f" $\mu$: {mu_1:.2f} $\sigma$:{std_1:.2f}",fontsize = font)
-                ax.set_xlabel('T2 (µs)',fontsize = font)
+                ax.set_xlabel('T2R (µs)',fontsize = font)
                 ax.set_ylabel('Frequency',fontsize = font)
                 ax.tick_params(axis='both', which='major', labelsize=font)
 
@@ -265,7 +265,7 @@ class T2rHistCumulErrPlots:
                         linestyle='--')
                 ax.tick_params(axis='both', which='major', labelsize=font)
         #ax.set_title('')
-        ax.set_xlabel('T2 (us)',fontsize = font)
+        ax.set_xlabel('T2R (us)',fontsize = font)
         ax.set_ylabel('Cumulative Distribution',fontsize = font)
         ax.loglog()
         ax.legend(edgecolor='black')
@@ -277,7 +277,7 @@ class T2rHistCumulErrPlots:
 
 
         fig, axes = plt.subplots(2, 3, figsize=(12, 8))
-        plt.title('Fit Error vs T2 Time',fontsize = font)
+        plt.title('Fit Error vs T2R Time',fontsize = font)
         axes = axes.flatten()
         titles = [f"Qubit {i + 1}" for i in range(self.number_of_qubits)]
         for i, ax in enumerate(axes):
@@ -290,7 +290,7 @@ class T2rHistCumulErrPlots:
             ax.scatter(t2r_vals[i], t2r_errs[i], label = date_label, color = colors[i])
             if show_legends:
                 ax.legend(edgecolor='black')
-            ax.set_xlabel('T2 (us)', fontsize = font)
+            ax.set_xlabel('T2R (us)', fontsize = font)
             ax.set_ylabel('Fit error (us)', fontsize = font)
             ax.tick_params(axis='both', which='major', labelsize=font)
         plt.tight_layout()
