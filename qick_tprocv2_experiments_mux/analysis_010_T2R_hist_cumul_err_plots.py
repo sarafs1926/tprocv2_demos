@@ -105,7 +105,7 @@ class T2rHistCumulErrPlots:
             print("Error: Invalid input string format.  It should be a string representation of a list of numbers.")
             return None
 
-    def run(self):
+    def run(self, t1_vals):
         import datetime
         # ----------Load/get data from T2R------------------------
         t2r_vals = {i: [] for i in range(self.number_of_qubits)}
@@ -154,8 +154,9 @@ class T2rHistCumulErrPlots:
                             if T2 < 0:
                                 print("The value is negative, continuing...")
                                 continue
-                            if T2 > 1000:
-                                print("The value is above 1000 us, this is a bad fit, continuing...")
+                            max_t1 = max(t1_vals[q_key])
+                            if T2 > 2*max_t1:
+                                print(f"The value is above 2*{max_t1} us, this is a bad fit, continuing...")
                                 continue
                             t2r_vals[q_key].extend([T2])  # Store T1 values
                             t2r_errs[q_key].extend([T2_err])  # Store T1 error values

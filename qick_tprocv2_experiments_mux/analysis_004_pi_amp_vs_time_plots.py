@@ -376,3 +376,67 @@ class PiAmpsVsTime:
         plt.savefig(analysis_folder + 'Pi_Amps_vs_ssf.pdf', transparent=True, dpi=self.final_figure_quality)
 
         #plt.show()
+
+    def qtemp_vs_time(self, date_times, temps, show_legends):
+        #---------------------------------plot-----------------------------------------------------
+        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
+        self.create_folder_if_not_exists(analysis_folder)
+        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
+        self.create_folder_if_not_exists(analysis_folder)
+
+        from datetime import datetime
+        # Convert strings to datetime objects.
+        date_times = {
+            i: [
+                datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S") if isinstance(date_str, str) else date_str
+                for date_str in dates
+            ]
+            for i, dates in date_times.items()
+        }
+
+        font = 14
+        titles = [f"Qubit {i+1}" for i in range(self.number_of_qubits)]
+        colors = ['orange','blue','purple','green','brown','pink']
+        fig, axes = plt.subplots(2, 3, figsize=(12, 8))
+        plt.title('Qubit Temp vs Time',fontsize = font)
+        axes = axes.flatten()
+        titles = [f"Qubit {i + 1}" for i in range(self.number_of_qubits)]
+        from datetime import datetime
+
+        for i, ax in enumerate(axes):
+
+            ax.set_title(titles[i], fontsize = font)
+
+            x = date_times[i]
+            y = temps[i]
+
+
+
+            # Combine datetime objects and y values into a list of tuples and sort by datetime.
+            combined = list(zip(x, y))
+            combined.sort(reverse=True, key=lambda x: x[0])
+
+            # Unpack them back into separate lists, in order from latest to most recent.
+            sorted_x, sorted_y = zip(*combined)
+            ax.scatter(sorted_x, sorted_y, color=colors[i])
+
+            sorted_x = np.asarray(sorted(x))
+
+            num_points = 5
+            indices = np.linspace(0, len(sorted_x) - 1, num_points, dtype=int)
+
+            # Set new x-ticks using the datetime objects at the selected indices
+            ax.set_xticks(sorted_x[indices])
+            ax.set_xticklabels([dt for dt in sorted_x[indices]], rotation=45)
+
+            ax.scatter(x, y, color=colors[i])
+            if show_legends:
+                ax.legend(edgecolor='black')
+            ax.set_xlabel('Time (Days)', fontsize=font-2)
+            ax.set_ylabel('Qubit Temp (mK)', fontsize=font-2)
+            ax.tick_params(axis='both', which='major', labelsize=8)
+
+        plt.tight_layout()
+        plt.savefig(analysis_folder + 'qubit_temp.pdf', transparent=True, dpi=self.final_figure_quality)
+
+        #plt.show()

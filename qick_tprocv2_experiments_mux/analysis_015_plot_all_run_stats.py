@@ -142,15 +142,20 @@ class CompareRuns:
                 # ax.set_ylim(current_ylim[0], new_upper_limit)
                 ax.set_ylim(0, 50)
 
+                n=0
                 # Annotate for each x-value with the corresponding note
                 for idx, x_val in enumerate(x):
                     words = run_notes_all[idx].split()
                     plotting_note = '\n'.join(
                         ' '.join(words[i:i + 3]) for i in range(0, len(words), 3)) #adapt this to enter after every nth word
-
+                    if n < 1:
+                        text_x_offset = x_val+0.1
+                    else:
+                        text_x_offset = x_val
+                    n+=1
                     ax.annotate(
                         plotting_note,  # run_notes should be a list of the same length as x
-                        xy=(x_val, highest_points[idx]),
+                        xy=(text_x_offset, highest_points[idx]),
                         xytext=(0, 10),  # vertical offset in points
                         textcoords='offset points',
                         ha='center',

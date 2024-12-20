@@ -229,7 +229,8 @@ class AmplitudeRabiExperiment:
                     pi_amp = gains[np.argmax(best_signal_fit)]
                 else:
                     pi_amp = gains[np.argmin(best_signal_fit)]
-            depth = abs(best_signal_fit[np.argmin(best_signal_fit)] - best_signal_fit[np.argmax(best_signal_fit)])
+            tot_amp = [np.sqrt((ifit)**2 + (qfit)**2) for ifit,qfit in zip(q1_fit_cosine_I, q1_fit_cosine_Q)]
+            depth = abs(tot_amp[np.argmin(tot_amp)] - tot_amp[np.argmax(tot_amp)])
         else:
             print('Invalid signal passed, please do I Q or None')
         if grab_depths:
