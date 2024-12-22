@@ -146,7 +146,11 @@ class T1HistCumulErrPlots:
                             T1_class_instance = T1Measurement(q_key, outerFolder_save_plots, round_num, self.signal,
                                                               self.save_figs, fit_data = True)
                             T1_spec_cfg = ast.literal_eval(self.exp_config['T1_ge'].decode())
-                            q1_fit_exponential, T1_err, T1, plot_sig = T1_class_instance.t1_fit(I, Q, delay_times)
+                            try:
+                                q1_fit_exponential, T1_err, T1, plot_sig = T1_class_instance.t1_fit(I, Q, delay_times)
+                            except Exception as e:
+                                print('Fit didnt work due to error: ', e)
+                                continue
                             if T1 < 0:
                                 print("The value is negative, continuing...")
                                 continue

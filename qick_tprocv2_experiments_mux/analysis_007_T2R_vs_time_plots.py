@@ -176,7 +176,7 @@ class T2rVsTime:
         titles = [f"Qubit {i+1}" for i in range(self.number_of_qubits)]
         colors = ['orange','blue','purple','green','brown','pink']
         fig, axes = plt.subplots(2, 3, figsize=(12, 8))
-        plt.title('T2 Values vs Time',fontsize = font)
+        plt.title('T2R Values vs Time',fontsize = font)
         axes = axes.flatten()
         titles = [f"Qubit {i + 1}" for i in range(self.number_of_qubits)]
         from datetime import datetime
@@ -213,10 +213,10 @@ class T2rVsTime:
             if show_legends:
                 ax.legend(edgecolor='black')
             ax.set_xlabel('Time (Days)', fontsize=font-2)
-            ax.set_ylabel('T2 (us)', fontsize=font-2)
+            ax.set_ylabel('T2R (us)', fontsize=font-2)
             ax.tick_params(axis='both', which='major', labelsize=8)
 
         plt.tight_layout()
-        plt.savefig(analysis_folder + 'T2_vals.pdf', transparent=True, dpi=self.final_figure_quality)
+        plt.savefig(analysis_folder + 'T2R_vals.pdf', transparent=True, dpi=self.final_figure_quality)
 
         #plt.show()

@@ -148,7 +148,8 @@ class T2rHistCumulErrPlots:
                                                                fit_data=True)
                             try:
                                 fitted, T2, T2_err, plot_sig = T2_class_instance.t2_fit(delay_times, I, Q)
-                            except:
+                            except Exception as e:
+                                print('Fit didnt work due to error: ', e)
                                 continue
                             T2_cfg = ast.literal_eval(self.exp_config['Ramsey_ge'].decode())
                             if T2 < 0:

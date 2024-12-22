@@ -52,6 +52,6 @@ class SaveRunData:
 
             hf.attrs['t2e_vals'] = json.dumps(t2e_vals)
             hf.attrs['t2e_errs'] = json.dumps(t2e_errs)
-
+        
             hf.attrs['t2e_mean_values'] = json.dumps(t2e_mean_values)
             hf.attrs['t2e_std_values'] = json.dumps(t2e_std_values)

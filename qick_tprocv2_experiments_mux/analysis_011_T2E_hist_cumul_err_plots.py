@@ -147,7 +147,7 @@ class T2eHistCumulErrPlots:
                             try:
                                 fitted, T2E, T2E_err, plot_sig = T2E_class_instance.t2_fit(delay_times, I, Q)
                             except Exception as e:
-                                print("Error fitting:", e)
+                                print('Fit didnt work due to error: ', e)
                                 continue
 
                             T2E_cfg = ast.literal_eval(self.exp_config['SpinEcho_ge'].decode())
@@ -297,4 +297,5 @@ class T2eHistCumulErrPlots:
         plt.tight_layout()
         plt.savefig(analysis_folder + 'errs.pdf', transparent=True, dpi=self.final_figure_quality)
         #plt.show()
+
         return std_values, mean_values

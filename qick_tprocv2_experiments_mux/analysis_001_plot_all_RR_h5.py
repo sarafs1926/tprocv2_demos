@@ -371,7 +371,11 @@ class PlotAllRR:
         
                     if len(I) > 0:
                         T2_class_instance = T2RMeasurement(q_key, self.outerFolder_save_plots, round_num, self.signal, self.save_figs, fit_data = True)
-                        fitted, t2r_est, t2r_err, plot_sig = T2_class_instance.t2_fit(delay_times, I, Q)
+                        try:
+                            fitted, t2r_est, t2r_err, plot_sig = T2_class_instance.t2_fit(delay_times, I, Q)
+                        except Exception as e:
+                            print('Fit didnt work due to error: ', e)
+                            continue
                         T2_cfg = ast.literal_eval(self.exp_config['Ramsey_ge'].decode())
                         T2_class_instance.plot_results(I, Q, delay_times, date, fitted, t2r_est, t2r_err, plot_sig, config = T2_cfg, fig_quality=self.figure_quality)
                         del T2_class_instance
@@ -413,7 +417,11 @@ class PlotAllRR:
         
                     if len(I) > 0:
                         T2E_class_instance = T2EMeasurement(q_key, self.outerFolder_save_plots, round_num, self.signal, self.save_figs, fit_data = True)
-                        fitted, t2e_est, t2e_err, plot_sig = T2E_class_instance.t2_fit(delay_times, I, Q)
+                        try:
+                            fitted, t2e_est, t2e_err, plot_sig = T2E_class_instance.t2_fit(delay_times, I, Q)
+                        except Exception as e:
+                            print('Fit didnt work due to error: ', e)
+                            continue
                         T2E_cfg = ast.literal_eval(self.exp_config['SpinEcho_ge'].decode())
                         T2E_class_instance.plot_results(I, Q, delay_times, date, fitted, t2e_est, t2e_err, plot_sig, config = T2E_cfg, fig_quality=self.figure_quality)
                         del T2E_class_instance

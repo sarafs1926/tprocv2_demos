@@ -52,7 +52,7 @@ class CompareRuns:
             't2e_mean_values': t2e_mean_values,
         }
 
-    def run(self):
+    def run(self,skip_qubit_t2e=False, qubit_to_skip_t2e=None):
         if len(self.run_number_list) > 1:
             t1_data = {}
             t1_err = {}
@@ -110,8 +110,8 @@ class CompareRuns:
             for i, qb in enumerate(qubit_list):
                 ax = axes[i]
                 ax.errorbar(x, t1_data[qb], yerr=t1_err[qb], fmt='o-', label='T1', capsize=3)
-                if i ==0:
-                    print("skipping t2r")
+                if skip_qubit_t2e and i == qubit_to_skip_t2e:
+                    print(f"Skipping t2r for Qubit {qubit_to_skip_t2e+1}")
                     highest_points = []
                     for idx in range(len(x)):
                         highest_point = max(
