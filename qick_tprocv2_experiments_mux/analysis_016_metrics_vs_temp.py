@@ -18,6 +18,29 @@ import ast
 import matplotlib.pyplot as plt
 from scipy.stats import norm
 from scipy.optimize import curve_fit
+import pandas as pd
+
+class GetThermData:
+    def __init__(self, folder):
+        self.folder = folder
+
+    def run(self):
+        from datetime import datetime
+        unix_dates = []
+        mcp2_temps = []
+
+        for file_name in os.listdir(self.folder):
+            if file_name.endswith('.csv'):
+                file_path = os.path.join(self.folder, file_name)
+                data = pd.read_csv(file_path)
+
+                if {'Unix Date', 'MCP2 Temp (mK)', 'Mag Can Temp (mK)'}.issubset(data.columns):
+                    unix_dates.extend(data['Unix Date'].tolist())
+                    mcp2_temps.extend(data['MCP2 Temp (mK)'].tolist())
+        datetime_dates = []
+        for i in unix_dates:
+            datetime_dates.append(datetime.utcfromtimestamp(i))
+        return datetime_dates, mcp2_temps
 
 class ResonatorFreqVsTemp:
     def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
@@ -36,11 +59,6 @@ class ResonatorFreqVsTemp:
         # Convert to Unix timestamp
         unix_timestamp = int(dt.timestamp())
         return unix_timestamp
-
-    def unix_to_datetime(self, unix_timestamp):
-        # Convert the Unix timestamp to a datetime object
-        dt = datetime.fromtimestamp(unix_timestamp)
-        return dt
 
     def create_folder_if_not_exists(self, folder):
         """Creates a folder at the given path if it doesn't already exist."""
@@ -167,7 +185,7 @@ class ResonatorFreqVsTemp:
                 del H5_class_instance
         return date_times, resonator_centers
 
-    def plot(self, date_times, resonator_centers, show_legends):
+    def plot(self, date_times, resonator_centers, mcp2_dates, mcp2_temps, show_legends):
         #---------------------------------plot-----------------------------------------------------
         analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
         self.create_folder_if_not_exists(analysis_folder)
@@ -183,46 +201,52 @@ class ResonatorFreqVsTemp:
         from datetime import datetime
         for i, ax in enumerate(axes):
 
-            ax.set_title(titles[i], fontsize = font)
+            ax.set_title(titles[i], fontsize=font)
 
             x = date_times[i]
             y = resonator_centers[i]
 
-            # Convert strings to datetime objects.
             datetime_objects = [datetime.strptime(date_string, "%Y-%m-%d %H:%M:%S") for date_string in x]
 
-            # Combine datetime objects and y values into a list of tuples and sort by datetime.
             combined = list(zip(datetime_objects, y))
-            combined.sort(reverse=True, key=lambda x: x[0])
-
-            # Unpack them back into separate lists, in order from latest to most recent.
+            combined.sort(reverse=True, key=lambda item: item[0])
             sorted_x, sorted_y = zip(*combined)
-            ax.scatter(sorted_x, sorted_y, color=colors[i])
 
-            sorted_x = np.asarray(sorted(x))
+            sorted_x = np.array(sorted_x)
+            sorted_y = np.array(sorted_y)
+
+            combined_mcp2 = list(zip(mcp2_dates, mcp2_temps))
+            combined_mcp2.sort(reverse=True, key=lambda item: item[0])
+            sorted_x_mcp2, sorted_y_mcp2 = zip(*combined_mcp2)
+
+            sorted_x_mcp2 = np.array(sorted_x_mcp2)
+            sorted_y_mcp2 = np.array(sorted_y_mcp2)
+
+            ax.scatter(sorted_x, sorted_y, color=colors[i])
 
             num_points = 5
             indices = np.linspace(0, len(sorted_x) - 1, num_points, dtype=int)
-
-            # Set new x-ticks using the datetime objects at the selected indices
             ax.set_xticks(sorted_x[indices])
             ax.set_xticklabels([dt for dt in sorted_x[indices]], rotation=45)
 
-            ax.scatter(x, y, color=colors[i])
-            
-            if show_legends:
-                ax.legend(edgecolor='black')
-            ax.set_xlabel('Time (Days)', fontsize=font-2)
-            ax.set_ylabel('Resonator Center (MHz)', fontsize=font-2)
+            min_datetime = sorted_x.min()
+            max_datetime = sorted_x.max()
+
+            valid_indices = (sorted_x_mcp2 >= min_datetime) & (sorted_x_mcp2 <= max_datetime)
+            filtered_x_mcp2 = sorted_x_mcp2[valid_indices]
+            filtered_y_mcp2 = sorted_y_mcp2[valid_indices]
+
+            ax.set_xlabel('Time (Days)', fontsize=font - 2)
+            ax.set_ylabel('Resonator Center (MHz)', fontsize=font - 2)
             ax.tick_params(axis='both', which='major', labelsize=8)
 
             ax2 = ax.twinx()
-            ax2.scatter(sorted_x2, sorted_y2, color='red', marker='x', label='Temperature')
-            ax2.set_ylabel('Temperature', fontsize=font - 2, color='red')
-            ax2.tick_params(axis='y', labelcolor='red', labelsize=10)
+            ax2.scatter(filtered_x_mcp2, filtered_y_mcp2, color='darkblue')
+            ax2.set_ylabel('Temperature (mK)', fontsize=font - 2, color='darkblue')
+            ax2.tick_params(axis='y', labelcolor='darkblue', labelsize=10)
             
         plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-        plt.savefig(analysis_folder + 'Res_Centers_vs_temp.pdf', transparent=True, dpi=self.final_figure_quality)
+        plt.savefig(analysis_folder + 'Res_Centers_vs_time_thermometry.pdf', transparent=True, dpi=self.final_figure_quality)
 
         #plt.show()
 class QubitFreqsVsTemp:
@@ -361,7 +385,7 @@ class QubitFreqsVsTemp:
                 del H5_class_instance
         return date_times, qubit_frequencies
 
-    def plot(self,date_times, qubit_frequencies, show_legends):
+    def plot(self,date_times, qubit_frequencies, mcp2_dates, mcp2_temps,show_legends):
         #---------------------------------plot-----------------------------------------------------
         analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
         self.create_folder_if_not_exists(analysis_folder)
@@ -383,41 +407,49 @@ class QubitFreqsVsTemp:
             x = date_times[i]
             y = qubit_frequencies[i]
 
-            # Convert strings to datetime objects.
             datetime_objects = [datetime.strptime(date_string, "%Y-%m-%d %H:%M:%S") for date_string in x]
 
-            # Combine datetime objects and y values into a list of tuples and sort by datetime.
             combined = list(zip(datetime_objects, y))
-            combined.sort(reverse=True, key=lambda x: x[0])
-
-            # Unpack them back into separate lists, in order from latest to most recent.
+            combined.sort(reverse=True, key=lambda item: item[0])
             sorted_x, sorted_y = zip(*combined)
-            ax.scatter(sorted_x, sorted_y, color=colors[i])
 
-            sorted_x = np.asarray(sorted(x))
+            sorted_x = np.array(sorted_x)
+            sorted_y = np.array(sorted_y)
+
+            combined_mcp2 = list(zip(mcp2_dates, mcp2_temps))
+            combined_mcp2.sort(reverse=True, key=lambda item: item[0])
+            sorted_x_mcp2, sorted_y_mcp2 = zip(*combined_mcp2)
+
+            sorted_x_mcp2 = np.array(sorted_x_mcp2)
+            sorted_y_mcp2 = np.array(sorted_y_mcp2)
+
+            ax.scatter(sorted_x, sorted_y, color=colors[i])
 
             num_points = 5
             indices = np.linspace(0, len(sorted_x) - 1, num_points, dtype=int)
-
-            # Set new x-ticks using the datetime objects at the selected indices
             ax.set_xticks(sorted_x[indices])
             ax.set_xticklabels([dt for dt in sorted_x[indices]], rotation=45)
 
-            ax.scatter(x, y, color=colors[i])
-            if show_legends:
-                ax.legend(edgecolor='black')
+            min_datetime = sorted_x.min()
+            max_datetime = sorted_x.max()
+
+            valid_indices = (sorted_x_mcp2 >= min_datetime) & (sorted_x_mcp2 <= max_datetime)
+            filtered_x_mcp2 = sorted_x_mcp2[valid_indices]
+            filtered_y_mcp2 = sorted_y_mcp2[valid_indices]
+
+
             ax.set_xlabel('Time (Days)', fontsize=font-2)
             ax.set_ylabel('Qubit Frequency (MHz)', fontsize=font-2)
             ax.tick_params(axis='both', which='major', labelsize=8)
 
             ax2 = ax.twinx()
-            ax2.scatter(sorted_x2, sorted_y2, color='red', marker='x', label='Temperature')
-            ax2.set_ylabel('Temperature', fontsize=font - 2, color='red')
-            ax2.tick_params(axis='y', labelcolor='red', labelsize=10)
+            ax2.scatter(filtered_x_mcp2, filtered_y_mcp2, color='darkblue')
+            ax2.set_ylabel('Temperature (mK)', fontsize=font - 2, color='darkblue')
+            ax2.tick_params(axis='y', labelcolor='darkblue', labelsize=10)
 
         plt.tight_layout(rect=[0, 0.03, 1, 0.95])
 
-        plt.savefig(analysis_folder + 'Q_Freqs_vs_Temp.pdf', transparent=True, dpi=self.final_figure_quality)
+        plt.savefig(analysis_folder + 'Q_Freqs_vs_time_thermometry.pdf', transparent=True, dpi=self.final_figure_quality)
 
         #plt.show()
 
@@ -507,16 +539,16 @@ class PiAmpsVsTemp:
             print("Error: Invalid input string format.  It should be a string representation of a list of numbers.")
             return None
 
-    def run(self):
+    def run(self, plot_depths=False):
         import datetime
         # ----------Load/get data------------------------
         pi_amps = {i: [] for i in range(self.number_of_qubits)}
+        depths = {i: [] for i in range(self.number_of_qubits)}
         rounds = []
         reps = []
         file_names = []
         date_times = {i: [] for i in range(self.number_of_qubits)}
         mean_values = {}
-
         for folder_date in self.top_folder_dates:
             outerFolder = f"/data/QICK_data/{self.run_name}/" + folder_date + "/"
             outerFolder_save_plots = f"/data/QICK_data/{self.run_name}/" + folder_date + "_plots/"
@@ -524,9 +556,7 @@ class PiAmpsVsTemp:
             # ------------------------------------------------Load/Plot/Save Rabi---------------------------------------
             outerFolder_expt = outerFolder + "/Data_h5/Rabi_ge/"
             h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
-
             for h5_file in h5_files:
-
                 save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
                 H5_class_instance = Data_H5(h5_file)
                 load_data = H5_class_instance.load_from_h5(data_type='Rabi', save_r=int(save_round))
@@ -550,17 +580,24 @@ class PiAmpsVsTemp:
                             I = np.asarray(I)
                             Q = np.asarray(Q)
                             gains = np.asarray(gains)
-                            best_signal_fit, pi_amp = rabi_class_instance.get_results(I, Q, gains)
+                            if plot_depths:
+                                best_signal_fit, pi_amp, depth = rabi_class_instance.get_results(I, Q, gains,
+                                                                                                 grab_depths=True)
+                                depths[q_key].extend([depth])
+                            else:
+                                best_signal_fit, pi_amp = rabi_class_instance.get_results(I, Q, gains)
 
                             pi_amps[q_key].extend([pi_amp])
                             date_times[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])
 
                             del rabi_class_instance
-
                 del H5_class_instance
+        if plot_depths:
+            return date_times, pi_amps, depths
+        else:
             return date_times, pi_amps
 
-    def plot(self, date_times, pi_amps, show_legends):
+    def plot(self, date_times, pi_amps, mcp2_dates, mcp2_temps, show_legends):
         #---------------------------------plot-----------------------------------------------------
         analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
         self.create_folder_if_not_exists(analysis_folder)
@@ -582,40 +619,47 @@ class PiAmpsVsTemp:
             x = date_times[i]
             y = pi_amps[i]
 
-            # Convert strings to datetime objects.
             datetime_objects = [datetime.strptime(date_string, "%Y-%m-%d %H:%M:%S") for date_string in x]
 
-            # Combine datetime objects and y values into a list of tuples and sort by datetime.
             combined = list(zip(datetime_objects, y))
-            combined.sort(reverse=True, key=lambda x: x[0])
-
-            # Unpack them back into separate lists, in order from latest to most recent.
+            combined.sort(reverse=True, key=lambda item: item[0])
             sorted_x, sorted_y = zip(*combined)
-            ax.scatter(sorted_x, sorted_y, color=colors[i])
 
-            sorted_x = np.asarray(sorted(x))
+            sorted_x = np.array(sorted_x)
+            sorted_y = np.array(sorted_y)
+
+            combined_mcp2 = list(zip(mcp2_dates, mcp2_temps))
+            combined_mcp2.sort(reverse=True, key=lambda item: item[0])
+            sorted_x_mcp2, sorted_y_mcp2 = zip(*combined_mcp2)
+
+            sorted_x_mcp2 = np.array(sorted_x_mcp2)
+            sorted_y_mcp2 = np.array(sorted_y_mcp2)
+
+            ax.scatter(sorted_x, sorted_y, color=colors[i])
 
             num_points = 5
             indices = np.linspace(0, len(sorted_x) - 1, num_points, dtype=int)
-
-            # Set new x-ticks using the datetime objects at the selected indices
             ax.set_xticks(sorted_x[indices])
             ax.set_xticklabels([dt for dt in sorted_x[indices]], rotation=45)
 
-            ax.scatter(x, y, color=colors[i])
-            if show_legends:
-                ax.legend(edgecolor='black')
+            min_datetime = sorted_x.min()
+            max_datetime = sorted_x.max()
+
+            valid_indices = (sorted_x_mcp2 >= min_datetime) & (sorted_x_mcp2 <= max_datetime)
+            filtered_x_mcp2 = sorted_x_mcp2[valid_indices]
+            filtered_y_mcp2 = sorted_y_mcp2[valid_indices]
+
             ax.set_xlabel('Time (Days)', fontsize=font-2)
             ax.set_ylabel('Pi Amp (a.u.)', fontsize=font-2)
             ax.tick_params(axis='both', which='major', labelsize=8)
 
             ax2 = ax.twinx()
-            ax2.scatter(sorted_x2, sorted_y2, color='red', marker='x', label='Temperature')
-            ax2.set_ylabel('Temperature', fontsize=font - 2, color='red')
-            ax2.tick_params(axis='y', labelcolor='red', labelsize=10)
+            ax2.scatter(filtered_x_mcp2, filtered_y_mcp2, color='darkblue')
+            ax2.set_ylabel('Temperature (mK)', fontsize=font - 2, color='darkblue')
+            ax2.tick_params(axis='y', labelcolor='darkblue', labelsize=10)
 
         plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-        plt.savefig(analysis_folder + 'Pi_Amps_vs_temp.pdf', transparent=True, dpi=self.final_figure_quality)
+        plt.savefig(analysis_folder + 'Pi_Amps_vs_time_thermometry.pdf', transparent=True, dpi=self.final_figure_quality)
 
         #plt.show()
 
@@ -764,7 +808,7 @@ class T1VsTemp:
                 del H5_class_instance
         return date_times, t1_vals
 
-    def plot(self, date_times, t1_vals, show_legends):
+    def plot(self, date_times, t1_vals, mcp2_dates, mcp2_temps, show_legends):
         #---------------------------------plot-----------------------------------------------------
         analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
         self.create_folder_if_not_exists(analysis_folder)
@@ -786,40 +830,47 @@ class T1VsTemp:
             x = date_times[i]
             y = t1_vals[i]
 
-            # Convert strings to datetime objects.
             datetime_objects = [datetime.strptime(date_string, "%Y-%m-%d %H:%M:%S") for date_string in x]
 
-            # Combine datetime objects and y values into a list of tuples and sort by datetime.
             combined = list(zip(datetime_objects, y))
-            combined.sort(reverse=True, key=lambda x: x[0])
-
-            # Unpack them back into separate lists, in order from latest to most recent.
+            combined.sort(reverse=True, key=lambda item: item[0])
             sorted_x, sorted_y = zip(*combined)
-            ax.scatter(sorted_x, sorted_y, color=colors[i])
 
-            sorted_x = np.asarray(sorted(x))
+            sorted_x = np.array(sorted_x)
+            sorted_y = np.array(sorted_y)
+
+            combined_mcp2 = list(zip(mcp2_dates, mcp2_temps))
+            combined_mcp2.sort(reverse=True, key=lambda item: item[0])
+            sorted_x_mcp2, sorted_y_mcp2 = zip(*combined_mcp2)
+
+            sorted_x_mcp2 = np.array(sorted_x_mcp2)
+            sorted_y_mcp2 = np.array(sorted_y_mcp2)
+
+            ax.scatter(sorted_x, sorted_y, color=colors[i])
 
             num_points = 5
             indices = np.linspace(0, len(sorted_x) - 1, num_points, dtype=int)
-
-            # Set new x-ticks using the datetime objects at the selected indices
             ax.set_xticks(sorted_x[indices])
             ax.set_xticklabels([dt for dt in sorted_x[indices]], rotation=45)
 
-            ax.scatter(x, y, color=colors[i])
-            if show_legends:
-                ax.legend(edgecolor='black')
+            min_datetime = sorted_x.min()
+            max_datetime = sorted_x.max()
+
+            valid_indices = (sorted_x_mcp2 >= min_datetime) & (sorted_x_mcp2 <= max_datetime)
+            filtered_x_mcp2 = sorted_x_mcp2[valid_indices]
+            filtered_y_mcp2 = sorted_y_mcp2[valid_indices]
+
             ax.set_xlabel('Time (Days)', fontsize=font-2)
             ax.set_ylabel('T1 (us)', fontsize=font-2)
             ax.tick_params(axis='both', which='major', labelsize=8)
 
             ax2 = ax.twinx()
-            ax2.scatter(sorted_x2, sorted_y2, color='red', marker='x', label='Temperature')
-            ax2.set_ylabel('Temperature', fontsize=font - 2, color='red')
-            ax2.tick_params(axis='y', labelcolor='red', labelsize=10)
+            ax2.scatter(filtered_x_mcp2, filtered_y_mcp2, color='darkblue')
+            ax2.set_ylabel('Temperature (mK)', fontsize=font - 2, color='darkblue')
+            ax2.tick_params(axis='y', labelcolor='darkblue', labelsize=10)
 
         plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-        plt.savefig(analysis_folder + 'T1_vals_vs_Temp.pdf', transparent=True, dpi=self.final_figure_quality)
+        plt.savefig(analysis_folder + 'T1_vals_vs_time_thermometry.pdf', transparent=True, dpi=self.final_figure_quality)
 
         #plt.show()
 
@@ -968,7 +1019,7 @@ class T2rVsTemp:
                 del H5_class_instance
         return date_times, t2_vals
 
-    def plot(self, date_times, t2_vals, show_legends):
+    def plot(self, date_times, t2_vals, mcp2_dates, mcp2_temps, show_legends):
         #---------------------------------plot-----------------------------------------------------
         analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
         self.create_folder_if_not_exists(analysis_folder)
@@ -990,40 +1041,47 @@ class T2rVsTemp:
             x = date_times[i]
             y = t2_vals[i]
 
-            # Convert strings to datetime objects.
             datetime_objects = [datetime.strptime(date_string, "%Y-%m-%d %H:%M:%S") for date_string in x]
 
-            # Combine datetime objects and y values into a list of tuples and sort by datetime.
             combined = list(zip(datetime_objects, y))
-            combined.sort(reverse=True, key=lambda x: x[0])
-
-            # Unpack them back into separate lists, in order from latest to most recent.
+            combined.sort(reverse=True, key=lambda item: item[0])
             sorted_x, sorted_y = zip(*combined)
-            ax.scatter(sorted_x, sorted_y, color=colors[i])
 
-            sorted_x = np.asarray(sorted(x))
+            sorted_x = np.array(sorted_x)
+            sorted_y = np.array(sorted_y)
+
+            combined_mcp2 = list(zip(mcp2_dates, mcp2_temps))
+            combined_mcp2.sort(reverse=True, key=lambda item: item[0])
+            sorted_x_mcp2, sorted_y_mcp2 = zip(*combined_mcp2)
+
+            sorted_x_mcp2 = np.array(sorted_x_mcp2)
+            sorted_y_mcp2 = np.array(sorted_y_mcp2)
+
+            ax.scatter(sorted_x, sorted_y, color=colors[i])
 
             num_points = 5
             indices = np.linspace(0, len(sorted_x) - 1, num_points, dtype=int)
-
-            # Set new x-ticks using the datetime objects at the selected indices
             ax.set_xticks(sorted_x[indices])
             ax.set_xticklabels([dt for dt in sorted_x[indices]], rotation=45)
 
-            ax.scatter(x, y, color=colors[i])
-            if show_legends:
-                ax.legend(edgecolor='black')
+            min_datetime = sorted_x.min()
+            max_datetime = sorted_x.max()
+
+            valid_indices = (sorted_x_mcp2 >= min_datetime) & (sorted_x_mcp2 <= max_datetime)
+            filtered_x_mcp2 = sorted_x_mcp2[valid_indices]
+            filtered_y_mcp2 = sorted_y_mcp2[valid_indices]
+
             ax.set_xlabel('Time (Days)', fontsize=font-2)
             ax.set_ylabel('T2 (us)', fontsize=font-2)
             ax.tick_params(axis='both', which='major', labelsize=8)
 
             ax2 = ax.twinx()
-            ax2.scatter(sorted_x2, sorted_y2, color='red', marker='x', label='Temperature')
-            ax2.set_ylabel('Temperature', fontsize=font - 2, color='red')
-            ax2.tick_params(axis='y', labelcolor='red', labelsize=10)
+            ax2.scatter(filtered_x_mcp2, filtered_y_mcp2, color='darkblue')
+            ax2.set_ylabel('Temperature (mK)', fontsize=font - 2, color='darkblue')
+            ax2.tick_params(axis='y', labelcolor='darkblue', labelsize=10)
 
         plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-        plt.savefig(analysis_folder + 'T2_vals_vs_Temp.pdf', transparent=True, dpi=self.final_figure_quality)
+        plt.savefig(analysis_folder + 'T2_vals_vs_time_thermometry.pdf', transparent=True, dpi=self.final_figure_quality)
 
         #plt.show()
 
@@ -1154,7 +1212,10 @@ class T2eVsTemp:
                         if len(I) > 0:
                             T2E_class_instance = T2EMeasurement(q_key, outerFolder_save_plots, round_num, self.signal, self.save_figs,
                                                                fit_data=True)
-                            fitted, t2e_est, t2e_err, plot_sig = T2E_class_instance.t2_fit(delay_times, I, Q)
+                            try:
+                                fitted, t2e_est, t2e_err, plot_sig = T2E_class_instance.t2_fit(delay_times, I, Q)
+                            except:
+                                continue
                             T2E_cfg = ast.literal_eval(self.exp_config['SpinEcho_ge'].decode())
                             if t2e_est < 0:
                                 print("The value is negative, continuing...")
@@ -1169,7 +1230,7 @@ class T2eVsTemp:
                 del H5_class_instance
         return date_times, t2e_vals
 
-    def plot(self, date_times, t2e_vals, show_legends):
+    def plot(self, date_times, t2e_vals, mcp2_dates, mcp2_temps, show_legends):
         #---------------------------------plot-----------------------------------------------------
         analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
         self.create_folder_if_not_exists(analysis_folder)
@@ -1194,36 +1255,46 @@ class T2eVsTemp:
             # Convert strings to datetime objects.
             datetime_objects = [datetime.strptime(date_string, "%Y-%m-%d %H:%M:%S") for date_string in x]
 
-            # Combine datetime objects and y values into a list of tuples and sort by datetime.
+            datetime_objects = [datetime.strptime(date_string, "%Y-%m-%d %H:%M:%S") for date_string in x]
+
             combined = list(zip(datetime_objects, y))
-            combined.sort(reverse=True, key=lambda x: x[0])
-
-            # Unpack them back into separate lists, in order from latest to most recent.
+            combined.sort(reverse=True, key=lambda item: item[0])
             sorted_x, sorted_y = zip(*combined)
-            ax.scatter(sorted_x, sorted_y, color=colors[i])
 
-            sorted_x = np.asarray(sorted(x))
+            sorted_x = np.array(sorted_x)
+            sorted_y = np.array(sorted_y)
+
+            combined_mcp2 = list(zip(mcp2_dates, mcp2_temps))
+            combined_mcp2.sort(reverse=True, key=lambda item: item[0])
+            sorted_x_mcp2, sorted_y_mcp2 = zip(*combined_mcp2)
+
+            sorted_x_mcp2 = np.array(sorted_x_mcp2)
+            sorted_y_mcp2 = np.array(sorted_y_mcp2)
+
+            ax.scatter(sorted_x, sorted_y, color=colors[i])
 
             num_points = 5
             indices = np.linspace(0, len(sorted_x) - 1, num_points, dtype=int)
-
-            # Set new x-ticks using the datetime objects at the selected indices
             ax.set_xticks(sorted_x[indices])
             ax.set_xticklabels([dt for dt in sorted_x[indices]], rotation=45)
 
-            ax.scatter(x, y, color=colors[i])
-            if show_legends:
-                ax.legend(edgecolor='black')
+            min_datetime = sorted_x.min()
+            max_datetime = sorted_x.max()
+
+            valid_indices = (sorted_x_mcp2 >= min_datetime) & (sorted_x_mcp2 <= max_datetime)
+            filtered_x_mcp2 = sorted_x_mcp2[valid_indices]
+            filtered_y_mcp2 = sorted_y_mcp2[valid_indices]
+
             ax.set_xlabel('Time (Days)', fontsize=font-2)
             ax.set_ylabel('T2E (us)', fontsize=font-2)
             ax.tick_params(axis='both', which='major', labelsize=8)
 
             ax2 = ax.twinx()
-            ax2.scatter(sorted_x2, sorted_y2, color='red', marker='x', label='Temperature')
-            ax2.set_ylabel('Temperature', fontsize=font - 2, color='red')
-            ax2.tick_params(axis='y', labelcolor='red', labelsize=10)
+            ax2.scatter(filtered_x_mcp2, filtered_y_mcp2, color='darkblue')
+            ax2.set_ylabel('Temperature (mK)', fontsize=font - 2, color='darkblue')
+            ax2.tick_params(axis='y', labelcolor='darkblue', labelsize=10)
 
         plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-        plt.savefig(analysis_folder + 'T2E_vals_vs_Temp.pdf', transparent=True, dpi=self.final_figure_quality)
+        plt.savefig(analysis_folder + 'T2E_vals_vs_time_thermometry.pdf', transparent=True, dpi=self.final_figure_quality)
 
         #plt.show()

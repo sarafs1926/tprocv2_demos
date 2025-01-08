@@ -15,10 +15,11 @@ from analysis_012_save_run_data import SaveRunData
 from analysis_013_update_saved_run_data_notes import UpdateNote
 from analysis_014_temperature_calcsandplots import TempCalcAndPlots
 from analysis_015_plot_all_run_stats import CompareRuns
-from analysis_016_metrics_vs_temp import (ResonatorFreqVsTemp, QubitFreqsVsTemp,
+from analysis_016_metrics_vs_temp import (ResonatorFreqVsTemp, GetThermData, QubitFreqsVsTemp,
                                           PiAmpsVsTemp, T1VsTemp, T2rVsTemp, T2eVsTemp)
 from section_008_save_data_to_h5 import Data_H5
 from analysis_000_load_configs import LoadConfigs
+from analysis_017_plot_metric_dependencies import PlotMetricDependencies
 
 ###################################################### Set These #######################################################
 save_figs = True
@@ -28,15 +29,15 @@ signal = 'None'
 number_of_qubits = 6
 run_number = 2 #starting from first run with qubits
 figure_quality = 100 #ramp this up to like 500 for presentation plots
-final_figure_quality = 500
+final_figure_quality = 200
 run_name = '6transmon_run5'
 run_notes = ('Added more eccosorb filters and a lpf on mxc before and after the device. Added thermometry '
              'next to the device') #please make it brief for the plot
 top_folder_dates = ['2024-12-09', '2024-12-10', '2024-12-11', '2024-12-12', '2024-12-13', '2024-12-14', '2024-12-15',
                     '2024-12-16', '2024-12-17', '2024-12-18', '2024-12-19', '2024-12-20']
-
+#top_folder_dates = ['2024-12-20']
 ###################################### 00: Load Configs for Plotting Titles ############################################
-date = '2024-12-16'  #only plot all of the data for one date at a time because there is a lot
+date = '2024-12-20'  #only plot all of the data for one date at a time because there is a lot
 outerFolder = f"/data/QICK_data/{run_name}/" + date + "/"
 config_loader = LoadConfigs(outerFolder)
 sys_config, exp_config = config_loader.run()
@@ -81,13 +82,13 @@ sys_config, exp_config = config_loader.run()
 # # filtered_pi_amps = temps_class_obj.get_filtered_pi_amps(qubit_ssf_dates, date_times, pi_amps)
 # # pi_amps_vs_time.plot_vs_ssf(date_times, filtered_pi_amps, ssf, show_legends)
 # #
-# # ############# 05: Qubit Temp vs time (not working currently, use arianna code at bottom) #############################
-# # qtemp_vs_time = QTempsVsTime(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs,
-# #                                fit_saved,signal, run_name, exp_config)
-# #
-# # qubit_temp_dates, qubit_temperatures = qtemp_vs_time.run()
-# # qtemp_vs_time.plot(qubit_temp_dates, qubit_temperatures, show_legends)
+# ############# 05: Qubit Temp vs time (not working currently, use arianna code at bottom) #############################
+# qtemp_vs_time = QTempsVsTime(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs,
+#                                fit_saved,signal, run_name, exp_config)
 #
+# qubit_temp_dates, qubit_temperatures = qtemp_vs_time.run()
+# qtemp_vs_time.plot(qubit_temp_dates, qubit_temperatures, show_legends)
+
 # ################################################# 06: T1 vs Time Plots #################################################
 # t1_vs_time = T1VsTime(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
 #                  signal, run_name, exp_config)
@@ -106,29 +107,29 @@ sys_config, exp_config = config_loader.run()
 # date_times, t2e_vals = t2e_vs_time.run()
 # t2e_vs_time.plot(date_times, t2e_vals, show_legends)
 #
-############################################## 09: T1 hist/cumul/err Plots #############################################
-t1_distribution_plots = T1HistCumulErrPlots(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates,
-                                            save_figs, fit_saved, signal, run_name, run_notes, run_number, exp_config)
-dates, t1_vals, t1_errs = t1_distribution_plots.run()
-gaussian_dates, t1_std_values, t1_mean_values = t1_distribution_plots.plot(dates, t1_vals, t1_errs, show_legends)
-
-############################################## 10: T2R hist/cumul/err Plots ############################################
-t2r_distribution_plots = T2rHistCumulErrPlots(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates,
-                                            save_figs, fit_saved, signal, run_name, exp_config)
-dates, t2r_vals, t2r_errs = t2r_distribution_plots.run(t1_vals)
-t2r_std_values, t2r_mean_values = t2r_distribution_plots.plot(dates, t2r_vals, t2r_errs, show_legends)
-
-############################################## 11: T2E hist/cumul/err Plots ############################################
-t2e_distribution_plots = T2eHistCumulErrPlots(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates,
-                                            save_figs, fit_saved, signal, run_name, exp_config)
-dates, t2e_vals, t2e_errs = t2e_distribution_plots.run(t1_vals)
-t2e_std_values, t2e_mean_values = t2e_distribution_plots.plot(dates, t2e_vals, t2e_errs, show_legends)
-
-############################ 12: Save the Key Statistics for This Run to Compare Later #################################
-#need to run 00, and 08-10 before this to get all of the variables
-saver = SaveRunData(run_number, run_notes)
-saver.run(gaussian_dates, t1_vals, t1_errs, t1_std_values, t1_mean_values, t2r_vals, t2r_errs,
-                 t2r_mean_values, t2r_std_values, t2e_vals, t2e_errs, t2e_mean_values, t2e_std_values)
+# ############################################## 09: T1 hist/cumul/err Plots #############################################
+# t1_distribution_plots = T1HistCumulErrPlots(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates,
+#                                             save_figs, fit_saved, signal, run_name, run_notes, run_number, exp_config)
+# dates, t1_vals, t1_errs = t1_distribution_plots.run()
+# gaussian_dates, t1_std_values, t1_mean_values = t1_distribution_plots.plot(dates, t1_vals, t1_errs, show_legends)
+#
+# ############################################## 10: T2R hist/cumul/err Plots ############################################
+# t2r_distribution_plots = T2rHistCumulErrPlots(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates,
+#                                             save_figs, fit_saved, signal, run_name, exp_config)
+# dates, t2r_vals, t2r_errs = t2r_distribution_plots.run(t1_vals)
+# t2r_std_values, t2r_mean_values = t2r_distribution_plots.plot(dates, t2r_vals, t2r_errs, show_legends)
+#
+# ############################################## 11: T2E hist/cumul/err Plots ############################################
+# t2e_distribution_plots = T2eHistCumulErrPlots(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates,
+#                                             save_figs, fit_saved, signal, run_name, exp_config)
+# dates, t2e_vals, t2e_errs = t2e_distribution_plots.run(t1_vals)
+# t2e_std_values, t2e_mean_values = t2e_distribution_plots.plot(dates, t2e_vals, t2e_errs, show_legends)
+#
+# ############################ 12: Save the Key Statistics for This Run to Compare Later #################################
+# #need to run 00, and 08-10 before this to get all of the variables
+# saver = SaveRunData(run_number, run_notes)
+# saver.run(gaussian_dates, t1_vals, t1_errs, t1_std_values, t1_mean_values, t2r_vals, t2r_errs,
+#                  t2r_mean_values, t2r_std_values, t2e_vals, t2e_errs, t2e_mean_values, t2e_std_values)
 
 # ################################## 13: Update Saved Run Notes For Comparison Plot ######################################
 # run_number_to_update = 2
@@ -138,9 +139,9 @@ saver.run(gaussian_dates, t1_vals, t1_errs, t1_std_values, t1_mean_values, t2r_v
 # updater.run()
 
 ################################################ 14: Run Comparison Plots ##############################################
-run_number_list = [1,2]
-comparing_runs = CompareRuns(run_number_list)
-comparing_runs.run(skip_qubit_t2e=False, qubit_to_skip_t2e=0)
+# run_number_list = [1,2]
+# comparing_runs = CompareRuns(run_number_list)
+# comparing_runs.run(skip_qubit_t2e=False, qubit_to_skip_t2e=0)
 #
 # ############################################### 15: Qubit Temperature Plots ############################################
 # temps_class_obj = TempCalcAndPlots(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
@@ -148,31 +149,76 @@ comparing_runs.run(skip_qubit_t2e=False, qubit_to_skip_t2e=0)
 # temps_class_obj.run()
 
 # ########################################## 16: Metrics Vs Temperature Plots ############################################
+# therm = GetThermData(f'/data/QICK_data/{run_name}/Thermometer_Data/')
+# mcp2_dates, mcp2_temps = therm.run()
+#
 # res_spec_vs_temp = ResonatorFreqVsTemp(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates,
-#                                        save_figs, fit_saved, signal, run_name, exp_config)
+#                                         save_figs, fit_saved, signal, run_name, exp_config)
 # date_times, res_freqs = res_spec_vs_temp.run()
-# res_spec_vs_temp.plot(date_times, res_freqs, show_legends)
+# res_spec_vs_temp.plot(date_times, res_freqs, mcp2_dates, mcp2_temps, show_legends)
 #
 # q_spec_vs_temp = QubitFreqsVsTemp(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates,
 #                                   save_figs, fit_saved, signal, run_name, exp_config)
 # date_times, q_freqs = q_spec_vs_temp.run()
+# q_spec_vs_temp.plot(date_times, q_freqs, mcp2_dates, mcp2_temps, show_legends)
 #
 # pi_amps_vs_temp = PiAmpsVsTemp(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs,
 #                                fit_saved,signal, run_name, exp_config)
 # date_times, pi_amps = pi_amps_vs_temp.run()
-# pi_amps_vs_temp.plot(date_times, pi_amps, show_legends)
+#
+# pi_amps_vs_temp.plot(date_times, pi_amps, mcp2_dates, mcp2_temps, show_legends)
 #
 # t1_vs_temp = T1VsTemp(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
 #                  signal, run_name, exp_config)
 # date_times, t1_vals = t1_vs_temp.run()
-# t1_vs_temp.plot(date_times, t1_vals, show_legends)
+# t1_vs_temp.plot(date_times, t1_vals, mcp2_dates, mcp2_temps, show_legends)
 #
 # t2r_vs_temp = T2rVsTemp(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
 #                  signal, run_name, exp_config)
 # date_times, t2r_vals = t2r_vs_temp.run()
-# t2r_vs_temp.plot(date_times, t2r_vals, show_legends)
+# t2r_vs_temp.plot(date_times, t2r_vals, mcp2_dates, mcp2_temps, show_legends)
 #
 # t2e_vs_temp = T2eVsTemp(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
 #                  signal, run_name, exp_config)
 # date_times, t2e_vals = t2e_vs_temp.run()
-# t2e_vs_temp.plot(date_times, t2e_vals, show_legends)
+# t2e_vs_temp.plot(date_times, t2e_vals, mcp2_dates, mcp2_temps, show_legends)
+
+########################################## 16: Metrics Vs Each Other ############################################
+# first get all of the data from the regulat classes
+res_spec_vs_time = ResonatorFreqVsTime(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates,
+                                       save_figs, fit_saved, signal, run_name, exp_config)
+date_times_res_spec, res_freqs = res_spec_vs_time.run()
+
+q_spec_vs_time = QubitFreqsVsTime(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates,
+                                  save_figs, fit_saved, signal, run_name, exp_config)
+date_times_q_spec, q_freqs = q_spec_vs_time.run()
+pi_amps_vs_time = PiAmpsVsTime(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs,
+                              fit_saved,signal, run_name, exp_config)
+date_times_pi_amps, pi_amps = pi_amps_vs_time.run()
+
+t1_vs_time = T1VsTime(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
+                 signal, run_name, exp_config)
+date_times_t1, t1_vals = t1_vs_time.run()
+
+t2r_vs_time = T2rVsTime(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
+                 signal, run_name, exp_config)
+date_times_t2r, t2r_vals = t2r_vs_time.run()
+
+t2e_distribution_plots = T2eHistCumulErrPlots(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates,
+                                            save_figs, fit_saved, signal, run_name, exp_config)
+date_times_t2e, t2e_vals, t2e_errs = t2e_distribution_plots.run(t1_vals)
+
+#now plot them vs eachother
+plotter = PlotMetricDependencies(run_name, number_of_qubits, final_figure_quality)
+
+plotter.plot(date_times_q_spec, q_freqs, date_times_t1, t1_vals, metric_1_label = 'Q Freq',metric_2_label = 'T1')
+plotter.plot(date_times_pi_amps, pi_amps, date_times_t1, t1_vals, metric_1_label = 'Pi Amp',metric_2_label = 'T1')
+
+plotter.plot(date_times_q_spec, q_freqs, date_times_t2r, t2r_vals, metric_1_label = 'Q Freq',metric_2_label = 'T2R')
+plotter.plot(date_times_pi_amps, pi_amps, date_times_t2r, t2r_vals, metric_1_label = 'Pi Amp',metric_2_label = 'T2R')
+
+plotter.plot(date_times_q_spec, q_freqs, date_times_t2e, t2e_vals, metric_1_label = 'Q Freq',metric_2_label = 'T2E')
+plotter.plot(date_times_pi_amps, pi_amps, date_times_t2e, t2e_vals, metric_1_label = 'Pi Amp',metric_2_label = 'T2E')
+
+plotter.plot(date_times_q_spec, q_freqs, date_times_pi_amps, pi_amps, metric_1_label = 'Q Freq',metric_2_label = 'Pi Amp')
+

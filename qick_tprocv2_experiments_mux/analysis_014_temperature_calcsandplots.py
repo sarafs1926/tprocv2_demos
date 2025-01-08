@@ -52,12 +52,12 @@ class TempCalcAndPlots:
         frequency_hz = frequency_mhz * 1e6
         #T = (h * frequency_hz) / (k_B * np.log(ground_state_population / excited_state_population))
         # Check for invalid populations
-        if excited_state_population <= 0 or ground_state_population <= 0:
+        if excited_state_population <= 0 or ground_state_population <= 0: #if one of them is zero can't calculate the temp
             print("Warning: Invalid population values encountered (<= 0). Skipping this dataset.")
             return None
 
         ratio = ground_state_population / excited_state_population
-        if ratio <= 1:
+        if ratio <= 1: #denominator would become zero at Pg=Pe
             print(f"Warning: Non-physical ratio (P_g/P_e = {ratio:.3f} <= 1) encountered. Skipping this dataset.")
             return None
 
@@ -216,7 +216,7 @@ class TempCalcAndPlots:
                             del qspec_class_instance
 
                 del H5_class_instance
-            print(qubit_frequencies)
+            #print(qubit_frequencies)
 
             # ------------------------------------------------Load/Plot/Save SS---------------------------------------
             outerFolder_expt = outerFolder + "/Data_h5/SS_ge/"
@@ -243,7 +243,7 @@ class TempCalcAndPlots:
                     ):
                         populated_keys.append(q_key)
 
-                print(f"Populated keys: {populated_keys}")
+                #print(f"Populated keys: {populated_keys}")
 
                 for q_key in populated_keys:
                     # Within each qubit loop, create a folder for the specific qubit
@@ -300,10 +300,11 @@ class TempCalcAndPlots:
                                 # print(f"Ground state population: {ground_state_population}")
                                 # print(f"Excited state (leakage) population: {excited_state_population_overlap}")
                                 # print(f"Qubit {q_key + 1} Temperature: {temperature_mk:.2f} mK", "\n")
-                                if temperature_mk <= 500:
+                                limit_temp = 800 #500
+                                if temperature_mk <= limit_temp:
                                     qubit_temperatures[q_key].append((temperature_mk, timestamp))
                                 else:
-                                    print(f"Warning: Temperature {temperature_mk:.2f} mK exceeds 500 mK for Qubit {q_key + 1}. Skipping this dataset.")
+                                    print(f"Warning: Temperature {temperature_mk:.2f} mK exceeds {limit_temp} mK for Qubit {q_key + 1}. Skipping this dataset.")
                                     pass  # Skip this dataset
 
                             # temperature_mk = temperature_k * 1e3
@@ -312,84 +313,84 @@ class TempCalcAndPlots:
                             # print(f"Qubit {q_key + 1} Temperature: {temperature_mk:.2f} mK", "\n")
                             # qubit_temperatures[q_key].append((temperature_mk, timestamp))#save temps for each qubit
 
-                            # Plotting double gaussian distributions and fitting
-                            xlims = [np.min(ig_new), np.max(ig_new)]
-                            plt.figure(figsize=(10, 6))
+                            # # Plotting double gaussian distributions and fitting
+                            # xlims = [np.min(ig_new), np.max(ig_new)]
+                            # plt.figure(figsize=(10, 6))
+                            #
+                            # # Plot histogram for `ig_new`
+                            # steps = 3000
+                            # numbins = round(math.sqrt(steps))
+                            # n, bins, _ = plt.hist(ig_new, bins=numbins, range=xlims, density=False, alpha=0.5,
+                            #                       label='Histogram of $I_g$',
+                            #                       color='gray')
+                            # # print(numbins)
+                            # # Use the midpoints of bins to create boolean masks
+                            # bin_centers = (bins[:-1] + bins[1:]) / 2
+                            # ground_region = (bin_centers < crossing_point)
+                            # excited_region = (bin_centers >= crossing_point)
+                            #
+                            # # Calculate scaling factors for each region
+                            # scaling_factor_ground = max(n[ground_region]) / max(
+                            #     (weights[ground_gaussian] / (np.sqrt(2 * np.pi) * covariances[ground_gaussian])) * np.exp(
+                            #         -0.5 * ((bin_centers[ground_region] - means[ground_gaussian]) / covariances[
+                            #             ground_gaussian]) ** 2))
+                            #
+                            # scaling_factor_excited = max(n[excited_region]) / max(
+                            #     (weights[excited_gaussian] / (np.sqrt(2 * np.pi) * covariances[excited_gaussian])) * np.exp(
+                            #         -0.5 * ((bin_centers[excited_region] - means[excited_gaussian]) / covariances[
+                            #             excited_gaussian]) ** 2))
+                            #
+                            # # Generate x values for plotting Gaussian components
+                            # x = np.linspace(xlims[0], xlims[1], 1000)
+                            # ground_gaussian_fit = scaling_factor_ground * (
+                            #         weights[ground_gaussian] / (np.sqrt(2 * np.pi) * covariances[ground_gaussian])) * np.exp(
+                            #     -0.5 * ((x - means[ground_gaussian]) / covariances[ground_gaussian]) ** 2)
+                            # excited_gaussian_fit = scaling_factor_excited * (
+                            #         weights[excited_gaussian] / (np.sqrt(2 * np.pi) * covariances[excited_gaussian])) * np.exp(
+                            #     -0.5 * ((x - means[excited_gaussian]) / covariances[excited_gaussian]) ** 2)
 
-                            # Plot histogram for `ig_new`
-                            steps = 3000
-                            numbins = round(math.sqrt(steps))
-                            n, bins, _ = plt.hist(ig_new, bins=numbins, range=xlims, density=False, alpha=0.5,
-                                                  label='Histogram of $I_g$',
-                                                  color='gray')
-                            # print(numbins)
-                            # Use the midpoints of bins to create boolean masks
-                            bin_centers = (bins[:-1] + bins[1:]) / 2
-                            ground_region = (bin_centers < crossing_point)
-                            excited_region = (bin_centers >= crossing_point)
-
-                            # Calculate scaling factors for each region
-                            scaling_factor_ground = max(n[ground_region]) / max(
-                                (weights[ground_gaussian] / (np.sqrt(2 * np.pi) * covariances[ground_gaussian])) * np.exp(
-                                    -0.5 * ((bin_centers[ground_region] - means[ground_gaussian]) / covariances[
-                                        ground_gaussian]) ** 2))
-
-                            scaling_factor_excited = max(n[excited_region]) / max(
-                                (weights[excited_gaussian] / (np.sqrt(2 * np.pi) * covariances[excited_gaussian])) * np.exp(
-                                    -0.5 * ((bin_centers[excited_region] - means[excited_gaussian]) / covariances[
-                                        excited_gaussian]) ** 2))
-
-                            # Generate x values for plotting Gaussian components
-                            x = np.linspace(xlims[0], xlims[1], 1000)
-                            ground_gaussian_fit = scaling_factor_ground * (
-                                    weights[ground_gaussian] / (np.sqrt(2 * np.pi) * covariances[ground_gaussian])) * np.exp(
-                                -0.5 * ((x - means[ground_gaussian]) / covariances[ground_gaussian]) ** 2)
-                            excited_gaussian_fit = scaling_factor_excited * (
-                                    weights[excited_gaussian] / (np.sqrt(2 * np.pi) * covariances[excited_gaussian])) * np.exp(
-                                -0.5 * ((x - means[excited_gaussian]) / covariances[excited_gaussian]) ** 2)
-
-                            plt.plot(x, ground_gaussian_fit, label='Ground Gaussian Fit', color='blue', linewidth=2)
-                            plt.plot(x, excited_gaussian_fit, label='Excited (leakage) Gaussian Fit', color='red', linewidth=2)
-                            plt.axvline(crossing_point, color='black', linestyle='--', linewidth=1,
-                                        label=f'Crossing Point ({crossing_point:.2f})')
-
-                            # Add shading for ground and excited state regions
-                            x_vals = np.linspace(np.min(ig_new), np.max(ig_new), 1000)
-
-                            # Add shading for ground_data points
-                            plt.hist(
-                                ground_data, bins=numbins, range=[np.min(ig_new), np.max(ig_new)], density=False,
-                                alpha=0.5, color="blue", label="Ground Data Region", zorder=2
-                            )
-
-                            # Add shading for excited_data points
-                            plt.hist(
-                                excited_data, bins=numbins, range=[np.min(ig_new), np.max(ig_new)], density=False,
-                                alpha=0.5, color="red", label="Excited Data Region", zorder=3
-                            )
+                            # plt.plot(x, ground_gaussian_fit, label='Ground Gaussian Fit', color='blue', linewidth=2)
+                            # plt.plot(x, excited_gaussian_fit, label='Excited (leakage) Gaussian Fit', color='red', linewidth=2)
+                            # plt.axvline(crossing_point, color='black', linestyle='--', linewidth=1,
+                            #             label=f'Crossing Point ({crossing_point:.2f})')
+                            #
+                            # # Add shading for ground and excited state regions
+                            # x_vals = np.linspace(np.min(ig_new), np.max(ig_new), 1000)
+                            #
+                            # # Add shading for ground_data points
+                            # plt.hist(
+                            #     ground_data, bins=numbins, range=[np.min(ig_new), np.max(ig_new)], density=False,
+                            #     alpha=0.5, color="blue", label="Ground Data Region", zorder=2
+                            # )
+                            #
+                            # # Add shading for excited_data points
+                            # plt.hist(
+                            #     excited_data, bins=numbins, range=[np.min(ig_new), np.max(ig_new)], density=False,
+                            #     alpha=0.5, color="red", label="Excited Data Region", zorder=3
+                            # )
 
                             # plt.hist(
                             #     iq_data, bins=numbins, range=[np.min(ig_new), np.max(ig_new)], density=False,
                             #     alpha=0.2, color="green", label="All IQ Data Region", zorder=1
                             # )
 
-                            plt.title(f"Fidelity Histogram and Double Gaussian Fit ; Qubit {q_key + 1}; Fidelity = {fidelity * 100:.2f}%")
-                            plt.xlabel('$I_g$', fontsize=14)
+                            #plt.title(f"Fidelity Histogram and Double Gaussian Fit ; Qubit {q_key + 1}; Fidelity = {fidelity * 100:.2f}%")
+                            #plt.xlabel('$I_g$', fontsize=14)
                             # plt.ylabel('Probability Density', fontsize=14)
-                            plt.legend()
+                            #plt.legend()
                             #plt.show()
 
                             # Save the plot to the Temperatures folder
                             plot_filename = os.path.join(qubit_folder, f"Qubit{q_key + 1}_Fidelityhist_gaussianfit_Dataset{dataset}_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.png")
                             #plt.savefig(plot_filename)
                             #print(f"Plot saved to {plot_filename}")
-                            plt.close()
+                            #plt.close()
 
                             # Cleanup
-                            del ig_new, ground_gaussian_fit, excited_gaussian_fit, n, bins, x, gmm, \
-                                bin_centers, ground_region, excited_region, scaling_factor_ground, \
-                                scaling_factor_excited, weights, means, covariances, ground_gaussian, \
-                                excited_gaussian, crossing_point
+                            # del ig_new, ground_gaussian_fit, excited_gaussian_fit, n, bins, x, gmm, \
+                            #     bin_centers, ground_region, excited_region, scaling_factor_ground, \
+                            #     scaling_factor_excited, weights, means, covariances, ground_gaussian, \
+                            #     excited_gaussian, crossing_point
 
                             del ss_class_instance
 
@@ -403,22 +404,22 @@ class TempCalcAndPlots:
 
 
             # After the loop is complete, create the subplots for temperature histograms
-            plt.figure(figsize=(15, 10))
+            #plt.figure(figsize=(15, 10))
             colors = ['orange','blue','purple','green','brown','pink']
             for qubit_id, temperatures in qubit_temperatures.items():
                 temperatures = [temp[0] for temp in qubit_temperatures[qubit_id]]
-                plt.subplot(2, 3, qubit_id + 1)
-                plt.hist(temperatures, bins=20, color=colors[qubit_id], alpha=0.7, edgecolor='black')
-                plt.title(f"Qubit {qubit_id + 1} Temperature Distribution")
-                plt.xlabel("Temperature (mK)")
-                plt.ylabel("Frequency")
-                plt.grid(alpha=0.3)
+                # plt.subplot(2, 3, qubit_id + 1)
+                # plt.hist(temperatures, bins=20, color=colors[qubit_id], alpha=0.7, edgecolor='black')
+                # plt.title(f"Qubit {qubit_id + 1} Temperature Distribution")
+                # plt.xlabel("Temperature (mK)")
+                # plt.ylabel("Frequency")
+                # plt.grid(alpha=0.3)
 
             # Adjust layout and save the figure
-            plt.tight_layout()
-            hist_plot_filename = os.path.join(temp_histograms_folder, f"Temperature_Distributions_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.png")
+            #plt.tight_layout()
+            #hist_plot_filename = os.path.join(temp_histograms_folder, f"Temperature_Distributions_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.png")
             #plt.savefig(hist_plot_filename)
-            print(f"Temperature histogram saved to {hist_plot_filename}")
+            #print(f"Temperature histogram saved to {hist_plot_filename}")
 
             # Cleanup
             plt.close()
@@ -432,32 +433,32 @@ class TempCalcAndPlots:
             # Create subplots for temperatures over time
             plt.figure(figsize=(15, 10))
             colors = ['orange', 'blue', 'purple', 'green', 'brown', 'pink']
-            for qubit_id, data in qubit_temperatures.items():
-                if data:  # Check if there's data for the qubit
-                    temperatures, timestamps = zip(*data)  # Unpack temperatures and timestamps
-                    timestamps = [datetime.datetime.fromtimestamp(ts) for ts in timestamps]  # Convert timestamps to datetime
-
-                    ax = plt.subplot(2, 3, qubit_id + 1)  # Capture the subplot into 'ax'
-                    ax.scatter(timestamps, temperatures, color=colors[qubit_id], alpha=0.7, edgecolor='black')
-                    ax.set_title(f"Qubit {qubit_id + 1} Temperature Over Time")
-                    ax.set_xlabel("Time")
-                    ax.set_ylabel("Temperature (mK)")
-                    ax.grid(alpha=0.3)
-
-                    # Format x-axis to show full timestamps
-                    date_formatter = DateFormatter('%m-%d %H:%M') # Customize date and time format
-                    ax.xaxis.set_major_formatter(date_formatter)
-                    plt.xticks(rotation=45)
-
-
-            # Adjust layout and save the figure
-            plt.tight_layout()
-            scatter_plot_filename = os.path.join(temp_scatter_folder, f"Temperature_Over_Time_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.png")
-            #plt.savefig(scatter_plot_filename)
-            print(f"Temperature scatter plot saved to {scatter_plot_filename}")
-
-            # Cleanup
-            plt.close()
+            # for qubit_id, data in qubit_temperatures.items():
+            #     if data:  # Check if there's data for the qubit
+            #         temperatures, timestamps = zip(*data)  # Unpack temperatures and timestamps
+            #         timestamps = [datetime.datetime.fromtimestamp(ts) for ts in timestamps]  # Convert timestamps to datetime
+            #
+            #         ax = plt.subplot(2, 3, qubit_id + 1)  # Capture the subplot into 'ax'
+            #         ax.scatter(timestamps, temperatures, color=colors[qubit_id], alpha=0.7, edgecolor='black')
+            #         ax.set_title(f"Qubit {qubit_id + 1} Temperature Over Time")
+            #         ax.set_xlabel("Time")
+            #         ax.set_ylabel("Temperature (mK)")
+            #         ax.grid(alpha=0.3)
+            #
+            #         # Format x-axis to show full timestamps
+            #         date_formatter = DateFormatter('%m-%d %H:%M') # Customize date and time format
+            #         ax.xaxis.set_major_formatter(date_formatter)
+            #                             plt.xticks(rotation=45)
+            #
+            #
+            #                     # Adjust layout and save the figure
+            #                     plt.tight_layout()
+            #                     scatter_plot_filename = os.path.join(temp_scatter_folder, f"Temperature_Over_Time_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.png")
+            #                     #plt.savefig(scatter_plot_filename)
+            #                     #print(f"Temperature scatter plot saved to {scatter_plot_filename}")
+            #
+            #                     # Cleanup
+            #                     plt.close()
 
             #Saving data for all days
             for q_id in range(self.number_of_qubits):
@@ -483,12 +484,13 @@ class TempCalcAndPlots:
             if all_qubit_temperatures[qubit_id]:  # Check if we have any data for this qubit
                 ax = plt.subplot(2, 3, qubit_id + 1)
                 ax.scatter(all_qubit_timestamps[qubit_id], all_qubit_temperatures[qubit_id],
-                           color=colors[qubit_id], alpha=0.7, edgecolor='black')
+                           color=colors[qubit_id], alpha=0.7, edgecolor='black', label = f"Qubit {qubit_id + 1}")
                 ax.set_title(f"Qubit {qubit_id + 1} Temperature Over Time (All Dates)")
                 ax.set_xlabel("Time")
                 ax.set_ylabel("Temperature (mK)")
                 ax.grid(alpha=0.3)
 
+                ax.legend()
                 # Format the x-axis with a date formatter
                 date_formatter = DateFormatter('%m-%d %H:%M')
                 ax.xaxis.set_major_formatter(date_formatter)
