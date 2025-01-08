@@ -61,11 +61,19 @@ class PlotMetricDependencies:
                 ref_metrics = sorted_metric_1
                 other_times = sorted_date_times_2
                 other_mets = sorted_metric_2
+
+                # We'll plot metric 1 on x-axis, metric 2 on y-axis
+                x_label = metric_1_label
+                y_label = metric_2_label
             else:
                 ref_times = sorted_date_times_2
                 ref_metrics = sorted_metric_2
                 other_times = sorted_date_times_1
                 other_mets = sorted_metric_1
+
+                # We'll plot metric 2 on x-axis, metric 1 on y-axis
+                x_label = metric_2_label
+                y_label = metric_1_label
 
             # Step 2 & 3: For each timestamp in the reference array, find the closest
             # timestamp in the other array, and collect matched values
@@ -87,8 +95,8 @@ class PlotMetricDependencies:
             # Step 4: Now that both metrics have matching lengths and times, you can plot
             ax.scatter(matched_ref_metrics, matched_other_metrics, color='blue')
 
-            ax.set_xlabel(metric_1_label, fontsize=font-2)
-            ax.set_ylabel(metric_2_label, fontsize=font-2)
+            ax.set_xlabel(x_label, fontsize=font - 2)
+            ax.set_ylabel(y_label, fontsize=font - 2)
 
 
         plt.tight_layout(rect=[0, 0.03, 1, 0.95])
