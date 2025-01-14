@@ -12,7 +12,7 @@ class SaveRunData:
         if not os.path.exists(folder):
             os.makedirs(folder)
 
-    def run(self,gaussian_dates, t1_vals, t1_errs, t1_std_values, t1_mean_values, t2r_vals, t2r_errs,
+    def run(self,gaussian_dates, pi_amps, q_freqs, t1_vals, t1_errs, t1_std_values, t1_mean_values, t2r_vals, t2r_errs,
                  t2r_mean_values, t2r_std_values, t2e_vals, t2e_errs, t2e_mean_values, t2e_std_values):
         ######## save run statistics to the run_stats folder so we can compare/plot to previous runs later #############
 
@@ -31,6 +31,9 @@ class SaveRunData:
 
         with h5py.File(filename, 'w') as hf:
             # Save dictionaries as JSON strings in attributes
+            hf.attrs['q_freqs'] = json.dumps(q_freqs)
+            hf.attrs['pi_amp'] = json.dumps(pi_amps)
+
             hf.attrs['t1_vals'] = json.dumps(t1_vals)
             hf.attrs['t1_errs'] = json.dumps(t1_errs)
 

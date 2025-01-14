@@ -244,7 +244,7 @@ class T1HistCumulErrPlots:
                 ax.tick_params(axis='both', which='major', labelsize=font)
 
         plt.tight_layout()
-        plt.savefig( analysis_folder + 'hists.pdf', transparent=True, dpi=self.final_figure_quality)
+        plt.savefig( analysis_folder + 'hists.png', transparent=True, dpi=self.final_figure_quality)
 
 
         fig, ax = plt.subplots(1, 1, figsize=(12, 8))
@@ -270,10 +270,10 @@ class T1HistCumulErrPlots:
         ax.set_ylabel('Cumulative Distribution',fontsize = font)
         ax.loglog()
         ax.legend(edgecolor='black')
-        #ax.set_xlim(10**0, 10**3)
-        #ax.set_ylim(10 ** -7, 10 ** 0) #to compare to johns plot, need to adjust a little
+        ax.set_xlim(10**0, 10**3)
+        ax.set_ylim(10 ** -7, 10 ** 0) #to compare to johns plot, need to adjust a little
         plt.tight_layout()
-        plt.savefig(analysis_folder + 'cumulative.pdf', transparent=True, dpi=self.final_figure_quality)
+        plt.savefig(analysis_folder + 'cumulative.png', transparent=True, dpi=self.final_figure_quality)
 
 
 
@@ -295,7 +295,7 @@ class T1HistCumulErrPlots:
             ax.set_ylabel('Fit error (us)', fontsize = font)
             ax.tick_params(axis='both', which='major', labelsize=font)
         plt.tight_layout()
-        plt.savefig(analysis_folder + 'errs.pdf', transparent=True, dpi=self.final_figure_quality)
+        plt.savefig(analysis_folder + 'errs.png', transparent=True, dpi=self.final_figure_quality)
 
         #plt.show()
 

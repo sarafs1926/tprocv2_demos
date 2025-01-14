@@ -3,6 +3,7 @@ import json
 import matplotlib.pyplot as plt
 import os
 from matplotlib.ticker import MaxNLocator
+import numpy as np
 
 class CompareRuns:
     def __init__(self, run_number_list):
@@ -52,7 +53,7 @@ class CompareRuns:
             't2e_mean_values': t2e_mean_values,
         }
 
-    def run(self,skip_qubit_t2e=False, qubit_to_skip_t2e=None):
+    def plot_decoherence_vs_run(self,skip_qubit_t2e=False, qubit_to_skip_t2e=None):
         if len(self.run_number_list) > 1:
             t1_data = {}
             t1_err = {}
@@ -235,3 +236,72 @@ class CompareRuns:
             analysis_folder = "/data/QICK_data/6transmon_run5/benchmark_analysis_plots/"
             self.create_folder_if_not_exists(analysis_folder)
             plt.savefig(analysis_folder + 'compare_runs.pdf', dpi=500)
+
+    def plot_decoherence_vs_qfreq(self):
+        # If no runs are specified, do nothing
+        if not self.run_number_list:
+            print("No runs provided!")
+            return
+
+        # Prepare the figure: one subplot per run
+        fig, axes = plt.subplots(
+            nrows=len(self.run_number_list),
+            ncols=1,
+            figsize=(8, 6 * len(self.run_number_list)),
+            sharex=False
+        )
+        # If there's only one run, axes is not a list, so wrap it
+        if len(self.run_number_list) == 1:
+            axes = [axes]
+
+        # Loop over runs
+        for i, run_number in enumerate(self.run_number_list):
+            ax = axes[i]
+
+            # Load the data for this run
+            run_stats_folder = f"run_stats/run{run_number}/"
+            filename = run_stats_folder + 'experiment_data.h5'
+            loaded_data = self.load_from_h5(filename)
+
+            # Grab the raw arrays for each qubit
+            # Here we assume these are dicts keyed by qubit name (or number)
+            # Each entry in the dict is an array of measured values
+            t1_vals_all = loaded_data['t1_vals']  # e.g., {'Q1': array([...]), 'Q2': array([...]), ...}
+            t2r_vals_all = loaded_data['t2r_vals']
+            t2e_vals_all = loaded_data['t2e_vals']
+            freq_vals_all = loaded_data['qfreq_vals']  # similarly, {'Q1': array([...]), ...}
+
+            # Sort qubits just to have a consistent ordering
+            qubit_list = sorted(t1_vals_all.keys())
+
+            # Compute medians
+            freq_medians = []
+            t1_medians = []
+            t2r_medians = []
+            t2e_medians = []
+
+            for qb in qubit_list:
+                freq_medians.append(np.median(freq_vals_all[qb]))
+                t1_medians.append(np.median(t1_vals_all[qb]))
+                t2r_medians.append(np.median(t2r_vals_all[qb]))
+                t2e_medians.append(np.median(t2e_vals_all[qb]))
+
+            # Plot the data for this run
+            ax.scatter(freq_medians, t1_medians, label='T1', marker='o')
+            ax.scatter(freq_medians, t2r_medians, label='T2R', marker='s')
+            ax.scatter(freq_medians, t2e_medians, label='T2E', marker='^')
+
+            ax.set_xlabel('Median Qubit Frequency (GHz)')  # or adjust units/labels as needed
+            ax.set_ylabel('Median Time (µs)')
+            ax.set_title(f'Decoherence vs. Qubit Frequency (Run {run_number})')
+            ax.xaxis.set_major_locator(MaxNLocator(integer=False))  # keep x-axis tidy
+            ax.legend()
+
+        # Tight layout so subplots don't overlap
+        plt.tight_layout()
+
+        # Save the figure
+        analysis_folder = "/data/QICK_data/6transmon_run5/benchmark_analysis_plots/"
+        self.create_folder_if_not_exists(analysis_folder)
+        plt.savefig(analysis_folder + 'compare_runs.pdf', dpi=500)
+        plt.show()

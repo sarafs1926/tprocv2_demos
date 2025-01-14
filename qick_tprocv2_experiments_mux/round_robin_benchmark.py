@@ -175,6 +175,7 @@ while j < n:
 
         ###################################################### T2R #####################################################
         try:
+
             t2r = T2RMeasurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data,
                                  increase_qubit_reps, qubit_to_increase_reps_for, multiply_qubit_reps_by)
             t2r_est, t2r_err, t2r_I, t2r_Q, t2r_delay_times, fit_ramsey = t2r.run(experiment.soccfg, experiment.soc)

@@ -216,6 +216,6 @@ class T2eVsTime:
             ax.tick_params(axis='both', which='major', labelsize=8)
 
         plt.tight_layout()
-        plt.savefig(analysis_folder + 'T2E_vals.pdf', transparent=True, dpi=self.final_figure_quality)
+        plt.savefig(analysis_folder + 'T2E_vals.png', transparent=True, dpi=self.final_figure_quality)
 
         #plt.show()

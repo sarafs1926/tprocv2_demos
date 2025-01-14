@@ -28,6 +28,7 @@ class GetThermData:
         from datetime import datetime
         unix_dates = []
         mcp2_temps = []
+        magcan_temps = []
 
         for file_name in os.listdir(self.folder):
             if file_name.endswith('.csv'):
@@ -37,10 +38,11 @@ class GetThermData:
                 if {'Unix Date', 'MCP2 Temp (mK)', 'Mag Can Temp (mK)'}.issubset(data.columns):
                     unix_dates.extend(data['Unix Date'].tolist())
                     mcp2_temps.extend(data['MCP2 Temp (mK)'].tolist())
+                    magcan_temps.extend(data['Mag Can Temp (mK)'].tolist())
         datetime_dates = []
         for i in unix_dates:
             datetime_dates.append(datetime.utcfromtimestamp(i))
-        return datetime_dates, mcp2_temps
+        return datetime_dates, mcp2_temps, magcan_temps
 
 class ResonatorFreqVsTemp:
     def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,

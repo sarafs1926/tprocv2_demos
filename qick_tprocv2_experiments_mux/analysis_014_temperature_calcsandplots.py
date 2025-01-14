@@ -300,7 +300,7 @@ class TempCalcAndPlots:
                                 # print(f"Ground state population: {ground_state_population}")
                                 # print(f"Excited state (leakage) population: {excited_state_population_overlap}")
                                 # print(f"Qubit {q_key + 1} Temperature: {temperature_mk:.2f} mK", "\n")
-                                limit_temp = 800 #500
+                                limit_temp = 500
                                 if temperature_mk <= limit_temp:
                                     qubit_temperatures[q_key].append((temperature_mk, timestamp))
                                 else:
@@ -499,10 +499,11 @@ class TempCalcAndPlots:
         plt.tight_layout()
         all_scatter_plot_filename = os.path.join(features_folder,
                                                  f"AllQubits_Temperature_Over_All_Dates_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.png")
-        plt.savefig(all_scatter_plot_filename)
+        #plt.savefig(all_scatter_plot_filename)
         plt.close()
 
         print(f"All-dates temperature scatter plot saved to {all_scatter_plot_filename}")
+        return all_qubit_temperatures, all_qubit_timestamps
 
 
     def get_temps(self):
