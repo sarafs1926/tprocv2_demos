@@ -17,25 +17,46 @@ class CompareRuns:
     def load_from_h5(self, filename):
         with h5py.File(filename, 'r') as hf:
             # Load attributes
+
+            date_times_res_spec = json.loads(hf.attrs['date_times_res_spec'])
+            res_freqs = json.loads(hf.attrs['res_freqs'])
+
+            date_times_q_spec = json.loads(hf.attrs['date_times_q_spec'])
+            q_freqs = json.loads(hf.attrs['q_freqs'])
+
+            date_times_pi_amps = json.loads(hf.attrs['date_times_pi_amps'])
+            pi_amps = json.loads(hf.attrs['pi_amp'])
+
+            date_times_t1 = json.loads(hf.attrs['date_times_t1'])
             t1_vals = json.loads(hf.attrs['t1_vals'])
             t1_errs = json.loads(hf.attrs['t1_errs'])
             t1_std_values = json.loads(hf.attrs['t1_std_values'])
             t1_mean_values = json.loads(hf.attrs['t1_mean_values'])
-            run_number = hf.attrs['run_number']
-            run_notes = hf.attrs['run_notes']
-            last_date = hf.attrs['last_date']
 
+            date_times_t2r = json.loads(hf.attrs['date_times_t2r'])
             t2r_vals = json.loads(hf.attrs['t2r_vals'])
             t2r_errs = json.loads(hf.attrs['t2r_errs'])
             t2r_std_values = json.loads(hf.attrs['t2r_std_values'])
             t2r_mean_values = json.loads(hf.attrs['t2r_mean_values'])
 
+            date_times_t2e = json.loads(hf.attrs['date_times_t2e'])
             t2e_vals = json.loads(hf.attrs['t2e_vals'])
             t2e_errs = json.loads(hf.attrs['t2e_errs'])
             t2e_std_values = json.loads(hf.attrs['t2e_std_values'])
             t2e_mean_values = json.loads(hf.attrs['t2e_mean_values'])
 
+            run_number = hf.attrs['run_number']
+            run_notes = hf.attrs['run_notes']
+            last_date = hf.attrs['last_date']
+
         return {
+            'date_times_res_spec':date_times_res_spec,
+            'res_freqs':res_freqs,
+            'date_times_q_spec':date_times_q_spec,
+            'q_freqs':q_freqs,
+            'date_times_pi_amps':date_times_pi_amps,
+            'pi_amps':pi_amps,
+            'date_times_t1':date_times_t1,
             't1_vals': t1_vals,
             't1_errs': t1_errs,
             't1_std_values': t1_std_values,
@@ -43,10 +64,12 @@ class CompareRuns:
             'run_number': run_number,
             'run_notes': run_notes,
             'last_date': last_date,
+            'date_times_t2r': date_times_t2r,
             't2r_vals': t2r_vals,
             't2r_errs': t2r_errs,
             't2r_std_values': t2r_std_values,
             't2r_mean_values': t2r_mean_values,
+            'date_times_t2e': date_times_t2e,
             't2e_vals': t2e_vals,
             't2e_errs': t2e_errs,
             't2e_std_values': t2e_std_values,
@@ -255,6 +278,13 @@ class CompareRuns:
             axes = [axes]
 
         # Loop over runs
+        metric_markers = {
+            'T1': 'o',
+            'T2R': 's',
+            'T2E': '^'
+        }
+
+        # Loop over each run
         for i, run_number in enumerate(self.run_number_list):
             ax = axes[i]
 
@@ -263,45 +293,107 @@ class CompareRuns:
             filename = run_stats_folder + 'experiment_data.h5'
             loaded_data = self.load_from_h5(filename)
 
-            # Grab the raw arrays for each qubit
-            # Here we assume these are dicts keyed by qubit name (or number)
-            # Each entry in the dict is an array of measured values
-            t1_vals_all = loaded_data['t1_vals']  # e.g., {'Q1': array([...]), 'Q2': array([...]), ...}
+            # Extract the per-qubit arrays
+            t1_vals_all = loaded_data['t1_vals']  # e.g. {'Q1': array([...]), 'Q2': array([...]), ...}
             t2r_vals_all = loaded_data['t2r_vals']
             t2e_vals_all = loaded_data['t2e_vals']
-            freq_vals_all = loaded_data['qfreq_vals']  # similarly, {'Q1': array([...]), ...}
+            freq_vals_all = loaded_data['q_freqs']
 
             # Sort qubits just to have a consistent ordering
             qubit_list = sorted(t1_vals_all.keys())
 
-            # Compute medians
-            freq_medians = []
-            t1_medians = []
-            t2r_medians = []
-            t2e_medians = []
+            # Build a color map for qubits: one color per qubit
+            # You can use any colormap, e.g. 'tab10' or 'Set2'; adjust as desired
+            cmap = plt.cm.get_cmap('tab10')
+            qubit_colors = {}
+            for q_idx, qb in enumerate(qubit_list):
+                qubit_colors[qb] = cmap(q_idx % 10)
 
+            # Loop over each qubit, compute medians, and scatter the three metrics
             for qb in qubit_list:
-                freq_medians.append(np.median(freq_vals_all[qb]))
-                t1_medians.append(np.median(t1_vals_all[qb]))
-                t2r_medians.append(np.median(t2r_vals_all[qb]))
-                t2e_medians.append(np.median(t2e_vals_all[qb]))
+                freq_median = np.median(freq_vals_all[qb])
+                t1_median = np.median(t1_vals_all[qb])
+                t2r_median = np.median(t2r_vals_all[qb])
+                t2e_median = np.median(t2e_vals_all[qb])
 
-            # Plot the data for this run
-            ax.scatter(freq_medians, t1_medians, label='T1', marker='o')
-            ax.scatter(freq_medians, t2r_medians, label='T2R', marker='s')
-            ax.scatter(freq_medians, t2e_medians, label='T2E', marker='^')
+                # T1 point
+                ax.scatter(
+                    freq_median,
+                    t1_median,
+                    color=qubit_colors[qb],
+                    marker=metric_markers['T1'],
+                    # no label here (we'll handle legend separately)
+                )
 
-            ax.set_xlabel('Median Qubit Frequency (GHz)')  # or adjust units/labels as needed
+                # T2R point
+                ax.scatter(
+                    freq_median,
+                    t2r_median,
+                    color=qubit_colors[qb],
+                    marker=metric_markers['T2R'],
+                )
+
+                # T2E point
+                ax.scatter(
+                    freq_median,
+                    t2e_median,
+                    color=qubit_colors[qb],
+                    marker=metric_markers['T2E'],
+                )
+
+            ax.set_xlabel('Median Qubit Frequency (MHz)')
             ax.set_ylabel('Median Time (µs)')
             ax.set_title(f'Decoherence vs. Qubit Frequency (Run {run_number})')
-            ax.xaxis.set_major_locator(MaxNLocator(integer=False))  # keep x-axis tidy
-            ax.legend()
+            ax.xaxis.set_major_locator(MaxNLocator(integer=False))
 
-        # Tight layout so subplots don't overlap
+            # ─────────────────────────────────────────────────────────────────
+            # Create a "dual" legend:
+            #   1) one legend for qubit colors (Q1, Q2, …),
+            #   2) one legend for the shapes (T1, T2R, T2E).
+            # ─────────────────────────────────────────────────────────────────
+
+            # 1) Create dummy handles for each qubit color
+            qubit_legend_handles = []
+            for qb in qubit_list:
+                qubit_legend_handles.append(
+                    ax.scatter([], [],
+                               color=qubit_colors[qb],
+                               marker='o',  # marker shape doesn't matter here
+                               label=qb)
+                )
+
+            # 2) Create dummy handles for each metric shape (use a generic color)
+            metric_legend_handles = []
+            for metric, marker in metric_markers.items():
+                metric_legend_handles.append(
+                    ax.scatter([], [],
+                               color='black',
+                               marker=marker,
+                               label=metric)
+                )
+
+            # Now create two legends and display them together
+            qubit_legend = ax.legend(
+                handles=qubit_legend_handles,
+                title="Qubits",
+                loc="upper left",
+                bbox_to_anchor=(1.01, 1.0),  # put to right of plot
+                borderaxespad=0
+            )
+            metric_legend = ax.legend(
+                handles=metric_legend_handles,
+                title="Metrics",
+                loc="upper left",
+                bbox_to_anchor=(1.01, 0.5),  # below the qubit legend
+                borderaxespad=0
+            )
+
+            # Add the first legend back so both show
+            ax.add_artist(qubit_legend)
+
         plt.tight_layout()
 
         # Save the figure
         analysis_folder = "/data/QICK_data/6transmon_run5/benchmark_analysis_plots/"
         self.create_folder_if_not_exists(analysis_folder)
-        plt.savefig(analysis_folder + 'compare_runs.pdf', dpi=500)
-        plt.show()
+        plt.savefig(analysis_folder + 'compare_runs_qfreq_vs_decoherence.pdf', dpi=500)

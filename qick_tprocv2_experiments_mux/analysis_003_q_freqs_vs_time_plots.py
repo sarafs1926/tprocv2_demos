@@ -127,7 +127,9 @@ class QubitFreqsVsTime:
                 save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
 
                 H5_class_instance = Data_H5(h5_file)
-                load_data = H5_class_instance.load_from_h5(data_type='QSpec', save_r=int(save_round))
+
+                #sometimes you get '1(1)' when redownloading the h5 files for some reason
+                load_data = H5_class_instance.load_from_h5(data_type='QSpec', save_r=int(save_round.split('(')[0]))
 
                 for q_key in load_data['QSpec']:
                     for dataset in range(len(load_data['QSpec'][q_key].get('Dates', [])[0])):

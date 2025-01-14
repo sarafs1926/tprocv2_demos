@@ -299,6 +299,6 @@ class T1HistCumulErrPlots:
 
         #plt.show()
 
-        return gaussian_dates, std_values, mean_values
+        return std_values, mean_values
 
 
