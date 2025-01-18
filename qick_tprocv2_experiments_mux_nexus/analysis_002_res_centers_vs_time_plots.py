@@ -17,7 +17,8 @@ import matplotlib.pyplot as plt
 from scipy.stats import norm
 from scipy.optimize import curve_fit
 
-top_folder_dates = ['2024-12-10', '2024-12-10']
+#top_folder_dates = ['2024-12-10', '2024-12-10']
+top_folder_dates = ['2024-12-17']
 final_figure_quality = 50
 
 #---------------------------------------get data--------------------------------
@@ -142,10 +143,10 @@ for folder_date in top_folder_dates:
             for dataset in range(len(load_data['Res'][q_key].get('Dates', [])[0])):
                 date = datetime.datetime.fromtimestamp(
                     load_data['Res'][q_key].get('Dates', [])[0][dataset])  # single date per dataset
+                # print(load_data['Res'][q_key].get('freq_pts', [])[0][dataset].decode())
                 freq_pts = process_h5_data(load_data['Res'][q_key].get('freq_pts', [])[0][
                                                dataset].decode())  # comes in as an array but put into a byte string, need to convert to list
-                freq_center = process_h5_data(load_data['Res'][q_key].get('freq_center', [])[0][
-                                                  dataset].decode())  # comes in as an array but put into a string, need to convert to list
+                # freq_pts = load_data['Res'][q_key].get('freq_pts', [])[0][dataset].decode()  # comes in as an array but put into a byte string, need to convert to list
                 freqs_found = string_to_float_list(load_data['Res'][q_key].get('Found Freqs', [])[0][
                                                        dataset].decode())  # comes in as a list of floats in string format, need to convert
                 amps = process_string_of_nested_lists(
@@ -170,7 +171,7 @@ for folder_date in top_folder_dates:
                 if len(freq_pts) > 0:
                     res_class_instance = ResonanceSpectroscopy(q_key, outerFolder_save_plots, round_num, save_figs)
                     res_spec_cfg = ast.literal_eval(exp_config['res_spec'].decode())
-                    res_freqs = res_class_instance.plot_results(freq_points, freq_center, amps, res_spec_cfg, figure_quality)
+                    res_freqs = res_class_instance.plot_results(freq_points, amps, res_spec_cfg, figure_quality)
 
                     resonator_centers[q_key].extend([res_freqs[q_key]])
                     date_times[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])

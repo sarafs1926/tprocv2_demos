@@ -1,7 +1,7 @@
 import numpy as np
-
+from section_004_qubit_spec_ge import QubitSpectroscopy
 from section_002_res_spec_ge_mux import ResonanceSpectroscopy
-from section_004_qubit_spec_ge_Franken import QubitSpectroscopy
+#from section_004_qubit_spec_ge_Franken import QubitSpectroscopy
 from section_006_amp_rabi_ge import AmplitudeRabiExperiment
 from section_007_T1_ge import T1Measurement
 from section_008_save_data_to_h5 import Data_H5
@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import norm
 from scipy.optimize import curve_fit
 
-top_folder_dates = ['2024-12-10', '2024-12-10']
+top_folder_dates = ['2024-12-17']
 final_figure_quality = 50
 
 #---------------------------------------get data--------------------------------
