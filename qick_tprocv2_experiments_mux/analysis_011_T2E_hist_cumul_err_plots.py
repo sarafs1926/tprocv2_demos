@@ -19,9 +19,9 @@ import json
 import h5py
 from scipy.optimize import curve_fit
 
-class T2rHistCumulErrPlots:
+class T2eHistCumulErrPlots:
     def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-                 signal, run_name):
+                 signal, run_name, exp_config):
         self.save_figs = save_figs
         self.fit_saved = fit_saved
         self.signal = signal
@@ -30,6 +30,7 @@ class T2rHistCumulErrPlots:
         self.number_of_qubits = number_of_qubits
         self.final_figure_quality = final_figure_quality
         self.top_folder_dates = top_folder_dates
+        self.exp_config = exp_config
 
     def datetime_to_unix(self, dt):
         # Convert to Unix timestamp
@@ -104,11 +105,10 @@ class T2rHistCumulErrPlots:
             print("Error: Invalid input string format.  It should be a string representation of a list of numbers.")
             return None
 
-    def run(self):
-        import datetime
-        # ----------Load/get data from T2R------------------------
-        t2r_vals = {i: [] for i in range(self.number_of_qubits)}
-        t2r_errs = {i: [] for i in range(self.number_of_qubits)}
+    def run(self, t1_vals):
+        # ----------Load/get data from T2E------------------------
+        t2e_vals = {i: [] for i in range(self.number_of_qubits)}
+        t2e_errs = {i: [] for i in range(self.number_of_qubits)}
         qubit_for_this_index = []
         rounds = []
         reps = []
@@ -119,65 +119,60 @@ class T2rHistCumulErrPlots:
             outerFolder = f"/data/QICK_data/{self.run_name}/" + folder_date + "/"
             outerFolder_save_plots = f"/data/QICK_data/{self.run_name}/" + folder_date + "_plots/"
 
-            loader_config_instance = Data_H5(outerFolder)
-            sys_config = loader_config_instance.load_config('sys_config.h5')
-            del loader_config_instance
-
-            loader_config_instance = Data_H5(outerFolder)
-            exp_config = loader_config_instance.load_config('expt_cfg.h5')
-            del loader_config_instance
-
-            outerFolder_expt = outerFolder + "/Data_h5/T2_ge/"
+            outerFolder_expt = outerFolder + "/Data_h5/T2E_ge/"
             h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
 
             for h5_file in h5_files:
                 save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
                 H5_class_instance = Data_H5(h5_file)
-                #save_round = save_round.split('(')[0]
-                load_data = H5_class_instance.load_from_h5(data_type='T2', save_r=int(save_round))
+                load_data = H5_class_instance.load_from_h5(data_type='T2E', save_r=int(save_round))
 
-                for q_key in load_data['T2']:
-                    for dataset in range(len(load_data['T2'][q_key].get('Dates', [])[0])):
-                        if 'nan' in str(load_data['T2'][q_key].get('Dates', [])[0][dataset]):
+                for q_key in load_data['T2E']:
+                    for dataset in range(len(load_data['T2E'][q_key].get('Dates', [])[0])):
+                        if 'nan' in str(load_data['T2E'][q_key].get('Dates', [])[0][dataset]):
                             continue
-                        # T2 = load_data['T2'][q_key].get('T2', [])[0][dataset]
-                        # errors = load_data['T2'][q_key].get('Errors', [])[0][dataset]
-                        date = datetime.datetime.fromtimestamp(load_data['T2'][q_key].get('Dates', [])[0][dataset])
-                        I = self.process_h5_data(load_data['T2'][q_key].get('I', [])[0][dataset].decode())
-                        Q = self.process_h5_data(load_data['T2'][q_key].get('Q', [])[0][dataset].decode())
-                        delay_times = self.process_h5_data(load_data['T2'][q_key].get('Delay Times', [])[0][dataset].decode())
-                        # fit = load_data['T2'][q_key].get('Fit', [])[0][dataset]
-                        round_num = load_data['T2'][q_key].get('Round Num', [])[0][dataset]
-                        batch_num = load_data['T2'][q_key].get('Batch Num', [])[0][dataset]
+                        # T2E = load_data['T2E'][q_key].get('T2E', [])[0][dataset]
+                        # errors = load_data['T2E'][q_key].get('Errors', [])[0][dataset]
+                        date = datetime.datetime.fromtimestamp(load_data['T2E'][q_key].get('Dates', [])[0][dataset])
+                        I = self.process_h5_data(load_data['T2E'][q_key].get('I', [])[0][dataset].decode())
+                        Q = self.process_h5_data(load_data['T2E'][q_key].get('Q', [])[0][dataset].decode())
+                        delay_times = self.process_h5_data(load_data['T2E'][q_key].get('Delay Times', [])[0][dataset].decode())
+                        # fit = load_data['T2E'][q_key].get('Fit', [])[0][dataset]
+                        round_num = load_data['T2E'][q_key].get('Round Num', [])[0][dataset]
+                        batch_num = load_data['T2E'][q_key].get('Batch Num', [])[0][dataset]
 
                         if len(I) > 0:
-                            T2_class_instance = T2RMeasurement(q_key, outerFolder_save_plots, round_num, self.signal, self.save_figs,
+                            T2E_class_instance = T2EMeasurement(q_key, outerFolder_save_plots, round_num, self.signal, self.save_figs,
                                                                fit_data=True)
                             try:
-                                fitted, T2, T2_err, plot_sig = T2_class_instance.t2_fit(delay_times, I, Q)
-                            except:
+                                fitted, T2E, T2E_err, plot_sig = T2E_class_instance.t2_fit(delay_times, I, Q)
+                            except Exception as e:
+                                print('Fit didnt work due to error: ', e)
                                 continue
-                            T2_cfg = ast.literal_eval(exp_config['Ramsey_ge'].decode())
-                            if T2 < 0:
+
+                            T2E_cfg = ast.literal_eval(self.exp_config['SpinEcho_ge'].decode())
+                            if T2E < 0:
                                 print("The value is negative, continuing...")
                                 continue
-                            if T2 > 1000:
-                                print("The value is above 1000 us, this is a bad fit, continuing...")
+                            max_t1 = max(t1_vals[q_key])
+                            if T2E > 2 * max_t1:
+                                print(f"The value is above 2*{max_t1} us, this is a bad fit, continuing...")
                                 continue
-                            t2r_vals[q_key].extend([T2])  # Store T1 values
-                            t2r_errs[q_key].extend([T2_err])  # Store T1 error values
+
+                            t2e_vals[q_key].extend([T2E])  # Store T1 values
+                            t2e_errs[q_key].extend([T2E_err])  # Store T1 error values
                             dates[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])  # Decode bytes to string
 
-                            del T2_class_instance
+                            del T2E_class_instance
 
                 del H5_class_instance
-        return dates, t2r_vals, t2r_errs
+        return dates, t2e_vals, t2e_errs
 
-    def plot(self, dates, t2r_vals, t2r_errs, show_legends):
+    def plot(self, dates, t2e_vals, t2e_errs, show_legends):
         #---------------------------------plot-----------------------------------------------------
         analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
         self.create_folder_if_not_exists(analysis_folder)
-        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/T2/"
+        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/T2E/"
         self.create_folder_if_not_exists(analysis_folder)
 
         fig, axes = plt.subplots(2, 3, figsize=(12, 8))
@@ -198,21 +193,21 @@ class T2rHistCumulErrPlots:
                 date_label = ''
 
 
-            if len(t2r_vals[i]) >1:
-                optimal_bin_num = self.optimal_bins(t2r_vals[i])
+            if len(t2e_vals[i]) >1:
+                optimal_bin_num = self.optimal_bins(t2e_vals[i])
 
                 # Fit a Gaussian to the raw data instead of the histogram
                 # get the mean and standard deviation of the data
-                mu_1, std_1 = norm.fit(t2r_vals[i])
+                mu_1, std_1 = norm.fit(t2e_vals[i])
                 mean_values[f"Qubit {i + 1}"] = mu_1  # Store the mean value for each qubit
                 std_values[f"Qubit {i + 1}"] = std_1
 
                 # Generate x values for plotting a gaussian based on this mean and standard deviation
-                x_1 = np.linspace(min(t2r_vals[i]), max(t2r_vals[i]), optimal_bin_num)
+                x_1 = np.linspace(min(t2e_vals[i]), max(t2e_vals[i]), optimal_bin_num)
                 p_1 = norm.pdf(x_1, mu_1, std_1)
 
                 # Calculate histogram data for t1_vals[i]
-                hist_data_1, bins_1 = np.histogram(t2r_vals[i], bins=optimal_bin_num)
+                hist_data_1, bins_1 = np.histogram(t2e_vals[i], bins=optimal_bin_num)
                 bin_centers_1 = (bins_1[:-1] + bins_1[1:]) / 2
 
                 # Scale the Gaussian curve to match the histogram
@@ -226,10 +221,10 @@ class T2rHistCumulErrPlots:
                 ax.plot(x_1, p_1 * (np.diff(bins_1) * hist_data_1.sum()), 'b--', linewidth=2, color=colors[i])
 
                 # Plot histogram and Gaussian fit for t1_vals[i]
-                ax.hist(t2r_vals[i], bins=optimal_bin_num, alpha=0.7, color=colors[i], edgecolor='black', label=date_label)
+                ax.hist(t2e_vals[i], bins=optimal_bin_num, alpha=0.7, color=colors[i], edgecolor='black', label=date_label)
 
                 #make a fuller gaussian to make smoother lotting for cumulative plot
-                x_1_full = np.linspace(min(t2r_vals[i]), max(t2r_vals[i]), 2000)
+                x_1_full = np.linspace(min(t2e_vals[i]), max(t2e_vals[i]), 2000)
                 p_1_full = norm.pdf(x_1_full, mu_1, std_1)
 
                 gaussian_xvals[i].append(x_1_full)
@@ -245,7 +240,7 @@ class T2rHistCumulErrPlots:
                 if show_legends:
                     ax.legend()
                 ax.set_title(titles[i] + f" $\mu$: {mu_1:.2f} $\sigma$:{std_1:.2f}",fontsize = font)
-                ax.set_xlabel('T2 (µs)',fontsize = font)
+                ax.set_xlabel('T2E (µs)',fontsize = font)
                 ax.set_ylabel('Frequency',fontsize = font)
                 ax.tick_params(axis='both', which='major', labelsize=font)
 
@@ -254,14 +249,14 @@ class T2rHistCumulErrPlots:
 
         fig, ax = plt.subplots(1, 1, figsize=(12, 8))
         plt.title('Cumulative Distribution',fontsize = font)
-        for i in range(0, len(t2r_vals)):
+        for i in range(0, len(t2e_vals)):
             if len(dates[i])>1:
                 date_label = dates[i][0]
             else:
                 date_label = ''
 
-            if len(t2r_vals[i]) > 1:
-                t1_vals_sorted = np.sort(t2r_vals[i])
+            if len(t2e_vals[i]) > 1:
+                t1_vals_sorted = np.sort(t2e_vals[i])
                 len_samples = len(t1_vals_sorted)
                 var = np.linspace(1,len_samples,len_samples)/ len_samples
 
@@ -271,7 +266,7 @@ class T2rHistCumulErrPlots:
                         linestyle='--')
                 ax.tick_params(axis='both', which='major', labelsize=font)
         #ax.set_title('')
-        ax.set_xlabel('T2 (us)',fontsize = font)
+        ax.set_xlabel('T2E (us)',fontsize = font)
         ax.set_ylabel('Cumulative Distribution',fontsize = font)
         ax.loglog()
         ax.legend(edgecolor='black')
@@ -283,7 +278,7 @@ class T2rHistCumulErrPlots:
 
 
         fig, axes = plt.subplots(2, 3, figsize=(12, 8))
-        plt.title('Fit Error vs T2 Time',fontsize = font)
+        plt.title('Fit Error vs T2E Time',fontsize = font)
         axes = axes.flatten()
         titles = [f"Qubit {i + 1}" for i in range(self.number_of_qubits)]
         for i, ax in enumerate(axes):
@@ -293,10 +288,10 @@ class T2rHistCumulErrPlots:
             else:
                 date_label = ''
             ax.set_title(titles[i], fontsize = font)
-            ax.scatter(t2r_vals[i], t2r_errs[i], label = date_label, color = colors[i])
+            ax.scatter(t2e_vals[i], t2e_errs[i], label = date_label, color = colors[i])
             if show_legends:
                 ax.legend(edgecolor='black')
-            ax.set_xlabel('T2 (us)', fontsize = font)
+            ax.set_xlabel('T2E (us)', fontsize = font)
             ax.set_ylabel('Fit error (us)', fontsize = font)
             ax.tick_params(axis='both', which='major', labelsize=font)
         plt.tight_layout()

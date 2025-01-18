@@ -22,7 +22,7 @@ from scipy.optimize import curve_fit
 
 class PiAmpsVsTime:
     def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-                 signal, run_name):
+                 signal, run_name, exp_config):
         self.save_figs = save_figs
         self.fit_saved = fit_saved
         self.signal = signal
@@ -31,6 +31,7 @@ class PiAmpsVsTime:
         self.number_of_qubits = number_of_qubits
         self.final_figure_quality = final_figure_quality
         self.top_folder_dates = top_folder_dates
+        self.exp_config = exp_config
 
     def datetime_to_unix(self, dt):
         # Convert to Unix timestamp
@@ -105,34 +106,24 @@ class PiAmpsVsTime:
             print("Error: Invalid input string format.  It should be a string representation of a list of numbers.")
             return None
 
-    def run(self):
+    def run(self, plot_depths = False):
         import datetime
         # ----------Load/get data------------------------
         pi_amps = {i: [] for i in range(self.number_of_qubits)}
+        depths = {i: [] for i in range(self.number_of_qubits)}
         rounds = []
         reps = []
         file_names = []
         date_times = {i: [] for i in range(self.number_of_qubits)}
         mean_values = {}
-
         for folder_date in self.top_folder_dates:
             outerFolder = f"/data/QICK_data/{self.run_name}/" + folder_date + "/"
             outerFolder_save_plots = f"/data/QICK_data/{self.run_name}/" + folder_date + "_plots/"
 
-            loader_config_instance = Data_H5(outerFolder)
-            sys_config = loader_config_instance.load_config('sys_config.h5')
-            del loader_config_instance
-
-            loader_config_instance = Data_H5(outerFolder)
-            exp_config = loader_config_instance.load_config('expt_cfg.h5')
-            del loader_config_instance
-
             # ------------------------------------------------Load/Plot/Save Rabi---------------------------------------
             outerFolder_expt = outerFolder + "/Data_h5/Rabi_ge/"
             h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
-
             for h5_file in h5_files:
-
                 save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
                 H5_class_instance = Data_H5(h5_file)
                 load_data = H5_class_instance.load_from_h5(data_type='Rabi', save_r=int(save_round))
@@ -152,18 +143,25 @@ class PiAmpsVsTime:
                         if len(I) > 0:
                             rabi_class_instance = AmplitudeRabiExperiment(q_key, outerFolder_save_plots, round_num,
                                                                           self.signal, self.save_figs)
-                            rabi_cfg = ast.literal_eval(exp_config['power_rabi_ge'].decode())
+                            rabi_cfg = ast.literal_eval(self.exp_config['power_rabi_ge'].decode())
                             I = np.asarray(I)
                             Q = np.asarray(Q)
                             gains = np.asarray(gains)
-                            best_signal_fit, pi_amp = rabi_class_instance.get_results(I, Q, gains)
+                            if plot_depths:
+                                best_signal_fit, pi_amp, depth = rabi_class_instance.get_results(I, Q, gains,
+                                                                                                 grab_depths=True)
+                                depths[q_key].extend([depth])
+                            else:
+                                best_signal_fit, pi_amp = rabi_class_instance.get_results(I, Q, gains)
 
                             pi_amps[q_key].extend([pi_amp])
                             date_times[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])
 
                             del rabi_class_instance
-
                 del H5_class_instance
+        if plot_depths:
+            return date_times, pi_amps, depths
+        else:
             return date_times, pi_amps
 
     def plot(self, date_times, pi_amps, show_legends):
@@ -181,6 +179,7 @@ class PiAmpsVsTime:
         axes = axes.flatten()
         titles = [f"Qubit {i + 1}" for i in range(self.number_of_qubits)]
         from datetime import datetime
+
         for i, ax in enumerate(axes):
 
             ax.set_title(titles[i], fontsize = font)
@@ -217,5 +216,227 @@ class PiAmpsVsTime:
 
         plt.tight_layout()
         plt.savefig(analysis_folder + 'Pi_Amps.pdf', transparent=True, dpi=self.final_figure_quality)
+
+        #plt.show()
+
+    def plot_vs_signal_depth(self, date_times, pi_amps, depths, show_legends):
+        #---------------------------------plot-----------------------------------------------------
+        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
+        self.create_folder_if_not_exists(analysis_folder)
+        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/other/"
+        self.create_folder_if_not_exists(analysis_folder)
+
+        font = 14
+        titles = [f"Qubit {i+1}" for i in range(self.number_of_qubits)]
+        colors = ['orange','blue','purple','green','brown','pink']
+        fig, axes = plt.subplots(2, 3, figsize=(12, 8))
+        plt.title('Pi Amplitudes vs Signal Depths',fontsize = font)
+        axes = axes.flatten()
+        titles = [f"Qubit {i + 1}" for i in range(self.number_of_qubits)]
+        from datetime import datetime
+
+        for i, ax in enumerate(axes):
+
+            ax.set_title(titles[i], fontsize = font)
+
+            x = depths[i]
+            y = pi_amps[i]
+
+            ax.scatter(x, y, color=colors[i])
+            if show_legends:
+                ax.legend(edgecolor='black')
+            ax.set_xlabel('Signal Depth', fontsize=font-2)
+            ax.set_ylabel('Pi Amp (a.u.)', fontsize=font-2)
+            ax.tick_params(axis='both', which='major', labelsize=8)
+
+        plt.tight_layout()
+        plt.savefig(analysis_folder + 'Pi_Amps_vs_depth.pdf', transparent=True, dpi=self.final_figure_quality)
+
+        #plt.show()
+
+    def plot_signal_depth_vs_time(self, date_times, pi_amps, depths, show_legends):
+        #---------------------------------plot-----------------------------------------------------
+        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
+        self.create_folder_if_not_exists(analysis_folder)
+        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/other/"
+        self.create_folder_if_not_exists(analysis_folder)
+
+        font = 14
+        titles = [f"Qubit {i+1}" for i in range(self.number_of_qubits)]
+        colors = ['orange','blue','purple','green','brown','pink']
+        fig, axes = plt.subplots(2, 3, figsize=(12, 8))
+        plt.title('Signal Depths vs Time',fontsize = font)
+        axes = axes.flatten()
+        titles = [f"Qubit {i + 1}" for i in range(self.number_of_qubits)]
+        from datetime import datetime
+
+        for i, ax in enumerate(axes):
+
+            ax.set_title(titles[i], fontsize = font)
+
+            x = date_times[i]
+            y = depths[i]
+
+            # Convert strings to datetime objects.
+            datetime_objects = [datetime.strptime(date_string, "%Y-%m-%d %H:%M:%S") for date_string in x]
+
+            # Combine datetime objects and y values into a list of tuples and sort by datetime.
+            combined = list(zip(datetime_objects, y))
+            combined.sort(reverse=True, key=lambda x: x[0])
+
+            # Unpack them back into separate lists, in order from latest to most recent.
+            sorted_x, sorted_y = zip(*combined)
+            ax.scatter(sorted_x, sorted_y, color=colors[i])
+
+            sorted_x = np.asarray(sorted(x))
+
+            num_points = 5
+            indices = np.linspace(0, len(sorted_x) - 1, num_points, dtype=int)
+
+            # Set new x-ticks using the datetime objects at the selected indices
+            ax.set_xticks(sorted_x[indices])
+            ax.set_xticklabels([dt for dt in sorted_x[indices]], rotation=45)
+
+            ax.scatter(x, y, color=colors[i])
+            if show_legends:
+                ax.legend(edgecolor='black')
+            ax.set_xlabel('Time (Days)', fontsize=font-2)
+            ax.set_ylabel('Signal Depth (a.u.)', fontsize=font-2)
+            ax.tick_params(axis='both', which='major', labelsize=8)
+
+        plt.tight_layout()
+        plt.savefig(analysis_folder + 'depths_vs_time.pdf', transparent=True, dpi=self.final_figure_quality)
+
+        #plt.show()
+
+    def plot_vs_temps(self, date_times, pi_amps, temps, show_legends):
+        #---------------------------------plot-----------------------------------------------------
+        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
+        self.create_folder_if_not_exists(analysis_folder)
+        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/other/"
+        self.create_folder_if_not_exists(analysis_folder)
+
+        font = 14
+        titles = [f"Qubit {i+1}" for i in range(self.number_of_qubits)]
+        colors = ['orange','blue','purple','green','brown','pink']
+        fig, axes = plt.subplots(2, 3, figsize=(12, 8))
+        plt.title('Pi Amplitudes vs Qubit temps',fontsize = font)
+        axes = axes.flatten()
+        titles = [f"Qubit {i + 1}" for i in range(self.number_of_qubits)]
+        from datetime import datetime
+
+        for i, ax in enumerate(axes):
+
+            ax.set_title(titles[i], fontsize = font)
+            x = temps[i]
+            y = pi_amps[i]
+
+            ax.scatter(x, y, color=colors[i])
+            if show_legends:
+                ax.legend(edgecolor='black')
+            ax.set_xlabel('Qubit temp (mK)', fontsize=font-2)
+            ax.set_ylabel('Pi Amp (a.u)', fontsize=font-2)
+            ax.tick_params(axis='both', which='major', labelsize=8)
+
+        plt.tight_layout()
+        plt.savefig(analysis_folder + 'Pi_Amps_vs_qtemp.pdf', transparent=True, dpi=self.final_figure_quality)
+
+        #plt.show()
+
+    def plot_vs_ssf(self, date_times, pi_amps, ssf, show_legends):
+        #---------------------------------plot-----------------------------------------------------
+        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
+        self.create_folder_if_not_exists(analysis_folder)
+        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/other/"
+        self.create_folder_if_not_exists(analysis_folder)
+
+        font = 14
+        titles = [f"Qubit {i+1}" for i in range(self.number_of_qubits)]
+        colors = ['orange','blue','purple','green','brown','pink']
+        fig, axes = plt.subplots(2, 3, figsize=(12, 8))
+        plt.title('Pi Amplitudes vs SSF',fontsize = font)
+        axes = axes.flatten()
+        titles = [f"Qubit {i + 1}" for i in range(self.number_of_qubits)]
+        from datetime import datetime
+
+        for i, ax in enumerate(axes):
+
+            ax.set_title(titles[i], fontsize = font)
+            x = ssf[i]
+            y = pi_amps[i]
+
+            ax.scatter(x, y, color=colors[i])
+            if show_legends:
+                ax.legend(edgecolor='black')
+            ax.set_xlabel('SSF', fontsize=font-2)
+            ax.set_ylabel('Pi Amp (a.u)', fontsize=font-2)
+            ax.tick_params(axis='both', which='major', labelsize=8)
+
+        plt.tight_layout()
+        plt.savefig(analysis_folder + 'Pi_Amps_vs_ssf.pdf', transparent=True, dpi=self.final_figure_quality)
+
+        #plt.show()
+
+    def qtemp_vs_time(self, date_times, temps, show_legends):
+        #---------------------------------plot-----------------------------------------------------
+        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
+        self.create_folder_if_not_exists(analysis_folder)
+        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
+        self.create_folder_if_not_exists(analysis_folder)
+
+        from datetime import datetime
+        # Convert strings to datetime objects.
+        date_times = {
+            i: [
+                datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S") if isinstance(date_str, str) else date_str
+                for date_str in dates
+            ]
+            for i, dates in date_times.items()
+        }
+
+        font = 14
+        titles = [f"Qubit {i+1}" for i in range(self.number_of_qubits)]
+        colors = ['orange','blue','purple','green','brown','pink']
+        fig, axes = plt.subplots(2, 3, figsize=(12, 8))
+        plt.title('Qubit Temp vs Time',fontsize = font)
+        axes = axes.flatten()
+        titles = [f"Qubit {i + 1}" for i in range(self.number_of_qubits)]
+        from datetime import datetime
+
+        for i, ax in enumerate(axes):
+
+            ax.set_title(titles[i], fontsize = font)
+
+            x = date_times[i]
+            y = temps[i]
+
+
+
+            # Combine datetime objects and y values into a list of tuples and sort by datetime.
+            combined = list(zip(x, y))
+            combined.sort(reverse=True, key=lambda x: x[0])
+
+            # Unpack them back into separate lists, in order from latest to most recent.
+            sorted_x, sorted_y = zip(*combined)
+            ax.scatter(sorted_x, sorted_y, color=colors[i])
+
+            sorted_x = np.asarray(sorted(x))
+
+            num_points = 5
+            indices = np.linspace(0, len(sorted_x) - 1, num_points, dtype=int)
+
+            # Set new x-ticks using the datetime objects at the selected indices
+            ax.set_xticks(sorted_x[indices])
+            ax.set_xticklabels([dt for dt in sorted_x[indices]], rotation=45)
+
+            ax.scatter(x, y, color=colors[i])
+            if show_legends:
+                ax.legend(edgecolor='black')
+            ax.set_xlabel('Time (Days)', fontsize=font-2)
+            ax.set_ylabel('Qubit Temp (mK)', fontsize=font-2)
+            ax.tick_params(axis='both', which='major', labelsize=8)
+
+        plt.tight_layout()
+        plt.savefig(analysis_folder + 'qubit_temp.pdf', transparent=True, dpi=self.final_figure_quality)
 
         #plt.show()

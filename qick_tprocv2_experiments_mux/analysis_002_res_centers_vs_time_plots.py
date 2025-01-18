@@ -21,7 +21,7 @@ from scipy.optimize import curve_fit
 
 class ResonatorFreqVsTime:
     def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-                 signal, run_name):
+                 signal, run_name, exp_config):
         self.figure_quality = figure_quality
         self.number_of_qubits = number_of_qubits
         self.save_figs = save_figs
@@ -30,6 +30,7 @@ class ResonatorFreqVsTime:
         self.run_name = run_name
         self.top_folder_dates = top_folder_dates
         self.final_figure_quality = final_figure_quality
+        self.exp_config = exp_config
 
     def datetime_to_unix(self, dt):
         # Convert to Unix timestamp
@@ -119,14 +120,6 @@ class ResonatorFreqVsTime:
             outerFolder = f"/data/QICK_data/{self.run_name}/" + folder_date + "/"
             outerFolder_save_plots = f"/data/QICK_data/{self.run_name}/" + folder_date + "_plots/"
 
-            loader_config_instance = Data_H5(outerFolder)
-            sys_config = loader_config_instance.load_config('sys_config.h5')
-            del loader_config_instance
-
-            loader_config_instance = Data_H5(outerFolder)
-            exp_config = loader_config_instance.load_config('expt_cfg.h5')
-            del loader_config_instance
-
             # ------------------------------------------Load/Plot/Save Res Spec------------------------------------
             outerFolder_expt = outerFolder + "/Data_h5/Res_ge/"
             h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
@@ -163,7 +156,7 @@ class ResonatorFreqVsTime:
 
                         if len(freq_pts) > 0:
                             res_class_instance = ResonanceSpectroscopy(q_key, outerFolder_save_plots, round_num, self.save_figs)
-                            res_spec_cfg = ast.literal_eval(exp_config['res_spec'].decode())
+                            res_spec_cfg = ast.literal_eval(self.exp_config['res_spec'].decode())
                             res_freqs = res_class_instance.get_results(freq_pts, freq_center, amps)
 
                             resonator_centers[q_key].extend([res_freqs[q_key]])

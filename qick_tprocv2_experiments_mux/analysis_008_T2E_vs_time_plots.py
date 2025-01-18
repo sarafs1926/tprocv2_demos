@@ -20,9 +20,9 @@ import matplotlib.pyplot as plt
 from scipy.stats import norm
 from scipy.optimize import curve_fit
 
-class T2rVsTime:
+class T2eVsTime:
     def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-                 signal, run_name):
+                 signal, run_name, exp_config):
         self.save_figs = save_figs
         self.fit_saved = fit_saved
         self.signal = signal
@@ -31,6 +31,7 @@ class T2rVsTime:
         self.number_of_qubits = number_of_qubits
         self.final_figure_quality = final_figure_quality
         self.top_folder_dates = top_folder_dates
+        self.exp_config = exp_config
 
     def datetime_to_unix(self, dt):
         # Convert to Unix timestamp
@@ -47,10 +48,10 @@ class T2rVsTime:
         if not os.path.exists(folder):
             os.makedirs(folder)
 
-    def exponential(self, x, a, b, c, d):
+    def exponential(x, a, b, c, d):
         return a * np.exp(-(x - b) / c) + d
 
-    def optimal_bins(self, data):
+    def optimal_bins(data):
         n = len(data)
         if n == 0:
             return {}
@@ -107,8 +108,9 @@ class T2rVsTime:
 
     def run(self):
         import datetime
+
         # ----------Load/get data------------------------
-        t2_vals = {i: [] for i in range(self.number_of_qubits)}
+        t2e_vals = {i: [] for i in range(self.number_of_qubits)}
         rounds = []
         reps = []
         file_names = []
@@ -119,60 +121,52 @@ class T2rVsTime:
             outerFolder = f"/data/QICK_data/{self.run_name}/" + folder_date + "/"
             outerFolder_save_plots = f"/data/QICK_data/{self.run_name}/" + folder_date + "_plots/"
 
-            loader_config_instance = Data_H5(outerFolder)
-            sys_config = loader_config_instance.load_config('sys_config.h5')
-            del loader_config_instance
-
-            loader_config_instance = Data_H5(outerFolder)
-            exp_config = loader_config_instance.load_config('expt_cfg.h5')
-            del loader_config_instance
-
-            # -------------------------------------------------------Load/Plot/Save T2------------------------------------------
-            outerFolder_expt = outerFolder + "/Data_h5/T2_ge/"
+            # -------------------------------------------------------Load/Plot/Save T2E------------------------------------------
+            outerFolder_expt = outerFolder + "/Data_h5/T2E_ge/"
             h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
 
             for h5_file in h5_files:
                 save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
                 H5_class_instance = Data_H5(h5_file)
-                load_data = H5_class_instance.load_from_h5(data_type='T2', save_r=int(save_round))
+                load_data = H5_class_instance.load_from_h5(data_type='T2E', save_r=int(save_round))
 
-                for q_key in load_data['T2']:
-                    for dataset in range(len(load_data['T2'][q_key].get('Dates', [])[0])):
-                        if 'nan' in str(load_data['T2'][q_key].get('Dates', [])[0][dataset]):
+                for q_key in load_data['T2E']:
+                    for dataset in range(len(load_data['T2E'][q_key].get('Dates', [])[0])):
+                        if 'nan' in str(load_data['T2E'][q_key].get('Dates', [])[0][dataset]):
                             continue
-                        # T2 = load_data['T2'][q_key].get('T2', [])[0][dataset]
-                        # errors = load_data['T2'][q_key].get('Errors', [])[0][dataset]
-                        date = datetime.datetime.fromtimestamp(load_data['T2'][q_key].get('Dates', [])[0][dataset])
-                        I = self.process_h5_data(load_data['T2'][q_key].get('I', [])[0][dataset].decode())
-                        Q = self.process_h5_data(load_data['T2'][q_key].get('Q', [])[0][dataset].decode())
-                        delay_times = self.process_h5_data(load_data['T2'][q_key].get('Delay Times', [])[0][dataset].decode())
-                        # fit = load_data['T2'][q_key].get('Fit', [])[0][dataset]
-                        round_num = load_data['T2'][q_key].get('Round Num', [])[0][dataset]
-                        batch_num = load_data['T2'][q_key].get('Batch Num', [])[0][dataset]
+                        # T2 = load_data['T2E'][q_key].get('T2', [])[0][dataset]
+                        # errors = load_data['T2E'][q_key].get('Errors', [])[0][dataset]
+                        date = datetime.datetime.fromtimestamp(load_data['T2E'][q_key].get('Dates', [])[0][dataset])
+                        I = self.process_h5_data(load_data['T2E'][q_key].get('I', [])[0][dataset].decode())
+                        Q = self.process_h5_data(load_data['T2E'][q_key].get('Q', [])[0][dataset].decode())
+                        delay_times = self.process_h5_data(load_data['T2E'][q_key].get('Delay Times', [])[0][dataset].decode())
+                        # fit = load_data['T2E'][q_key].get('Fit', [])[0][dataset]
+                        round_num = load_data['T2E'][q_key].get('Round Num', [])[0][dataset]
+                        batch_num = load_data['T2E'][q_key].get('Batch Num', [])[0][dataset]
 
                         if len(I) > 0:
-                            T2_class_instance = T2RMeasurement(q_key, outerFolder_save_plots, round_num, self.signal,
-                                                               self.save_figs, fit_data=True)
+                            T2E_class_instance = T2EMeasurement(q_key, outerFolder_save_plots, round_num, self.signal, self.save_figs,
+                                                               fit_data=True)
                             try:
-                                fitted, t2r_est, t2r_err, plot_sig = T2_class_instance.t2_fit(delay_times, I, Q)
-                            except:
+                                fitted, t2e_est, t2e_err, plot_sig = T2E_class_instance.t2_fit(delay_times, I, Q)
+                            except Exception as e:
+                                print(f"good fit not found, error: {e}")
                                 continue
-                            T2_cfg = ast.literal_eval(exp_config['Ramsey_ge'].decode())
-                            if t2r_est < 0:
+                            T2E_cfg = ast.literal_eval(self.exp_config['SpinEcho_ge'].decode())
+                            if t2e_est < 0:
                                 print("The value is negative, continuing...")
                                 continue
-                            if t2r_est > 1000:
-                                print("The value is above 1000 us, this is a bad fit, continuing...")
+                            if t2e_est > 50:
+                                print("The value is above 50 us, this is a bad fit, continuing...")
                                 continue
-                            t2_vals[q_key].extend([t2r_est])
+                            t2e_vals[q_key].extend([t2e_est])
                             date_times[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])
 
-                            del T2_class_instance
-
+                            del T2E_class_instance
                 del H5_class_instance
-        return date_times, t2_vals
+        return date_times, t2e_vals
 
-    def plot(self, date_times, t2_vals, show_legends):
+    def plot(self, date_times, t2e_vals, show_legends):
         #---------------------------------plot-----------------------------------------------------
         analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
         self.create_folder_if_not_exists(analysis_folder)
@@ -183,7 +177,7 @@ class T2rVsTime:
         titles = [f"Qubit {i+1}" for i in range(self.number_of_qubits)]
         colors = ['orange','blue','purple','green','brown','pink']
         fig, axes = plt.subplots(2, 3, figsize=(12, 8))
-        plt.title('T2 Values vs Time',fontsize = font)
+        plt.title('T2E Values vs Time',fontsize = font)
         axes = axes.flatten()
         titles = [f"Qubit {i + 1}" for i in range(self.number_of_qubits)]
         from datetime import datetime
@@ -192,7 +186,7 @@ class T2rVsTime:
             ax.set_title(titles[i], fontsize = font)
 
             x = date_times[i]
-            y = t2_vals[i]
+            y = t2e_vals[i]
 
             # Convert strings to datetime objects.
             datetime_objects = [datetime.strptime(date_string, "%Y-%m-%d %H:%M:%S") for date_string in x]
@@ -218,10 +212,10 @@ class T2rVsTime:
             if show_legends:
                 ax.legend(edgecolor='black')
             ax.set_xlabel('Time (Days)', fontsize=font-2)
-            ax.set_ylabel('T2 (us)', fontsize=font-2)
+            ax.set_ylabel('T2E (us)', fontsize=font-2)
             ax.tick_params(axis='both', which='major', labelsize=8)
 
         plt.tight_layout()
-        plt.savefig(analysis_folder + 'T2_vals.pdf', transparent=True, dpi=self.final_figure_quality)
+        plt.savefig(analysis_folder + 'T2E_vals.png', transparent=True, dpi=self.final_figure_quality)
 
         #plt.show()

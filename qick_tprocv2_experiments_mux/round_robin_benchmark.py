@@ -21,11 +21,11 @@ from expt_config import expt_cfg
 
 ################################################ Run Configurations ####################################################
 
-n= 10000
+n= 100000
 save_r = 1            # how many rounds to save after
 signal = 'None'       #'I', or 'Q' depending on where the signal is (after optimization). Put'None' if no optimization
 save_figs = False    # save plots for everything as you go along the RR script?
-live_plot = False      # for live plotting open http://localhost:8097/ on firefox
+live_plot = True      # for live plotting do "visdom" in comand line and then open http://localhost:8097/ on firefox
 fit_data = False      # fit the data here and save or plot the fits?
 save_data_h5 = True   # save all of the data to h5 files?
 
@@ -88,13 +88,17 @@ while j < n:
         #del tof
 
         ################################################## Res spec ####################################################
-        res_spec   = ResonanceSpectroscopy(QubitIndex, outerFolder, j, save_figs, experiment)
-        res_freqs, freq_pts, freq_center, amps = res_spec.run(experiment.soccfg, experiment.soc)
-        experiment.readout_cfg['res_freq_ge'] = res_freqs
-        offset = freq_offsets[QubitIndex] #use optimized offset values
-        offset_res_freqs = [r + offset for r in res_freqs]
-        experiment.readout_cfg['res_freq_ge'] = offset_res_freqs
-        del res_spec
+        try:
+            res_spec   = ResonanceSpectroscopy(QubitIndex, outerFolder, j, save_figs, experiment)
+            res_freqs, freq_pts, freq_center, amps = res_spec.run(experiment.soccfg, experiment.soc)
+            experiment.readout_cfg['res_freq_ge'] = res_freqs
+            offset = freq_offsets[QubitIndex] #use optimized offset values
+            offset_res_freqs = [r + offset for r in res_freqs]
+            experiment.readout_cfg['res_freq_ge'] = offset_res_freqs
+            del res_spec
+        except Exception as e:
+            print(f'Got the following error, continuing: {e}')
+            continue #skip the rest of this qubit
 
         # ############################################ Roll Signal into I ##############################################
         # #get the average theta value, then use that to rotate the signal. Plug that value into system_config res_phase
@@ -107,61 +111,91 @@ while j < n:
         # del ss
 
         ################################################## Qubit spec ##################################################
-        q_spec = QubitSpectroscopy(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot)
-        qspec_I, qspec_Q, qspec_freqs, qspec_I_fit, qspec_Q_fit, qubit_freq = q_spec.run(experiment.soccfg,
-                                                                                         experiment.soc)
-        # if these are None, fit didnt work
-        if (qspec_I_fit is None and qspec_Q_fit is None and qubit_freq is None):
-            print('QSpec fit didnt work, skipping the rest of this qubit')
+        try:
+            q_spec = QubitSpectroscopy(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot)
+            qspec_I, qspec_Q, qspec_freqs, qspec_I_fit, qspec_Q_fit, qubit_freq = q_spec.run(experiment.soccfg,
+                                                                                             experiment.soc)
+            # if these are None, fit didnt work
+            if (qspec_I_fit is None and qspec_Q_fit is None and qubit_freq is None):
+                print('QSpec fit didnt work, skipping the rest of this qubit')
+                continue #skip the rest of this qubit
+
+            experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = float(qubit_freq)
+            print('Qubit freq for qubit ', QubitIndex + 1 ,' is: ',float(qubit_freq))
+            del q_spec
+
+        except Exception as e:
+            print(f'Got the following error, continuing: {e}')
             continue #skip the rest of this qubit
 
-        experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = float(qubit_freq)
-        print('Qubit freq for qubit ', QubitIndex + 1 ,' is: ',float(qubit_freq))
-        del q_spec
-
         ###################################################### Rabi ####################################################
-        rabi = AmplitudeRabiExperiment(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot,
-                                       increase_qubit_reps, qubit_to_increase_reps_for, multiply_qubit_reps_by)
-        rabi_I, rabi_Q, rabi_gains, rabi_fit, pi_amp, sys_config_to_save  = rabi.run(experiment.soccfg, experiment.soc)
+        try:
+            rabi = AmplitudeRabiExperiment(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot,
+                                           increase_qubit_reps, qubit_to_increase_reps_for, multiply_qubit_reps_by)
+            rabi_I, rabi_Q, rabi_gains, rabi_fit, pi_amp, sys_config_to_save  = rabi.run(experiment.soccfg, experiment.soc)
 
-        # if these are None, fit didnt work
-        if (rabi_fit is None and pi_amp is None):
-            print('Rabi fit didnt work, skipping the rest of this qubit')
-            continue  # skip the rest of this qubit
+            # if these are None, fit didnt work
+            if (rabi_fit is None and pi_amp is None):
+                print('Rabi fit didnt work, skipping the rest of this qubit')
+                continue  # skip the rest of this qubit
 
-        experiment.qubit_cfg['pi_amp'][QubitIndex] = float(pi_amp)
-        print('Pi amplitude for qubit ', QubitIndex + 1, ' is: ', float(pi_amp))
-        del rabi
+            experiment.qubit_cfg['pi_amp'][QubitIndex] = float(pi_amp)
+            print('Pi amplitude for qubit ', QubitIndex + 1, ' is: ', float(pi_amp))
+            del rabi
+
+        except Exception as e:
+            print(f'Got the following error, continuing: {e}')
+            continue #skip the rest of this qubit
 
         ########################################## Single Shot Measurements ############################################
-        ss = SingleShot(QubitIndex, outerFolder,  j, save_figs, experiment)
-        fid, angle, iq_list_g, iq_list_e = ss.run(experiment.soccfg, experiment.soc)
-        I_g = iq_list_g[QubitIndex][0].T[0]
-        Q_g = iq_list_g[QubitIndex][0].T[1]
-        I_e = iq_list_e[QubitIndex][0].T[0]
-        Q_e = iq_list_e[QubitIndex][0].T[1]
+        try:
+            ss = SingleShot(QubitIndex, outerFolder,  j, save_figs, experiment)
+            fid, angle, iq_list_g, iq_list_e = ss.run(experiment.soccfg, experiment.soc)
+            I_g = iq_list_g[QubitIndex][0].T[0]
+            Q_g = iq_list_g[QubitIndex][0].T[1]
+            I_e = iq_list_e[QubitIndex][0].T[0]
+            Q_e = iq_list_e[QubitIndex][0].T[1]
 
-        fid, threshold, angle, ig_new, ie_new = ss.hist_ssf(
-            data=[I_g, Q_g, I_e, Q_e], cfg=ss.config, plot=save_figs)
+            fid, threshold, angle, ig_new, ie_new = ss.hist_ssf(
+                data=[I_g, Q_g, I_e, Q_e], cfg=ss.config, plot=save_figs)
 
+        except Exception as e:
+            print(f'Got the following error, continuing: {e}')
+            continue #skip the rest of this qubit
         ###################################################### T1 ######################################################
-        t1 = T1Measurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data,
-                           increase_qubit_reps, qubit_to_increase_reps_for, multiply_qubit_reps_by)
-        t1_est, t1_err, t1_I, t1_Q, t1_delay_times, q1_fit_exponential = t1.run(experiment.soccfg, experiment.soc)
-        del t1
+        try:
+            t1 = T1Measurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data,
+                               increase_qubit_reps, qubit_to_increase_reps_for, multiply_qubit_reps_by)
+            t1_est, t1_err, t1_I, t1_Q, t1_delay_times, q1_fit_exponential = t1.run(experiment.soccfg, experiment.soc)
+            del t1
+
+        except Exception as e:
+            print(f'Got the following error, continuing: {e}')
+            continue #skip the rest of this qubit
 
         ###################################################### T2R #####################################################
-        t2r = T2RMeasurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data,
-                             increase_qubit_reps, qubit_to_increase_reps_for, multiply_qubit_reps_by)
-        t2r_est, t2r_err, t2r_I, t2r_Q, t2r_delay_times, fit_ramsey = t2r.run(experiment.soccfg, experiment.soc)
-        del t2r
+        try:
+
+            t2r = T2RMeasurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data,
+                                 increase_qubit_reps, qubit_to_increase_reps_for, multiply_qubit_reps_by)
+            t2r_est, t2r_err, t2r_I, t2r_Q, t2r_delay_times, fit_ramsey = t2r.run(experiment.soccfg, experiment.soc)
+            del t2r
+
+        except Exception as e:
+            print(f'Got the following error, continuing: {e}')
+            continue #skip the rest of this qubit
 
         ##################################################### T2E ######################################################
-        t2e = T2EMeasurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data,
-                             increase_qubit_reps, qubit_to_increase_reps_for, multiply_qubit_reps_by)
-        t2e_est, t2e_err, t2e_I, t2e_Q, t2e_delay_times, fit_ramsey_t2e, sys_config_to_save = t2e.run(experiment.soccfg,
-                                                                                                      experiment.soc)
-        del t2e
+        try:
+            t2e = T2EMeasurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data,
+                                 increase_qubit_reps, qubit_to_increase_reps_for, multiply_qubit_reps_by)
+            t2e_est, t2e_err, t2e_I, t2e_Q, t2e_delay_times, fit_ramsey_t2e, sys_config_to_save = t2e.run(experiment.soccfg,
+                                                                                                          experiment.soc)
+            del t2e
+
+        except Exception as e:
+            print(f'Got the following error, continuing: {e}')
+            continue #skip the rest of this qubit
 
         ############################################### Collect Results ################################################
         if save_data_h5:

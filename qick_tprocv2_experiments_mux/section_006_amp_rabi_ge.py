@@ -175,7 +175,7 @@ class AmplitudeRabiExperiment:
             return None, None
 
 
-    def get_results(self, I, Q, gains):
+    def get_results(self, I, Q, gains, grab_depths = False):
 
         q1_a_guess_I = (np.max(I) - np.min(I)) / 2
         q1_d_guess_I = np.mean(I)
@@ -229,10 +229,14 @@ class AmplitudeRabiExperiment:
                     pi_amp = gains[np.argmax(best_signal_fit)]
                 else:
                     pi_amp = gains[np.argmin(best_signal_fit)]
+            tot_amp = [np.sqrt((ifit)**2 + (qfit)**2) for ifit,qfit in zip(q1_fit_cosine_I, q1_fit_cosine_Q)]
+            depth = abs(tot_amp[np.argmin(tot_amp)] - tot_amp[np.argmax(tot_amp)])
         else:
             print('Invalid signal passed, please do I Q or None')
-
-        return best_signal_fit, pi_amp
+        if grab_depths:
+            return best_signal_fit, pi_amp, depth
+        else:
+            return best_signal_fit, pi_amp
 
     def create_folder_if_not_exists(self, folder):
         """Creates a folder at the given path if it doesn't already exist."""
