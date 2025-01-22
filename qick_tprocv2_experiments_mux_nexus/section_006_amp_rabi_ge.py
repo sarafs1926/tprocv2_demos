@@ -39,7 +39,7 @@ class AmplitudeRabiExperiment:
             gains = amp_rabi.get_pulse_param('qubit_pulse', "gain", as_array=True)
 
         q1_fit_cosine, pi_amp = self.plot_results( I, Q, gains, config = self.config)
-        return I, Q, gains, q1_fit_cosine, pi_amp
+        return I, Q, gains, q1_fit_cosine, pi_amp, self.config
 
     def live_plotting(self, amp_rabi, soc):
         I = Q = expt_mags = expt_phases = expt_pop = None

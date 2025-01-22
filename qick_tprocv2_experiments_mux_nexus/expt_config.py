@@ -30,6 +30,15 @@ expt_cfg = {
         "relax_delay": 0.5, # [us]
     },
 
+    "bias_qubit_spec_ge": {
+        "reps": 700, #100
+        "rounds": 1, #10
+        "start": list(VNA_qubit-70), # [MHz]
+        "stop":  list(VNA_qubit+70), # [MHz]
+        "steps": 300,
+        "relax_delay": 0.5, # [us]
+    },
+
     "power_rabi_ge": {
         "reps": 500, #100
         "rounds": 1, #5
@@ -67,7 +76,7 @@ expt_cfg = {
         "start": [0.0] * 6, # [us]
         "stop":  [8.0] * 6, # [us]
         "steps": 100,
-        "ramsey_freq": 0.5,  # [MHz]
+        "ramsey_freq": 0.3,  # [MHz]
         "relax_delay": 500, # [us] the time to wait to let the qubit to relax to gnd again after exciting it (make it way above T1)
         "wait_time": 0.0, # [us]
     },
