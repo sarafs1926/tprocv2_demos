@@ -173,7 +173,7 @@ colors = ['orange','blue','purple','green']
 fig, axes = plt.subplots(2, 2, figsize=(12, 8))
 plt.title('T2 Values vs Time',fontsize = font)
 axes = axes.flatten()
-titles = [f"Qubit {i + 1}" for i in range(2)]
+titles = [f"Qubit {i + 1}" for i in range(4)]
 from datetime import datetime
 for i, ax in enumerate(axes):
 

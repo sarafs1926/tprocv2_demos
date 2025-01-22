@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import norm
 from scipy.optimize import curve_fit
 
-top_folder_dates = ['2024-12-10', '2024-12-10']
+top_folder_dates = ['2024-12-17']
 final_figure_quality = 50
 
 #---------------------------------------get data--------------------------------
@@ -121,7 +121,21 @@ for folder_date in top_folder_dates:
         H5_class_instance = Data_H5(h5_file)
         load_data = H5_class_instance.load_from_h5(data_type='T2E', save_r=int(save_round))
 
+        populated_keys = []
         for q_key in load_data['T2E']:
+            # Access 'Dates' for the current q_key
+            dates_list = load_data['T2E'][q_key].get('Dates', [[]])
+
+            # Check if any entry in 'Dates' is not NaN
+            if any(
+                    not np.isnan(date)
+                    for date in dates_list[0]  # Iterate over the first batch of dates
+            ):
+                populated_keys.append(q_key)
+
+        print(f"Populated keys: {populated_keys}")
+
+        for q_key in populated_keys:
             for dataset in range(len(load_data['T2E'][q_key].get('Dates', [])[0])):
                 # T2 = load_data['T2E'][q_key].get('T2', [])[0][dataset]
                 # errors = load_data['T2E'][q_key].get('Errors', [])[0][dataset]

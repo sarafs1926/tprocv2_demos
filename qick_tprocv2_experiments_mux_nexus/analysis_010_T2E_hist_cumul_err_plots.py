@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import norm
 from scipy.optimize import curve_fit
 
-top_folder_dates = ['2024-12-10', '2024-12-10']
+top_folder_dates = ['2024-12-17']
 final_figure_quality = 50
 
 #---------------------------------------get data--------------------------------
