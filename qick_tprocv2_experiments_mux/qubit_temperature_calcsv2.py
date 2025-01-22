@@ -4,6 +4,7 @@ from sklearn.mixture import GaussianMixture
 import matplotlib.pyplot as plt
 import math
 
+#this script is outdated,check out analysis_014 script instead
 
 def calculate_qubit_temperature(frequency_mhz, ground_state_population, excited_state_population):
     k_B = 1.380649e-23  # Boltzmann constant in J/K
@@ -50,7 +51,7 @@ def fit_double_gaussian_with_full_coverage(iq_data):
 
 
 # Load data
-file_path = '/data/QICK_data/6transmon_run4a/2024-11-13/Qubit_Temps/Qubit_4_temperatureSSdata_20241113_132158.h5'
+file_path = '/data/QICK_data/6transmon_run4/2024-11-13/Qubit_Temps/Qubit_4_temperatureSSdata_20241113_132158.h5'
 with h5py.File(file_path, 'r') as f:
     ig_new = f['ig_new'][:]
     qubit_frequency = f['qubit_frequency'][()]

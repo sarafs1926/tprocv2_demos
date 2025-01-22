@@ -166,36 +166,35 @@ class PlotMetricDependencies:
                     dpi=self.final_figure_quality)
 
 
-    #----------------------------------Plots Qubit 1 Temperature and T1 vs. Time --------------------------------------------
-    def plot_q1_temp_and_t1(
+    #----------------------------------Plots T1 vs. Time  and other metrics vs time if data is provided --------------------------------------------
+    def plot_q1_temp_and_t1( #works for any qubit, just provide the data corresponding to the qubit you want
             self,
-            q1_temp_times,
-            q1_temps,
-            q1_t1_times,
+            q1_t1_times, #T1 data
             q1_t1_vals,
+            q1_temp_times = None,
+            q1_temps = None, #Qubit temperature data
             temp_label="mK",
             t1_label="T1 (µs)",
             magcan_dates=None,
-            magcan_temps=None,
+            magcan_temps=None, #Magnetic shield can temperature data
             magcan_label="mK",
-            mcp2_dates=None,
+            mcp2_dates=None, #MCP2 temperature data
             mcp2_temps=None,
             mcp2_label="mK",
             Q1_freqs=None,
-            Q1_dates_spec=None,
+            Q1_dates_spec=None, #Qubit frequency data
             qspec_label="Q1 Frequency (MHz)",
             date_times_pi_amps_Q1 = None,
-            pi_amps_Q1 = None,
+            pi_amps_Q1 = None, #Pi Amp data
             pi_amps_label = "Pi Amp (a.u.)"):
         """
-        Plots Qubit 1's temperature vs. time and T1 vs. time on the same figure,
-        using two y-axes (a left y-axis for T1, and a right y-axis for temperature).
-        Also plots thermometry data, Pi Amp, and qubit frequency data during this time frame if provided.
+        Plots Qubit 1's T1 vs.time and other metrics vs time in the same plot,
+        Also plots qubit temp data, fridge thermometry data, Pi Amp, and qubit frequency data during this time frame IF provided.
         """
 
         analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
         self.create_folder_if_not_exists(analysis_folder)
-
+        print(self.run_name)
         analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/correlations_singleplots/"
         self.create_folder_if_not_exists(analysis_folder)
 
@@ -207,8 +206,12 @@ class PlotMetricDependencies:
                 return [datetime.strptime(t_str, "%Y-%m-%d %H:%M:%S") for t_str in ts_list]
             return ts_list
 
-        q1_temp_times_dt = ensure_datetime(q1_temp_times)
         q1_t1_times_dt = ensure_datetime(q1_t1_times)
+
+        if q1_temp_times is not None:
+            q1_temp_times_dt = ensure_datetime(q1_temp_times)
+        else:
+            q1_temp_times_dt = []
 
         if mcp2_dates is not None:
             mcp2_dates_dt = ensure_datetime(mcp2_dates)
@@ -232,7 +235,6 @@ class PlotMetricDependencies:
 
         # figure
         fig, ax1 = plt.subplots(figsize=(14, 6))
-        ax2 = ax1.twinx()  # second y-axis (right side) for temperature
 
         #Plots T1 data on ax1 (left y-axis)
         ax1.scatter(q1_t1_times_dt, q1_t1_vals, color='blue', alpha=0.8, label=t1_label, edgecolor='black')
@@ -243,33 +245,64 @@ class PlotMetricDependencies:
         ax1.grid(True, alpha=0.3)
 
         ############################# This sets a limit on the x axis if you only want to look at specific dates
+        # year = 2024
+        # month = 12
+        # day1 = 15
+        # day2 = 15
+        # start_time = datetime(year, month, day1, 4, 0, 0)
+        # end_time = datetime(year, month, day2, 12, 0, 0)
+        # ax1.set_xlim(start_time, end_time)  # Set the x-axis limits
+        #############################
+
+        ############################# use these limits to see cooldown data only, (without this it shows quiet thermometry data for the entire run)
+        # year = 2024
+        # month = 12
+        # day1 = 9
+        # day2 = 20
+        # start_time = datetime(year, month, day1, 10, 0, 0)
+        # end_time = datetime(year, month, day2, 12, 0, 0)
+        # ax1.set_xlim(start_time, end_time)  # Set the x-axis limits
+        #############################
+
+        ############################# use these limits to see warmup data only
         year = 2024
         month = 12
-        day = 20
-        start_time = datetime(year, month, day, 8, 0, 0)
-        end_time = datetime(year, month, day, 18, 0, 0)
+        day1 = 20
+        day2 = 20
+        start_time = datetime(year, month, day1, 10, 0, 0)
+        end_time = datetime(year, month, day2, 19, 0, 0)
         ax1.set_xlim(start_time, end_time)  # Set the x-axis limits
         #############################
 
-        #Plots temperature data on ax2 (right y-axis)
-        ax2.scatter(q1_temp_times_dt, q1_temps, color='red', alpha=0.8, label=temp_label, edgecolor='black')
-        ax2.set_ylabel("Temperature (mK)", color='black')
-        ax2.tick_params(axis='y', labelcolor='black')
+        # Check if we have ANY temperature data to plot on ax2
+        has_qubit_temp = bool(q1_temp_times_dt and q1_temps)
+        has_mcp2_temp = bool(mcp2_dates_dt and mcp2_temps)
+        has_magcan_temp = bool(magcan_dates_dt and magcan_temps)
+        ax2 = None
+        if has_qubit_temp or has_mcp2_temp or has_magcan_temp:
+            # Create ax2 only if we actually have data for it
+            ax2 = ax1.twinx()
 
-        # plot thermometry data if available
+        #Plots qubit temperature data on ax2 (right y-axis)
+        if q1_temp_times_dt and q1_temps:
+            ax2.scatter(q1_temp_times_dt, q1_temps, color='red', alpha=0.8, label=temp_label, edgecolor='black')
+            ax2.set_ylabel("Temperature (mK)", color='black')
+            ax2.tick_params(axis='y', labelcolor='black')
+
+        # plot thermometry data if available on ax2
         if mcp2_dates_dt and mcp2_temps:
             ax2.scatter(
                 mcp2_dates_dt, mcp2_temps,
-                color='orange', alpha=0.8, label=mcp2_label
+                color='orange', alpha=0.8, label=mcp2_label, s=10
             )
-
         if magcan_dates_dt and magcan_temps:
             ax2.scatter(
                 magcan_dates_dt, magcan_temps,
-                color='green', alpha=0.8, label=magcan_label
+                color='green', alpha=0.8, label=magcan_label, s=10
             )
 
         # Plots frequency data on ax3
+        ax3 = None
         if Q1_dates_spec_dt and Q1_freqs:
             ax3 = ax1.twinx()  # third y-axis (right side) for frequency
             ax3.spines["right"].set_position(("outward", 60))  # Offset the third axis
@@ -278,6 +311,7 @@ class PlotMetricDependencies:
             ax3.tick_params(axis='y', labelcolor='purple')
 
         # Plots frequency data on ax4
+        ax4 = None
         if date_times_pi_amps_Q1_dt and pi_amps_Q1:
             ax4 = ax1.twinx()  # fourth y-axis (right side) for Pi Amp (a.u.)
             ax4.spines["right"].set_position(("outward", 120))  # Offset the third axis
@@ -285,21 +319,21 @@ class PlotMetricDependencies:
             ax4.set_ylabel("Pi Amp (a.u.)", color='goldenrod')
             ax4.tick_params(axis='y', labelcolor='goldenrod')
 
-        plt.title("Qubit 1: T1 , Freq, Pi Amp, and Temperature vs. Time")
+        plt.title(" Qubit 1 run5a: T1 , Freq, Temperature, and Pi Amp vs. Time")
 
         # Collect legend info from ax1 and ax2
-        handles1, labels1 = ax1.get_legend_handles_labels()
-        handles2, labels2 = ax2.get_legend_handles_labels()
-        handles3, labels3 = ax3.get_legend_handles_labels()
-        handles4, labels4= ax4.get_legend_handles_labels()
+        handles1, labels1 = ax1.get_legend_handles_labels() #always provided
+        handles2, labels2 = ax2.get_legend_handles_labels() if ax2 is not None else ([], []) #if provided
+        handles3, labels3 = ax3.get_legend_handles_labels() if ax3 is not None else ([], []) #if provided
+        handles4, labels4 = ax4.get_legend_handles_labels() if ax4 is not None else ([], []) #if provided
 
         # Make one combined legend on ax1 (or plt)
-        ax1.legend(handles1 + handles2 + handles3 + handles4, labels1 + labels2 + labels3 + labels4, loc='upper left', fontsize=10, markerscale=0.8, handletextpad=0.6, borderpad=0.7, labelspacing=0.4)
+        ax1.legend(handles1 + handles2 + handles3 + handles4, labels1 + labels2 + labels3 + labels4, loc='best', fontsize=10, markerscale=0.8, handletextpad=0.6, borderpad=0.7, labelspacing=0.4)
 
         fig.tight_layout()
 
         unique_str = datetime.now().strftime('%Y%m%d%H%M%S')
-        plot_filename = os.path.join(analysis_folder, f"Q1_Temp_and_T1_vs_Time_{unique_str}.png")
+        plot_filename = os.path.join(analysis_folder, f"Q1_Temp_and_T1_vs_Time_warmupcloseup_{unique_str}.png")
         plt.savefig(plot_filename, transparent=False, dpi=self.final_figure_quality)
         #plt.show()
-        #plt.close()
+        plt.close()

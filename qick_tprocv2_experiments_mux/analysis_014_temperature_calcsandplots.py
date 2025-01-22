@@ -295,104 +295,112 @@ class TempCalcAndPlots:
                             temperature_k = self.calculate_qubit_temperature(qubit_frequency, ground_state_population,
                                                                         excited_state_population_overlap)
 
-                            if temperature_k is not None:
+                            limit_temp = 0.5 #kelvin, equivalent to 500mK
+                            if temperature_k is not None and temperature_k <= limit_temp:
                                 temperature_mk = temperature_k * 1e3
                                 # print(f"Ground state population: {ground_state_population}")
                                 # print(f"Excited state (leakage) population: {excited_state_population_overlap}")
                                 # print(f"Qubit {q_key + 1} Temperature: {temperature_mk:.2f} mK", "\n")
-                                limit_temp = 500
-                                if temperature_mk <= limit_temp:
-                                    qubit_temperatures[q_key].append((temperature_mk, timestamp))
+                                qubit_temperatures[q_key].append((temperature_mk, timestamp))
+
+                                # temperature_mk = temperature_k * 1e3
+                                # print(f"Ground state population: {ground_state_population}")
+                                # print(f"Excited state (leakage) population: {excited_state_population_overlap}")
+                                # print(f"Qubit {q_key + 1} Temperature: {temperature_mk:.2f} mK", "\n")
+                                # qubit_temperatures[q_key].append((temperature_mk, timestamp))#save temps for each qubit
+
+                                #-----------------PLOTS TO CHECK FITS AND THRESHOLDS---------------
+                                # # Plotting double gaussian distributions and fitting
+                                # xlims = [np.min(ig_new), np.max(ig_new)]
+                                # plt.figure(figsize=(10, 6))
+                                #
+                                # # Plot histogram for `ig_new`
+                                # steps = 3000
+                                # numbins = round(math.sqrt(steps))
+                                # n, bins, _ = plt.hist(ig_new, bins=numbins, range=xlims, density=False, alpha=0.5,
+                                #                       label='Histogram of $I_g$',
+                                #                       color='gray')
+                                # # print(numbins)
+                                # # Use the midpoints of bins to create boolean masks
+                                # bin_centers = (bins[:-1] + bins[1:]) / 2
+                                # ground_region = (bin_centers < crossing_point)
+                                # excited_region = (bin_centers >= crossing_point)
+                                #
+                                # # Calculate scaling factors for each region
+                                # scaling_factor_ground = max(n[ground_region]) / max(
+                                #     (weights[ground_gaussian] / (np.sqrt(2 * np.pi) * covariances[ground_gaussian])) * np.exp(
+                                #         -0.5 * ((bin_centers[ground_region] - means[ground_gaussian]) / covariances[
+                                #             ground_gaussian]) ** 2))
+                                #
+                                # scaling_factor_excited = max(n[excited_region]) / max(
+                                #     (weights[excited_gaussian] / (np.sqrt(2 * np.pi) * covariances[excited_gaussian])) * np.exp(
+                                #         -0.5 * ((bin_centers[excited_region] - means[excited_gaussian]) / covariances[
+                                #             excited_gaussian]) ** 2))
+                                #
+                                # # Generate x values for plotting Gaussian components
+                                # x = np.linspace(xlims[0], xlims[1], 1000)
+                                # ground_gaussian_fit = scaling_factor_ground * (
+                                #         weights[ground_gaussian] / (np.sqrt(2 * np.pi) * covariances[ground_gaussian])) * np.exp(
+                                #     -0.5 * ((x - means[ground_gaussian]) / covariances[ground_gaussian]) ** 2)
+                                # excited_gaussian_fit = scaling_factor_excited * (
+                                #         weights[excited_gaussian] / (np.sqrt(2 * np.pi) * covariances[excited_gaussian])) * np.exp(
+                                #     -0.5 * ((x - means[excited_gaussian]) / covariances[excited_gaussian]) ** 2)
+                                #
+                                # plt.plot(x, ground_gaussian_fit, label='Ground Gaussian Fit', color='blue', linewidth=2)
+                                # plt.plot(x, excited_gaussian_fit, label='Excited (leakage) Gaussian Fit', color='red', linewidth=2)
+                                # plt.axvline(crossing_point, color='black', linestyle='--', linewidth=1,
+                                #             label=f'Crossing Point ({crossing_point:.2f})')
+                                #
+                                # # Add shading for ground and excited state regions
+                                # x_vals = np.linspace(np.min(ig_new), np.max(ig_new), 1000)
+                                #
+                                # # Add shading for ground_data points
+                                # plt.hist(
+                                #     ground_data, bins=numbins, range=[np.min(ig_new), np.max(ig_new)], density=False,
+                                #     alpha=0.5, color="blue", label="Ground Data Region", zorder=2
+                                # )
+                                #
+                                # # Add shading for excited_data points
+                                # plt.hist(
+                                #     excited_data, bins=numbins, range=[np.min(ig_new), np.max(ig_new)], density=False,
+                                #     alpha=0.5, color="red", label="Excited Data Region", zorder=3
+                                # )
+                                #
+                                # # plt.hist(
+                                # #     iq_data, bins=numbins, range=[np.min(ig_new), np.max(ig_new)], density=False,
+                                # #     alpha=0.2, color="green", label="All IQ Data Region", zorder=1
+                                # # )
+                                #
+                                # plt.title(f"Fidelity Histogram and Double Gaussian Fit ; Qubit {q_key + 1}; Fidelity = {fidelity * 100:.2f}% ; Temp= {temperature_mk:2f} mK")
+                                # plt.xlabel('$I_g$', fontsize=14)
+                                # #plt.ylabel('Probability Density', fontsize=14) or is it counts? i think it might just be counts
+                                # plt.legend()
+                                # #plt.show()
+                                #
+                                # # Save the plot to the Temperatures folder
+                                # plot_filename = os.path.join(qubit_folder, f"Qubit{q_key + 1}_Fidelityhist_gaussianfit_Dataset{dataset}_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.png")
+                                # #plt.savefig(plot_filename)
+                                # #print(f"Plot saved to {plot_filename}")
+                                # plt.close()
+                                #
+                                # #Cleanup
+                                # del ig_new, ground_gaussian_fit, excited_gaussian_fit, n, bins, x, gmm, \
+                                #     bin_centers, ground_region, excited_region, scaling_factor_ground, \
+                                #     scaling_factor_excited, weights, means, covariances, ground_gaussian, \
+                                #     excited_gaussian, crossing_point
+                                #
+                                # del ss_class_instance
+
+                            else:
+                                # Distinguish between unphysical value or out-of-range value
+                                if temperature_k is None:
+                                    print(f"Warning: Unphysical temperature for Qubit {q_key + 1}. Skipping.")
+                                    pass # Skip this dataset
                                 else:
-                                    print(f"Warning: Temperature {temperature_mk:.2f} mK exceeds {limit_temp} mK for Qubit {q_key + 1}. Skipping this dataset.")
+                                    temperature_mk = temperature_k * 1e3
+                                    limit_temp_mk = limit_temp * 1e3  # Convert K to mK
+                                    print(f"Warning: Temperature {temperature_mk:.2f} mK exceeds {limit_temp_mk} mK for Qubit {q_key + 1}. Skipping this dataset.")
                                     pass  # Skip this dataset
-
-                            # temperature_mk = temperature_k * 1e3
-                            # print(f"Ground state population: {ground_state_population}")
-                            # print(f"Excited state (leakage) population: {excited_state_population_overlap}")
-                            # print(f"Qubit {q_key + 1} Temperature: {temperature_mk:.2f} mK", "\n")
-                            # qubit_temperatures[q_key].append((temperature_mk, timestamp))#save temps for each qubit
-
-                            # # Plotting double gaussian distributions and fitting
-                            # xlims = [np.min(ig_new), np.max(ig_new)]
-                            # plt.figure(figsize=(10, 6))
-                            #
-                            # # Plot histogram for `ig_new`
-                            # steps = 3000
-                            # numbins = round(math.sqrt(steps))
-                            # n, bins, _ = plt.hist(ig_new, bins=numbins, range=xlims, density=False, alpha=0.5,
-                            #                       label='Histogram of $I_g$',
-                            #                       color='gray')
-                            # # print(numbins)
-                            # # Use the midpoints of bins to create boolean masks
-                            # bin_centers = (bins[:-1] + bins[1:]) / 2
-                            # ground_region = (bin_centers < crossing_point)
-                            # excited_region = (bin_centers >= crossing_point)
-                            #
-                            # # Calculate scaling factors for each region
-                            # scaling_factor_ground = max(n[ground_region]) / max(
-                            #     (weights[ground_gaussian] / (np.sqrt(2 * np.pi) * covariances[ground_gaussian])) * np.exp(
-                            #         -0.5 * ((bin_centers[ground_region] - means[ground_gaussian]) / covariances[
-                            #             ground_gaussian]) ** 2))
-                            #
-                            # scaling_factor_excited = max(n[excited_region]) / max(
-                            #     (weights[excited_gaussian] / (np.sqrt(2 * np.pi) * covariances[excited_gaussian])) * np.exp(
-                            #         -0.5 * ((bin_centers[excited_region] - means[excited_gaussian]) / covariances[
-                            #             excited_gaussian]) ** 2))
-                            #
-                            # # Generate x values for plotting Gaussian components
-                            # x = np.linspace(xlims[0], xlims[1], 1000)
-                            # ground_gaussian_fit = scaling_factor_ground * (
-                            #         weights[ground_gaussian] / (np.sqrt(2 * np.pi) * covariances[ground_gaussian])) * np.exp(
-                            #     -0.5 * ((x - means[ground_gaussian]) / covariances[ground_gaussian]) ** 2)
-                            # excited_gaussian_fit = scaling_factor_excited * (
-                            #         weights[excited_gaussian] / (np.sqrt(2 * np.pi) * covariances[excited_gaussian])) * np.exp(
-                            #     -0.5 * ((x - means[excited_gaussian]) / covariances[excited_gaussian]) ** 2)
-
-                            # plt.plot(x, ground_gaussian_fit, label='Ground Gaussian Fit', color='blue', linewidth=2)
-                            # plt.plot(x, excited_gaussian_fit, label='Excited (leakage) Gaussian Fit', color='red', linewidth=2)
-                            # plt.axvline(crossing_point, color='black', linestyle='--', linewidth=1,
-                            #             label=f'Crossing Point ({crossing_point:.2f})')
-                            #
-                            # # Add shading for ground and excited state regions
-                            # x_vals = np.linspace(np.min(ig_new), np.max(ig_new), 1000)
-                            #
-                            # # Add shading for ground_data points
-                            # plt.hist(
-                            #     ground_data, bins=numbins, range=[np.min(ig_new), np.max(ig_new)], density=False,
-                            #     alpha=0.5, color="blue", label="Ground Data Region", zorder=2
-                            # )
-                            #
-                            # # Add shading for excited_data points
-                            # plt.hist(
-                            #     excited_data, bins=numbins, range=[np.min(ig_new), np.max(ig_new)], density=False,
-                            #     alpha=0.5, color="red", label="Excited Data Region", zorder=3
-                            # )
-
-                            # plt.hist(
-                            #     iq_data, bins=numbins, range=[np.min(ig_new), np.max(ig_new)], density=False,
-                            #     alpha=0.2, color="green", label="All IQ Data Region", zorder=1
-                            # )
-
-                            #plt.title(f"Fidelity Histogram and Double Gaussian Fit ; Qubit {q_key + 1}; Fidelity = {fidelity * 100:.2f}%")
-                            #plt.xlabel('$I_g$', fontsize=14)
-                            # plt.ylabel('Probability Density', fontsize=14)
-                            #plt.legend()
-                            #plt.show()
-
-                            # Save the plot to the Temperatures folder
-                            plot_filename = os.path.join(qubit_folder, f"Qubit{q_key + 1}_Fidelityhist_gaussianfit_Dataset{dataset}_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.png")
-                            #plt.savefig(plot_filename)
-                            #print(f"Plot saved to {plot_filename}")
-                            #plt.close()
-
-                            # Cleanup
-                            # del ig_new, ground_gaussian_fit, excited_gaussian_fit, n, bins, x, gmm, \
-                            #     bin_centers, ground_region, excited_region, scaling_factor_ground, \
-                            #     scaling_factor_excited, weights, means, covariances, ground_gaussian, \
-                            #     excited_gaussian, crossing_point
-
-                            del ss_class_instance
 
                 del H5_class_instance
 
