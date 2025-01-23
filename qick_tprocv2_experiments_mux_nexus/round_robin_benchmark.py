@@ -24,9 +24,14 @@ save_r = 1            # how many rounds to save after
 signal = 'None'       #'I', or 'Q' depending on where the signal is (after optimization). Put 'None' if no optimization has happened
 save_figs = True    # save plots for everything as you go along the RR script?
 live_plot = True      # for live plotting open http://localhost:8097/ on firefox
-fit_data = False      # fit the data here and save or plot the fits? Should be false! we fit in post processing. But spec and rabi always fit no matter what the flag is
+fit_data = True      # fit the data here and save or plot the fits? Should be false! we fit in post processing. But spec and rabi always fit no matter what the flag is
 save_data_h5 = True   # save all of the data to h5 files?
-outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/", str(datetime.date.today()))
+
+increase_qubit_reps = False #if you want to increase the reps for a qubit, set to True
+qubit_to_increase_reps_for = 0 #only has impact if previous line is True
+multiply_qubit_reps_by = 2 #only has impact if the line two above is True
+
+outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run30/", str(datetime.date.today())) #Change run number in each new run
 custom_Ramsey=False
 
 dictionary_qs = [0, 1, 2, 3] #needs to be the total number of qubits that you have
@@ -34,7 +39,8 @@ Qs_to_look_at = [0, 1, 2, 3] #only list the qubits you want to do the RR for
 
 # optimization outputs
 #res_leng_vals = [10.5, 3.55, 3.55, 3.55] # From NR25
-res_leng_vals = [9, 5.5, 6.5, 9] # From 12/9 optimization
+#res_leng_vals = [9, 5.5, 6.5, 9] # From 12/9 optimization
+res_leng_vals = [10.03, 5.07, 9.54, 4.07] #from 1/22 optimization
 res_gain = [0.15]*4 # Note 0.15 could be better for all, not sure yet
 # res_gain = [0.46, 0.38, 0.46, 0.42] # Note 0.15 could be better for all, not sure yet ## OLD As of Jan 21 morning
 
@@ -86,16 +92,16 @@ while j < n:
 
         ################################################## Res spec ####################################################
         try:
-            res_spec   = ResonanceSpectroscopy(QubitIndex, outerFolder, j, save_figs, experiment)
+            res_spec = ResonanceSpectroscopy(QubitIndex, outerFolder, j, save_figs, experiment)
             res_freqs, freq_pts, freq_center, amps = res_spec.run(experiment.soccfg, experiment.soc)
             experiment.readout_cfg['res_freq_ge'] = res_freqs
-            offset = freq_offsets[QubitIndex] #use optimized offset values
+            offset = freq_offsets[QubitIndex]  # use optimized offset values
             offset_res_freqs = [r + offset for r in res_freqs]
             experiment.readout_cfg['res_freq_ge'] = offset_res_freqs
             del res_spec
         except Exception as e:
             print(f'Got the following error, continuing: {e}')
-            continue #skip the rest of this qubit
+            continue  # skip the rest of this qubit
 
         # ############################################ Roll Signal into I ##############################################
         # #get the average theta value, then use that to rotate the signal. Plug that value into system_config res_phase
@@ -115,20 +121,22 @@ while j < n:
             # if these are None, fit didnt work
             if (qspec_I_fit is None and qspec_Q_fit is None and qubit_freq is None):
                 print('QSpec fit didnt work, skipping the rest of this qubit')
-                continue #skip the rest of this qubit
+                continue  # skip the rest of this qubit
 
             experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = float(qubit_freq)
-            print('Qubit freq for qubit ', QubitIndex + 1 ,' is: ',float(qubit_freq))
+            print('Qubit freq for qubit ', QubitIndex + 1, ' is: ', float(qubit_freq))
             del q_spec
 
         except Exception as e:
             print(f'Got the following error, continuing: {e}')
-            continue #skip the rest of this qubit
+            continue  # skip the rest of this qubit
 
         ###################################################### Rabi ####################################################
         try:
-            rabi = AmplitudeRabiExperiment(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot)
-            rabi_I, rabi_Q, rabi_gains, rabi_fit, pi_amp, sys_config_to_save  = rabi.run(experiment.soccfg, experiment.soc)
+            rabi = AmplitudeRabiExperiment(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot,
+                                           increase_qubit_reps, qubit_to_increase_reps_for, multiply_qubit_reps_by)
+            rabi_I, rabi_Q, rabi_gains, rabi_fit, pi_amp, sys_config_to_save = rabi.run(experiment.soccfg,
+                                                                                        experiment.soc)
 
             # if these are None, fit didnt work
             if (rabi_fit is None and pi_amp is None):
@@ -141,55 +149,59 @@ while j < n:
 
         except Exception as e:
             print(f'Got the following error, continuing: {e}')
-            continue #skip the rest of this qubit
+            continue  # skip the rest of this qubit
 
-        ########################################## Single Shot Measurements ############################################
-        try:
-            ss = SingleShot(QubitIndex, outerFolder,  j, save_figs, experiment)
-            fid, angle, iq_list_g, iq_list_e = ss.run(experiment.soccfg, experiment.soc)
-            I_g = iq_list_g[QubitIndex][0].T[0]
-            Q_g = iq_list_g[QubitIndex][0].T[1]
-            I_e = iq_list_e[QubitIndex][0].T[0]
-            Q_e = iq_list_e[QubitIndex][0].T[1]
-
-            fid, threshold, angle, ig_new, ie_new = ss.hist_ssf(
-                data=[I_g, Q_g, I_e, Q_e], cfg=ss.config, plot=save_figs)
-
-        except Exception as e:
-            print(f'Got the following error, continuing: {e}')
-            continue #skip the rest of this qubit
-
-        ###################################################### T1 ######################################################
-        try:
-            t1 = T1Measurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data)
-            t1_est, t1_err, t1_I, t1_Q, t1_delay_times, q1_fit_exponential = t1.run(experiment.soccfg, experiment.soc)
-            del t1
-
-        except Exception as e:
-            print(f'Got the following error, continuing: {e}')
-            continue #skip the rest of this qubit
+        # ########################################## Single Shot Measurements ############################################
+        # try:
+        #     ss = SingleShot(QubitIndex, outerFolder, j, save_figs, experiment)
+        #     fid, angle, iq_list_g, iq_list_e = ss.run(experiment.soccfg, experiment.soc)
+        #     I_g = iq_list_g[QubitIndex][0].T[0]
+        #     Q_g = iq_list_g[QubitIndex][0].T[1]
+        #     I_e = iq_list_e[QubitIndex][0].T[0]
+        #     Q_e = iq_list_e[QubitIndex][0].T[1]
+        #
+        #     fid, threshold, angle, ig_new, ie_new = ss.hist_ssf(
+        #         data=[I_g, Q_g, I_e, Q_e], cfg=ss.config, plot=save_figs)
+        #
+        # except Exception as e:
+        #     print(f'Got the following error, continuing: {e}')
+        #     continue  # skip the rest of this qubit
+        #
+        # ###################################################### T1 ######################################################
+        # try:
+        #     t1 = T1Measurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data,
+        #                        increase_qubit_reps, qubit_to_increase_reps_for, multiply_qubit_reps_by)
+        #     t1_est, t1_err, t1_I, t1_Q, t1_delay_times, q1_fit_exponential = t1.run(experiment.soccfg, experiment.soc)
+        #     del t1
+        #
+        # except Exception as e:
+        #     print(f'Got the following error, continuing: {e}')
+        #     continue  # skip the rest of this qubit
 
         ###################################################### T2R #####################################################
         try:
 
-            t2r = T2RMeasurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data, custom_Ramsey)
+            t2r = T2RMeasurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data,
+                                 increase_qubit_reps, qubit_to_increase_reps_for, multiply_qubit_reps_by)
             t2r_est, t2r_err, t2r_I, t2r_Q, t2r_delay_times, fit_ramsey = t2r.run(experiment.soccfg, experiment.soc)
             del t2r
 
         except Exception as e:
             print(f'Got the following error, continuing: {e}')
-            continue #skip the rest of this qubit
+            continue  # skip the rest of this qubit
 
         ##################################################### T2E ######################################################
         try:
-            t2e = T2EMeasurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data)
-            t2e_est, t2e_err, t2e_I, t2e_Q, t2e_delay_times, fit_ramsey_t2e, sys_config_to_save = t2e.run(experiment.soccfg,
-                                                                                                          experiment.soc)
+            t2e = T2EMeasurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data,
+                                 increase_qubit_reps, qubit_to_increase_reps_for, multiply_qubit_reps_by)
+            t2e_est, t2e_err, t2e_I, t2e_Q, t2e_delay_times, fit_ramsey_t2e, sys_config_to_save = t2e.run(
+                experiment.soccfg,
+                experiment.soc)
             del t2e
 
         except Exception as e:
             print(f'Got the following error, continuing: {e}')
-            continue #skip the rest of this qubit
+            continue  # skip the rest of this qubit
 
         ############################################### Collect Results ################################################
         if save_data_h5:
@@ -220,28 +232,28 @@ while j < n:
             rabi_data[QubitIndex]['Fit'][j - batch_num * save_r - 1] = rabi_fit
             rabi_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
             rabi_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
-
-            # ---------------------Collect Single Shot Results----------------
-            ss_data[QubitIndex]['Fidelity'][j - batch_num * save_r - 1] = fid
-            ss_data[QubitIndex]['Angle'][j - batch_num * save_r - 1] = angle
-            ss_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = time.mktime(datetime.datetime.now().timetuple())
-            ss_data[QubitIndex]['I_g'][j - batch_num * save_r - 1] = I_g
-            ss_data[QubitIndex]['Q_g'][j - batch_num * save_r - 1] = Q_g
-            ss_data[QubitIndex]['I_e'][j - batch_num * save_r - 1] = I_e
-            ss_data[QubitIndex]['Q_e'][j - batch_num * save_r - 1] = Q_e
-            ss_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
-            ss_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
-
-            #---------------------Collect T1 Results----------------
-            t1_data[QubitIndex]['T1'][j - batch_num*save_r - 1] = t1_est
-            t1_data[QubitIndex]['Errors'][j - batch_num*save_r - 1] = t1_err
-            t1_data[QubitIndex]['Dates'][j - batch_num*save_r - 1] = time.mktime(datetime.datetime.now().timetuple())
-            t1_data[QubitIndex]['I'][j - batch_num*save_r - 1] = t1_I
-            t1_data[QubitIndex]['Q'][j - batch_num*save_r - 1] = t1_Q
-            t1_data[QubitIndex]['Delay Times'][j - batch_num*save_r - 1] = t1_delay_times
-            t1_data[QubitIndex]['Fit'][j - batch_num*save_r - 1] = q1_fit_exponential
-            t1_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
-            t1_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
+            #
+            # # ---------------------Collect Single Shot Results----------------
+            # ss_data[QubitIndex]['Fidelity'][j - batch_num * save_r - 1] = fid
+            # ss_data[QubitIndex]['Angle'][j - batch_num * save_r - 1] = angle
+            # ss_data[QubitIndex]['Dates'][j - batch_num * save_r - 1] = time.mktime(datetime.datetime.now().timetuple())
+            # ss_data[QubitIndex]['I_g'][j - batch_num * save_r - 1] = I_g
+            # ss_data[QubitIndex]['Q_g'][j - batch_num * save_r - 1] = Q_g
+            # ss_data[QubitIndex]['I_e'][j - batch_num * save_r - 1] = I_e
+            # ss_data[QubitIndex]['Q_e'][j - batch_num * save_r - 1] = Q_e
+            # ss_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
+            # ss_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
+            #
+            # #---------------------Collect T1 Results----------------
+            # t1_data[QubitIndex]['T1'][j - batch_num*save_r - 1] = t1_est
+            # t1_data[QubitIndex]['Errors'][j - batch_num*save_r - 1] = t1_err
+            # t1_data[QubitIndex]['Dates'][j - batch_num*save_r - 1] = time.mktime(datetime.datetime.now().timetuple())
+            # t1_data[QubitIndex]['I'][j - batch_num*save_r - 1] = t1_I
+            # t1_data[QubitIndex]['Q'][j - batch_num*save_r - 1] = t1_Q
+            # t1_data[QubitIndex]['Delay Times'][j - batch_num*save_r - 1] = t1_delay_times
+            # t1_data[QubitIndex]['Fit'][j - batch_num*save_r - 1] = q1_fit_exponential
+            # t1_data[QubitIndex]['Round Num'][j - batch_num * save_r - 1] = j
+            # t1_data[QubitIndex]['Batch Num'][j - batch_num * save_r - 1] = batch_num
 
             #---------------------Collect T2 Results----------------
             t2r_data[QubitIndex]['T2'][j - batch_num*save_r - 1] = t2r_est

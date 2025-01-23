@@ -139,7 +139,7 @@ class PunchOut:
                 plt.xlabel("Frequency (MHz)", fontweight='normal')
                 plt.ylabel("Amplitude (a.u)", fontweight='normal')
                 plt.title(f"Resonator {i + 1}", pad=10)
-                plt.legend(loc='upper left', fontsize='6', title='Gain')
+                plt.legend(loc='upper right', fontsize='6', title='Gain')
 
         # Add a main title to the figure
         plt.suptitle("Resonance At Various Probe Gains", fontsize=24, y=0.95)
@@ -202,7 +202,7 @@ class TWPASweep:
 
             synth[0].power = out_power
             #synth[0].enable = True
-            time.sleep(25)
+            time.sleep(5)
 
             #self.config['res_gain_ge'] = [power for i in range(0, len(self.config['res_freq_ge']))]
             amps = np.zeros((len(self.config['res_freq_ge']), len(fpts)))
@@ -244,7 +244,7 @@ class TWPASweep:
 
             synth[0].frequency = out_freq
             #synth[0].enable = True
-            time.sleep(25)
+            time.sleep(5)
 
             #self.config['res_gain_ge'] = [power for i in range(0, len(self.config['res_freq_ge']))]
             amps = np.zeros((len(self.config['res_freq_ge']), len(fpts)))

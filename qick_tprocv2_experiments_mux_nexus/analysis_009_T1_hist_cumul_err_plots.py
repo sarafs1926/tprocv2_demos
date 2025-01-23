@@ -116,8 +116,8 @@ class T1HistCumulErrPlots:
         dates = {i: [] for i in range(self.number_of_qubits)}
 
         for folder_date in self.top_folder_dates:
-            outerFolder = f"/data/QICK_data/{self.run_name}/" + folder_date + "/"
-            outerFolder_save_plots = f"/data/QICK_data/{self.run_name}/" + folder_date + "_plots/"
+            outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "/"
+            outerFolder_save_plots = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "_plots/"
 
 
             outerFolder_expt = outerFolder + "/Data_h5/T1_ge/"
@@ -170,9 +170,9 @@ class T1HistCumulErrPlots:
 
     def plot(self, dates, t1_vals, t1_errs, show_legends):
         #---------------------------------plot-----------------------------------------------------
-        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
+        analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/"
         self.create_folder_if_not_exists(analysis_folder)
-        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/T1/"
+        analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/T1/"
         self.create_folder_if_not_exists(analysis_folder)
 
         fig, axes = plt.subplots(2, 3, figsize=(12, 8))

@@ -16,9 +16,9 @@ class PlotMetricDependencies:
 
     def plot(self, date_times_1, metric_1, date_times_2, metric_2, metric_1_label,metric_2_label):
         #---------------------------------plot-----------------------------------------------------
-        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
+        analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/"
         self.create_folder_if_not_exists(analysis_folder)
-        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/metric_interdependencies/"
+        analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/metric_interdependencies/"
         self.create_folder_if_not_exists(analysis_folder)
 
         font = 14
@@ -96,10 +96,9 @@ class PlotMetricDependencies:
         Creates a SINGLE scatter plot of metric_1 vs metric_2,
         matching data points by the same 'closest timestamp' logic.
         """
-        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
+        analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/"
         self.create_folder_if_not_exists(analysis_folder)
-
-        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/correlations_singleplots/"
+        analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/correlations_singleplots/"
         self.create_folder_if_not_exists(analysis_folder)
 
         #Converts timestamps from strings to datetime objects
@@ -192,10 +191,9 @@ class PlotMetricDependencies:
         Also plots qubit temp data, fridge thermometry data, Pi Amp, and qubit frequency data during this time frame IF provided.
         """
 
-        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
+        analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/"
         self.create_folder_if_not_exists(analysis_folder)
-        print(self.run_name)
-        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/correlations_singleplots/"
+        analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/correlations_singleplots/"
         self.create_folder_if_not_exists(analysis_folder)
 
         # If timestamps are strings, convert them to datetime objects

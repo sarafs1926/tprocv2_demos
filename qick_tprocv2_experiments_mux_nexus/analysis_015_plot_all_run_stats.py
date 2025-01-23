@@ -6,8 +6,9 @@ from matplotlib.ticker import MaxNLocator
 import numpy as np
 
 class CompareRuns:
-    def __init__(self, run_number_list):
+    def __init__(self, run_number_list, run_name):
         self.run_number_list = run_number_list
+        self.run_name = run_name
 
     def create_folder_if_not_exists(self, folder):
         """Creates a folder at the given path if it doesn't already exist."""
@@ -90,7 +91,7 @@ class CompareRuns:
 
             #load data for each run
             for r in self.run_number_list:
-                run_stats_folder = f"run_stats/run{r}/"
+                run_stats_folder = f"run_stats/Run{r}/"
                 filename = run_stats_folder + 'experiment_data.h5'
                 loaded_data = self.load_from_h5(filename)
 
@@ -198,14 +199,14 @@ class CompareRuns:
             axes[-1].set_xlabel('Run Number')
             axes[-1].xaxis.set_major_locator(MaxNLocator(integer=True))
             plt.tight_layout()
-            analysis_folder = "/data/QICK_data/6transmon_run5/benchmark_analysis_plots/"
+            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/"
             self.create_folder_if_not_exists(analysis_folder)
             plt.savefig(analysis_folder + 'compare_runs.pdf', dpi=500)
 
         elif len(self.run_number_list) == 1:
             #only 1 data point per qubit
             r = self.run_number_list[0]
-            run_stats_folder = f"run_stats/run{r}/"
+            run_stats_folder = f"run_stats/Run{r}/"
             filename = run_stats_folder + 'experiment_data.h5'
             loaded_data = self.load_from_h5(filename)
 
@@ -256,7 +257,7 @@ class CompareRuns:
             axes[-1].set_xlabel('Run Number')
             axes[-1].xaxis.set_major_locator(MaxNLocator(integer=True))
             plt.tight_layout()
-            analysis_folder = "/data/QICK_data/6transmon_run5/benchmark_analysis_plots/"
+            analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/"
             self.create_folder_if_not_exists(analysis_folder)
             plt.savefig(analysis_folder + 'compare_runs.pdf', dpi=500)
 
@@ -289,7 +290,7 @@ class CompareRuns:
             ax = axes[i]
 
             # Load the data for this run
-            run_stats_folder = f"run_stats/run{run_number}/"
+            run_stats_folder = f"run_stats/Run{run_number}/"
             filename = run_stats_folder + 'experiment_data.h5'
             loaded_data = self.load_from_h5(filename)
 
@@ -394,6 +395,6 @@ class CompareRuns:
         plt.tight_layout()
 
         # Save the figure
-        analysis_folder = "/data/QICK_data/6transmon_run5/benchmark_analysis_plots/"
+        analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/"
         self.create_folder_if_not_exists(analysis_folder)
         plt.savefig(analysis_folder + 'compare_runs_qfreq_vs_decoherence.pdf', dpi=500)

@@ -338,3 +338,4 @@ class GainFrequencySweep:
             results.append(fid_results)
 
         return results
+

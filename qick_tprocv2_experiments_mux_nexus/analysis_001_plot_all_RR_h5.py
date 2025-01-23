@@ -14,7 +14,7 @@ import datetime
 import ast
 import os
 import sys
-sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
+sys.path.append(os.path.abspath("/home/nexusadmin/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux_nexus/"))
 
 class PlotAllRR:
     def __init__(self, date, figure_quality, save_figs, fit_saved, signal, run_name, number_of_qubits, outerFolder,
@@ -130,6 +130,7 @@ class PlotAllRR:
                     freq_pts = self.process_h5_data(load_data['Res'][q_key].get('freq_pts', [])[0][dataset].decode())   # comes in as an array but put into a byte string, need to convert to list
                     freq_center = self.process_h5_data(load_data['Res'][q_key].get('freq_center', [])[0][dataset].decode()) # comes in as an array but put into a string, need to convert to list
                     freqs_found = self.string_to_float_list(load_data['Res'][q_key].get('Found Freqs', [])[0][dataset].decode()) #comes in as a list of floats in string format, need to convert
+                    #print(self.process_string_of_nested_lists(load_data['Res'][q_key].get('Amps', [])[0][dataset].decode()))
                     amps =  self.process_string_of_nested_lists(load_data['Res'][q_key].get('Amps', [])[0][dataset].decode())  #list of lists
                     round_num = load_data['Res'][q_key].get('Round Num', [])[0][dataset] #already a float
                     batch_num = load_data['Res'][q_key].get('Batch Num', [])[0][dataset]

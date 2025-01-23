@@ -14,7 +14,7 @@ outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/", str(date
 experiment = QICK_experiment(outerFolder)
 punch_out   = PunchOut(outerFolder, experiment)
 
-start_gain, stop_gain, num_points = 0.0, 1.0, 10
+start_gain, stop_gain, num_points = 0.0, 0.8, 10
 punch_out.run(experiment.soccfg, experiment.soc, start_gain, stop_gain, num_points, att_1, att_2, plot_Center_shift = True, plot_res_sweeps = True)
 
 del punch_out

@@ -155,8 +155,8 @@ class TempCalcAndPlots:
         # ----------------------------------------------Load/Plot/Save QSpec------------------------------------
         for date in self.top_folder_dates:
             print('Starting date: ', date)
-            outerFolder = "/data/QICK_data/6transmon_run5/" + date + "/"
-            outerFolder_save_plots = "/data/QICK_data/6transmon_run5/" + date + "_plots/"
+            outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + date + "/"
+            outerFolder_save_plots = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + date + "_plots/"
 
             # Update self.temperature_folder for the current date
             self.temperature_folder = os.path.join(outerFolder, "Temperatures")
@@ -477,7 +477,7 @@ class TempCalcAndPlots:
 
         # ---------------------------------- New Section: Combined Scatter Plot for All Dates ----------------------------------
         # Create the folder for the combined figure
-        analysis_folder = f"/data/QICK_data/{self.run_name}/benchmark_analysis_plots/"
+        analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/"
         if not os.path.exists(analysis_folder):
             os.makedirs(analysis_folder)
         features_folder = os.path.join(analysis_folder, "features_vs_time")
@@ -517,8 +517,8 @@ class TempCalcAndPlots:
     def get_temps(self):
         # ----------------------------------------------Load/Plot/Save QSpec------------------------------------
         for date in self.top_folder_dates:
-            outerFolder = "/data/QICK_data/6transmon_run5/" + date + "/"
-            outerFolder_save_plots = "/data/QICK_data/6transmon_run5/" + date + "_plots/"
+            outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + date + "/"
+            outerFolder_save_plots = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + date + "_plots/"
 
             self.temperature_folder = os.path.join(outerFolder, "Temperatures")
             if not os.path.exists(self.temperature_folder):
@@ -666,8 +666,8 @@ class TempCalcAndPlots:
     def get_ssf(self):
         # ----------------------------------------------Load/Plot/Save QSpec------------------------------------
         for date in self.top_folder_dates:
-            outerFolder = "/data/QICK_data/6transmon_run5/" + date + "/"
-            outerFolder_save_plots = "/data/QICK_data/6transmon_run5/" + date + "_plots/"
+            outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + date + "/"
+            outerFolder_save_plots = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + date + "_plots/"
 
             self.temperature_folder = os.path.join(outerFolder, "Temperatures")
             if not os.path.exists(self.temperature_folder):
