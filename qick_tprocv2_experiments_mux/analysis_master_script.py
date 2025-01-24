@@ -22,6 +22,7 @@ from analysis_000_load_configs import LoadConfigs
 from analysis_017_plot_metric_dependencies import PlotMetricDependencies
 import matplotlib.pyplot as plt
 from datetime import datetime
+import pytz
 ###################################################### Set These #######################################################
 save_figs = True
 fit_saved = False
@@ -34,13 +35,13 @@ final_figure_quality = 200
 run_name = '6transmon_run5'
 run_notes = ('Added more eccosorb filters and a lpf on mxc before and after the device. Added thermometry '
              'next to the device') #please make it brief for the plot
-#top_folder_dates = ['2024-12-09', '2024-12-10', '2024-12-11', '2024-12-12', '2024-12-13', '2024-12-14', '2024-12-15',
-                     #'2024-12-16', '2024-12-17', '2024-12-18', '2024-12-19', '2024-12-20']
+# top_folder_dates = ['2024-12-09', '2024-12-10', '2024-12-11', '2024-12-12', '2024-12-13', '2024-12-14', '2024-12-15',
+#                      '2024-12-16', '2024-12-17', '2024-12-18', '2024-12-19', '2024-12-20']
 
-top_folder_dates = ['2024-12-20_warmup']
-
+#top_folder_dates = ['2024-12-20_warmup']
+top_folder_dates = ['2024-12-20']
 ###################################### 00: Load Configs for Plotting Titles ############################################
-date = '2024-12-20_warmup'  #only plot all of the data for one date at a time because there is a lot
+date = '2024-12-20'  #only plot all of the data for one date at a time because there is a lot
 outerFolder = f"/data/QICK_data/{run_name}/" + date + "/"
 config_loader = LoadConfigs(outerFolder)
 sys_config, exp_config = config_loader.run()
@@ -71,12 +72,12 @@ t2e_vs_time = T2eVsTime(figure_quality, final_figure_quality, number_of_qubits, 
 date_times_t2e, t2e_vals = t2e_vs_time.run()
 
 # ################################################### 02: Plot Everything ################################################
-# outerFolder_save_plots = f"/data/QICK_data/{run_name}/" + date + "_plots/"
-# plotter = PlotAllRR(date, figure_quality, save_figs, fit_saved, signal, run_name, number_of_qubits, outerFolder,
-#                  outerFolder_save_plots, exp_config)
-# plotter.run(plot_res_spec = False, plot_q_spec = False, plot_rabi = False, plot_ss = True, plot_t1 = False,
-#             plot_t2r = False, plot_t2e = False)
-#
+outerFolder_save_plots = f"/data/QICK_data/{run_name}/" + date + "_plots/"
+plotter = PlotAllRR(date, figure_quality, save_figs, fit_saved, signal, run_name, number_of_qubits, outerFolder,
+                 outerFolder_save_plots, exp_config)
+plotter.run(plot_res_spec = False, plot_q_spec = True, plot_rabi = False, plot_ss = False, plot_t1 = True,
+            plot_t2r = False, plot_t2e = False)
+exit()
 # ########################################## 03: Resonator Freqs vs Time Plots ###########################################
 # res_spec_vs_time.plot(date_times_res_spec, res_freqs, show_legends)
 #
@@ -161,75 +162,22 @@ date_times_t2e, t2e_vals = t2e_vs_time.run()
 # comparing_runs.plot_decoherence_vs_qfreq()
 
 # ############################################### 15: Qubit Temperature Plots ############################################
-# temps_class_obj = TempCalcAndPlots(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
-#                  signal, run_name, exp_config, outerFolder)
-# all_qubit_temps, all_qubit_times = temps_class_obj.run()
-# #
-# # #Grabbing only Q1 temperature data
-# q1_temp_times = all_qubit_times[0]
-# q1_temps = all_qubit_temps[0]
+temps_class_obj = TempCalcAndPlots(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
+                 signal, run_name, exp_config, outerFolder)
+all_qubit_temps, all_qubit_times = temps_class_obj.run()
+#
+# #Grabbing only Q1 temperature data
+q1_temp_times = all_qubit_times[0]
+q1_temps = all_qubit_temps[0]
 
 # # ########################################## 16: Metrics Vs Temperature Plots ############################################
 therm = GetThermData(f'/data/QICK_data/{run_name}/Thermometer_Data/')
 mcp2_dates, mcp2_temps, magcan_temps = therm.run() #mcp2_dates are just the dates over which thermometry data was taken, works for both datasets
 
-'''# If timestamps are strings, convert them to datetime objects
-def ensure_datetime(ts_list):
-    if not ts_list:
-        return []
-    if isinstance(ts_list[0], str):
-        return [datetime.strptime(t_str, "%Y-%m-%d %H:%M:%S") for t_str in ts_list]
-    return ts_list
-
-
-if mcp2_dates is not None:
-    mcp2_dates_dt = ensure_datetime(mcp2_dates)
-    magcan_dates_dt = ensure_datetime(mcp2_dates)
-else:
-    mcp2_dates_dt = []
-    magcan_dates_dt = []
-
-fig, ax1 = plt.subplots(figsize=(14, 6))
-
-year = 2024
-month = 12
-day1 = 20
-day2 = 20
-start_time = datetime(year, month, day1, 10, 0, 0)
-end_time = datetime(year, month, day2, 19, 0, 0)
-ax1.set_xlim(start_time, end_time)  # Set the x-axis limits
-
-ax1.scatter(mcp2_dates_dt, mcp2_temps, color='orange', alpha=0.8, label='mcp2 temp', s=5)
-ax1.scatter(magcan_dates_dt, magcan_temps, color='green', alpha=0.8, label='mag can temp', s=5)
-ax1.set_xlabel("Time")
-ax1.set_ylabel('Temperature (mk)', color='black')
-ax1.tick_params(axis='y', labelcolor='black')
-ax1.tick_params(axis='x', rotation=45)
-ax1.grid(True, alpha=0.3)
-plt.legend()
-plt.title('Magnetic Shield Can and MCP2 Temps vs Time')
-plt.show()'''
-
 #res_spec_vs_temp = ResonatorFreqVsTemp(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates,
 #                                        save_figs, fit_saved, signal, run_name, exp_config)
 #date_times, res_freqs = res_spec_vs_temp.run()
 #res_spec_vs_temp.plot(date_times, res_freqs, mcp2_dates, magcan_temps, show_legends)
-
-#----test to match grace temp plot (Arianna please feel free to delete this, leaving it up here temporarily for reference for if its useful!)----
-# zooming in a bunch on the end:
-halfway_date = min(mcp2_dates) + ((max(mcp2_dates) - min(mcp2_dates)) / 20) * 19
-filtered_mcp2_dates = [date for date in mcp2_dates if date > halfway_date]
-filtered_mcp2_temps = [temp for date, temp in zip(mcp2_dates, mcp2_temps) if date > halfway_date]
-filtered_magcan_temps = [temp for date, temp in zip(mcp2_dates, magcan_temps) if date > halfway_date]
-plt.figure()
-plt.scatter(filtered_mcp2_dates, filtered_mcp2_temps, label="MCP2 Temps")
-plt.scatter(filtered_mcp2_dates, filtered_magcan_temps, label="MagCan Temps")
-plt.xlabel("Date")
-plt.ylabel("Temperature (mK)")
-plt.xticks(rotation=90)
-plt.legend()
-plt.tight_layout()
-plt.show()
 
 # q_spec_vs_temp = QubitFreqsVsTemp(figure_quality, final_figure_quality, number_of_qubits, top_folder_dates,
 #                                   save_figs, fit_saved, signal, run_name, exp_config)

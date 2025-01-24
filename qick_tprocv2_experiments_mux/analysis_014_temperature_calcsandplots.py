@@ -28,9 +28,10 @@ figure_quality = 100 #ramp this up to like 500 for presentation plots
 
 
 class TempCalcAndPlots:
-    def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
+    def __init__(self, list_of_all_qubits, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
                  signal, run_name, exp_config, outerFolder):
         self.save_figs = save_figs
+        self.list_of_all_qubits = list_of_all_qubits
         self.fit_saved = fit_saved
         self.signal = signal
         self.figure_quality = figure_quality

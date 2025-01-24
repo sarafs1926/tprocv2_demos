@@ -50,6 +50,9 @@ def fit_double_gaussian_with_overlap_exclusion(iq_data):
 date_str = str(datetime.date.today())
 output_folder = f"/data/QICK_data/6transmon_run4a/{date_str}/Qubit_Temps/"
 os.makedirs(output_folder, exist_ok=True)
+tot_num_of_qubits = 6
+
+list_of_all_qubits = list(range(tot_num_of_qubits))
 
 # Optimized parameters for qubits 3 and 4
 qubits = {
@@ -75,7 +78,7 @@ for qubit_index, params in qubits.items():
     experiment.readout_cfg['res_gain_ge'] = res_gains
 
     # Run the single-shot experiment
-    ss = SingleShot(QubitIndex, output_folder, experiment, round_num=0, save_figs=False)
+    ss = SingleShot(QubitIndex,list_of_all_qubits, output_folder, experiment, round_num=0, save_figs=False)
     fid, angle, iq_list_g, iq_list_e = ss.run(experiment.soccfg, experiment.soc)
 
     I_g = iq_list_g[QubitIndex][0].T[0]  # Ground-state I data
