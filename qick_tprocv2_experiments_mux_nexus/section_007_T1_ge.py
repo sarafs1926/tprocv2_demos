@@ -28,7 +28,7 @@ class T1Program(AveragerProgramV2):
                        )
 
         self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])
-        self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma'], length=cfg['sigma'] * 5, even_length=True)
+        self.add_gauss(ch=qubit_ch, name="ramp", sigma=cfg['sigma'], length=cfg['sigma'] * 4, even_length=False)
         self.add_pulse(ch=qubit_ch, name="qubit_pulse",
                        style="arb",
                        envelope="ramp",
@@ -47,7 +47,9 @@ class T1Program(AveragerProgramV2):
 
 
 class T1Measurement:
-    def __init__(self, QubitIndex, outerFolder, round_num, signal, save_figs, experiment = None, live_plot = None, fit_data = None):
+    def __init__(self, QubitIndex, outerFolder, round_num, signal, save_figs, experiment = None, live_plot = None,
+                 fit_data = None, increase_qubit_reps = False, qubit_to_increase_reps_for = None,
+                 multiply_qubit_reps_by = 0):
         self.QubitIndex = QubitIndex
         self.outerFolder = outerFolder
         self.expt_name = "T1_ge"
@@ -63,16 +65,20 @@ class T1Measurement:
             self.q_config = all_qubit_state(self.experiment)
             self.exp_cfg = add_qubit_experiment(expt_cfg, self.expt_name, self.QubitIndex)
             self.config = {**self.q_config[self.Qubit], **self.exp_cfg}
+            if increase_qubit_reps:
+                    if self.QubitIndex==qubit_to_increase_reps_for:
+                        print(f"Increasing reps for {self.Qubit} by {multiply_qubit_reps_by} times")
+                        self.config["reps"] *= multiply_qubit_reps_by
             print(f'Q {self.QubitIndex + 1} Round {self.round_num} T1 configuration: ', self.config)
 
     def run(self, soccfg, soc):
         now = datetime.datetime.now()
-        t1 = T1Program(soccfg, reps=self.exp_cfg['reps'], final_delay=self.exp_cfg['relax_delay'], cfg=self.config)
+        t1 = T1Program(soccfg, reps=self.config['reps'], final_delay=self.config['relax_delay'], cfg=self.config)
 
         if self.live_plot:
             I, Q, delay_times = self.live_plotting(t1, soc)
         else:
-            iq_list = t1.acquire(soc, soft_avgs=self.exp_cfg['rounds'], progress=True)
+            iq_list = t1.acquire(soc, soft_avgs=self.config['rounds'], progress=True)
             I = iq_list[self.QubitIndex][0, :, 0]
             Q = iq_list[self.QubitIndex][0, :, 1]
             delay_times = t1.get_time_param('wait', "t", as_array=True)
@@ -168,6 +174,7 @@ class T1Measurement:
         # Calculate the middle of the plot area
         plot_middle = (ax1.get_position().x0 + ax1.get_position().x1) / 2
 
+
         if self.fit_data:
             q1_fit_exponential, T1_err, T1_est, plot_sig = self.t1_fit(I, Q, delay_times)
 
@@ -180,7 +187,8 @@ class T1Measurement:
             if config is not None:
                 fig.text(plot_middle, 0.98,
                          f"T1 Q{self.QubitIndex + 1}" + f", {float(config['reps'])}*{float(config['rounds'])} avgs,",
-                         fontsize=24, ha='center', va='top') #, pi gain %.2f" % float(config['pi_amp']) + f", {float(config['sigma']) * 1000} ns sigma
+                         fontsize=24, ha='center',
+                         va='top')  # , pi gain %.2f" % float(config['pi_amp']) + f", {float(config['sigma']) * 1000} ns sigma
             else:
                 fig.text(plot_middle, 0.98,
                          f"T1 Q{self.QubitIndex + 1}, T1 %.2f us" % T1_est + f", {self.config['reps']}*{self.config['rounds']} avgs,",
@@ -190,7 +198,8 @@ class T1Measurement:
             if config is not None:
                 fig.text(plot_middle, 0.98,
                          f"T1 Q{self.QubitIndex + 1}" + f", {float(config['reps'])}*{float(config['rounds'])} avgs,",
-                         fontsize=24, ha='center', va='top') #, pi gain %.2f" % float(config['pi_amp']) + f", {float(config['sigma']) * 1000} ns sigma"   you can put this back once you save configs properly for when replotting
+                         fontsize=24, ha='center',
+                         va='top')  # , pi gain %.2f" % float(config['pi_amp']) + f", {float(config['sigma']) * 1000} ns sigma"   you can put this back once you save configs properly for when replotting
             else:
                 fig.text(plot_middle, 0.98,
                          f"T1 Q{self.QubitIndex + 1}",

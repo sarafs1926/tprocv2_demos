@@ -1,7 +1,10 @@
 import numpy as np
+import os
+import sys
+sys.path.append(os.path.abspath("/home/nexusadmin/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux_nexus/"))
 
 from section_002_res_spec_ge_mux import ResonanceSpectroscopy
-from section_004_qubit_spec_ge_Franken import QubitSpectroscopy
+from section_004_qubit_spec_ge import QubitSpectroscopy
 from section_006_amp_rabi_ge import AmplitudeRabiExperiment
 from section_007_T1_ge import T1Measurement
 from section_008_save_data_to_h5 import Data_H5
@@ -12,222 +15,207 @@ import glob
 import re
 import datetime
 import ast
-import os
 import matplotlib.pyplot as plt
 from scipy.stats import norm
 from scipy.optimize import curve_fit
 
-#top_folder_dates = ['2024-12-10', '2024-12-10']
-top_folder_dates = ['2024-12-17']
-final_figure_quality = 50
+class ResonatorFreqVsTime:
+    def __init__(self, figure_quality, final_figure_quality, number_of_qubits, top_folder_dates, save_figs, fit_saved,
+                 signal, run_name, exp_config):
+        self.figure_quality = figure_quality
+        self.number_of_qubits = number_of_qubits
+        self.save_figs = save_figs
+        self.fit_saved = fit_saved
+        self.signal = signal
+        self.run_name = run_name
+        self.top_folder_dates = top_folder_dates
+        self.final_figure_quality = final_figure_quality
+        self.exp_config = exp_config
 
-#---------------------------------------get data--------------------------------
-save_figs = False
-fit_saved = False
-signal = 'None'
-figure_quality = 100 #ramp this up to like 500 for presentation plots
+    def datetime_to_unix(self, dt):
+        # Convert to Unix timestamp
+        unix_timestamp = int(dt.timestamp())
+        return unix_timestamp
 
-#---------definitions---------
-def create_folder_if_not_exists(folder):
-    """Creates a folder at the given path if it doesn't already exist."""
-    if not os.path.exists(folder):
-        os.makedirs(folder)
+    def unix_to_datetime(self, unix_timestamp):
+        # Convert the Unix timestamp to a datetime object
+        dt = datetime.fromtimestamp(unix_timestamp)
+        return dt
 
-def exponential(x, a, b, c, d):
-    return a * np.exp(-(x - b) / c) + d
+    def create_folder_if_not_exists(self, folder):
+        """Creates a folder at the given path if it doesn't already exist."""
+        if not os.path.exists(folder):
+            os.makedirs(folder)
 
-def optimal_bins(data):
-    n = len(data)
-    if n == 0:
-        return {}
-    # Sturges' Rule
-    sturges_bins = int(np.ceil(np.log2(n) + 1))
-    return sturges_bins
+    def exponential(self, x, a, b, c, d):
+        return a * np.exp(-(x - b) / c) + d
 
-def process_string_of_nested_lists(data):
-    # Remove extra whitespace and non-numeric characters.
-    data = re.sub(r'\s*\[(\s*.*?\s*)\]\s*', r'[\1]', data)
-    data = data.replace('[ ', '[')
-    data = data.replace('[ ', '[')
-    data = data.replace('[ ', '[')
+    def optimal_bins(self, data):
+        n = len(data)
+        if n == 0:
+            return {}
+        # Sturges' Rule
+        sturges_bins = int(np.ceil(np.log2(n) + 1))
+        return sturges_bins
 
-    cleaned_data = ''.join(c for c in data if c.isdigit() or c in ['-', '.', ' ', 'e', '[', ']'])
-    pattern = r'\[(.*?)\]'  # Regular expression to match data within brackets
-    matches = re.findall(pattern, cleaned_data)
-    result = []
-    for match in matches:
-        numbers = [float(x.strip('[').strip(']').replace("'", "").replace(" ", "").replace("  ", "")) for x in match.split()] # Convert strings to integers
-        result.append(numbers)
+    def process_string_of_nested_lists(self, data):
+        # Remove extra whitespace and non-numeric characters.
+        data = re.sub(r'\s*\[(\s*.*?\s*)\]\s*', r'[\1]', data)
+        data = data.replace('[ ', '[')
+        data = data.replace('[ ', '[')
+        data = data.replace('[ ', '[')
 
-    return result
+        cleaned_data = ''.join(c for c in data if c.isdigit() or c in ['-', '.', ' ', 'e', '[', ']'])
+        pattern = r'\[(.*?)\]'  # Regular expression to match data within brackets
+        matches = re.findall(pattern, cleaned_data)
+        result = []
+        for match in matches:
+            numbers = [float(x.strip('[').strip(']').replace("'", "").replace(" ", "").replace("  ", "")) for x in match.split()] # Convert strings to integers
+            result.append(numbers)
+
+        return result
 
 
-def process_h5_data(data):
-    # Check if the data is a byte string; decode if necessary.
-    if isinstance(data, bytes):
-        data_str = data.decode()
-    elif isinstance(data, str):
-        data_str = data
-    else:
-        raise ValueError("Unsupported data type. Data should be bytes or string.")
+    def process_h5_data(self, data):
+        # Check if the data is a byte string; decode if necessary.
+        if isinstance(data, bytes):
+            data_str = data.decode()
+        elif isinstance(data, str):
+            data_str = data
+        else:
+            raise ValueError("Unsupported data type. Data should be bytes or string.")
 
-    # Remove extra whitespace and non-numeric characters.
-    cleaned_data = ''.join(c for c in data_str if c.isdigit() or c in ['-', '.', ' ', 'e'])
+        # Remove extra whitespace and non-numeric characters.
+        cleaned_data = ''.join(c for c in data_str if c.isdigit() or c in ['-', '.', ' ', 'e'])
 
-    # Split into individual numbers, removing empty strings.
-    numbers = [float(x) for x in cleaned_data.split() if x]
-    return numbers
+        # Split into individual numbers, removing empty strings.
+        numbers = [float(x) for x in cleaned_data.split() if x]
+        return numbers
 
-def string_to_float_list(input_string):
-    try:
-        # Remove 'np.float64()' parts
-        cleaned_string = input_string.replace('np.float64(', '').replace(')', '')
+    def string_to_float_list(self, input_string):
+        try:
+            # Remove 'np.float64()' parts
+            cleaned_string = input_string.replace('np.float64(', '').replace(')', '')
 
-        # Use ast.literal_eval for safe evaluation
-        float_list = ast.literal_eval(cleaned_string)
+            # Use ast.literal_eval for safe evaluation
+            float_list = ast.literal_eval(cleaned_string)
 
-        # Check if all elements are floats (or can be converted to floats)
-        return [float(x) for x in float_list]
-    except (ValueError, SyntaxError, TypeError):
-        print("Error: Invalid input string format.  It should be a string representation of a list of numbers.")
-        return None
+            # Check if all elements are floats (or can be converted to floats)
+            return [float(x) for x in float_list]
+        except (ValueError, SyntaxError, TypeError):
+            print("Error: Invalid input string format.  It should be a string representation of a list of numbers.")
+            return None
 
-# ----------Load/get data------------------------
-resonator_centers = {i: [] for i in range(4)}
-rounds = []
-reps = []
-file_names = []
-date_times = {i: [] for i in range(4)}
-mean_values = {}
-show_legends = False
+    def run(self):
+        import datetime
+        # ----------Load/get data------------------------
+        resonator_centers = {i: [] for i in range(self.number_of_qubits)}
+        rounds = []
+        reps = []
+        file_names = []
+        date_times = {i: [] for i in range(self.number_of_qubits)}
+        mean_values = {}
 
-for folder_date in top_folder_dates:
-    outerFolder = "/home/nexusadmin/qick/NEXUS_sandbox/Data/" + folder_date + "/"
-    outerFolder_save_plots = "/home/nexusadmin/qick/NEXUS_sandbox/Data/" + folder_date + "_plots/"
+        for folder_date in self.top_folder_dates:
+            outerFolder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "/"
+            outerFolder_save_plots = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/" + folder_date + "_plots/"
 
-    loader_config_instance = Data_H5(outerFolder)
-    sys_config = loader_config_instance.load_config('sys_config.h5')
-    del loader_config_instance
+            # ------------------------------------------Load/Plot/Save Res Spec------------------------------------
+            outerFolder_expt = outerFolder + "/Data_h5/Res_ge/"
+            h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
 
-    loader_config_instance = Data_H5(outerFolder)
-    exp_config = loader_config_instance.load_config('expt_cfg.h5')
-    del loader_config_instance
+            for h5_file in h5_files:
+                save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
+                H5_class_instance = Data_H5(h5_file)
+                # H5_class_instance.print_h5_contents(h5_file)
+                load_data = H5_class_instance.load_from_h5(data_type='Res', save_r=int(save_round))
 
-    # ------------------------------------------Load/Plot/Save Res Spec------------------------------------
-    outerFolder_expt = outerFolder + "/Data_h5/Res_ge/"
-    h5_files = glob.glob(os.path.join(outerFolder_expt, "*.h5"))
+                # just look at this resonator data, should have batch_num of arrays in each one
+                # right now the data writes the same thing batch_num of times, so it will do the same 5 datasets 5 times, until you fix this just grab the first one (All 5)
+                for q_key in load_data['Res']:
+                    # print("all batch_num datasets------------------------", load_data['Res'][q_key].get('Amps', [])[0])
+                    # print("one dataset------------------------",load_data['Res'][q_key].get('Amps', [])[0][0].decode())
+                    # go through each dataset in the batch and plot
+                    for dataset in range(len(load_data['Res'][q_key].get('Dates', [])[0])):
+                        if 'nan' in str(load_data['Res'][q_key].get('Dates', [])[0][dataset]):
+                            continue
 
-    for h5_file in h5_files:
-        save_round = h5_file.split('Num_per_batch')[-1].split('.')[0]
-        H5_class_instance = Data_H5(h5_file)
-        # H5_class_instance.print_h5_contents(h5_file)
-        load_data = H5_class_instance.load_from_h5(data_type='Res', save_r=int(save_round))
+                        date = datetime.datetime.fromtimestamp(
+                            load_data['Res'][q_key].get('Dates', [])[0][dataset])  # single date per dataset
 
-        # just look at this resonator data, should have batch_num of arrays in each one
-        # right now the data writes the same thing batch_num of times, so it will do the same 5 datasets 5 times, until you fix this just grab the first one (All 5)
-        populated_keys = []
-        for q_key in load_data['Res']:
-            # Access 'Dates' for the current q_key
-            dates_list = load_data['Res'][q_key].get('Dates', [[]])
+                        freq_pts = self.process_h5_data(load_data['Res'][q_key].get('freq_pts', [])[0][
+                                                       dataset].decode())  # comes in as an array but put into a byte string, need to convert to list
+                        freq_center = self.process_h5_data(load_data['Res'][q_key].get('freq_center', [])[0][
+                                                          dataset].decode())  # comes in as an array but put into a string, need to convert to list
+                        freqs_found = self.string_to_float_list(load_data['Res'][q_key].get('Found Freqs', [])[0][
+                                                               dataset].decode())  # comes in as a list of floats in string format, need to convert
+                        amps = self.process_string_of_nested_lists(
+                            load_data['Res'][q_key].get('Amps', [])[0][dataset].decode())  # list of lists
+                        round_num = load_data['Res'][q_key].get('Round Num', [])[0][dataset]  # already a float
+                        batch_num = load_data['Res'][q_key].get('Batch Num', [])[0][dataset]
 
-            # Check if any entry in 'Dates' is not NaN
-            if any(
-                    not np.isnan(date)
-                    for date in dates_list[0]  # Iterate over the first batch of dates
-            ):
-                populated_keys.append(q_key)
+                        if len(freq_pts) > 0:
+                            res_class_instance = ResonanceSpectroscopy(q_key, outerFolder_save_plots, round_num, self.save_figs)
+                            res_spec_cfg = ast.literal_eval(self.exp_config['res_spec'].decode())
+                            res_freqs = res_class_instance.get_results(freq_pts, freq_center, amps)
 
-        print(f"Populated keys: {populated_keys}")
+                            resonator_centers[q_key].extend([res_freqs[q_key]])
+                            date_times[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])
 
-        for q_key in populated_keys:
-            for dataset in range(len(load_data['Res'][q_key].get('Dates', [])[0])):
-                date = datetime.datetime.fromtimestamp(
-                    load_data['Res'][q_key].get('Dates', [])[0][dataset])  # single date per dataset
-                # print(load_data['Res'][q_key].get('freq_pts', [])[0][dataset].decode())
-                freq_pts = process_h5_data(load_data['Res'][q_key].get('freq_pts', [])[0][
-                                               dataset].decode())  # comes in as an array but put into a byte string, need to convert to list
-                # freq_pts = load_data['Res'][q_key].get('freq_pts', [])[0][dataset].decode()  # comes in as an array but put into a byte string, need to convert to list
-                freqs_found = string_to_float_list(load_data['Res'][q_key].get('Found Freqs', [])[0][
-                                                       dataset].decode())  # comes in as a list of floats in string format, need to convert
-                amps = process_string_of_nested_lists(
-                    load_data['Res'][q_key].get('Amps', [])[0][dataset].decode())  # list of lists
-                round_num = load_data['Res'][q_key].get('Round Num', [])[0][dataset]  # already a float
-                batch_num = load_data['Res'][q_key].get('Batch Num', [])[0][dataset]
+                            del res_class_instance
 
-                freq_pts_data = load_data['Res'][q_key].get('freq_pts', [])[0][dataset].decode()
+                del H5_class_instance
+        return date_times, resonator_centers
 
-                # Replace whitespace between numbers with commas to make it a valid list
-                formatted_str = freq_pts_data.replace('  ', ',').replace('\n', '')
-                formatted_str = formatted_str.replace(' ', ',').replace('\n', '')
-                formatted_str = formatted_str.replace(',]', ']').replace('\n', '')
-                formatted_str = formatted_str.replace('],[', '],[')
-                formatted_str = re.sub(r",,", ",", formatted_str)
-                formatted_str = re.sub(r",\s*([\]])", r"\1", formatted_str)
-                formatted_str = re.sub(r"(\d+)\.,", r"\1.0,",
-                                       formatted_str)  # Fix malformed floating-point numbers (e.g., '5829.,' -> '5829.0')
-                # Convert to NumPy array
-                freq_points = np.array(eval(formatted_str))
+    def plot(self, date_times, resonator_centers, show_legends):
+        #---------------------------------plot-----------------------------------------------------
+        analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/"
+        self.create_folder_if_not_exists(analysis_folder)
+        analysis_folder = f"/home/nexusadmin/qick/NEXUS_sandbox/Data/{self.run_name}/benchmark_analysis_plots/features_vs_time/"
+        self.create_folder_if_not_exists(analysis_folder)
 
-                if len(freq_pts) > 0:
-                    res_class_instance = ResonanceSpectroscopy(q_key, outerFolder_save_plots, round_num, save_figs)
-                    res_spec_cfg = ast.literal_eval(exp_config['res_spec'].decode())
-                    res_freqs = res_class_instance.plot_results(freq_points, amps, res_spec_cfg, figure_quality)
+        font = 14
+        colors = ['orange','blue','purple','green','brown','pink']
+        fig, axes = plt.subplots(2, 3, figsize=(12, 8))
+        plt.title('Resonator centers vs Time',fontsize = font)
+        axes = axes.flatten()
+        titles = [f"Res {i + 1}" for i in range(self.number_of_qubits)]
+        from datetime import datetime
+        for i, ax in enumerate(axes):
 
-                    resonator_centers[q_key].extend([res_freqs[q_key]])
-                    date_times[q_key].extend([date.strftime("%Y-%m-%d %H:%M:%S")])
+            ax.set_title(titles[i], fontsize = font)
 
-                    del res_class_instance
+            x = date_times[i]
+            y = resonator_centers[i]
 
-        del H5_class_instance
+            # Convert strings to datetime objects.
+            datetime_objects = [datetime.strptime(date_string, "%Y-%m-%d %H:%M:%S") for date_string in x]
 
-#---------------------------------plot-----------------------------------------------------
-analysis_folder = "/home/nexusadmin/qick/NEXUS_sandbox/Data/benchmark_analysis_plots/"
-create_folder_if_not_exists(analysis_folder)
-analysis_folder = "/home/nexusadmin/qick/NEXUS_sandbox/Data/benchmark_analysis_plots/features_vs_time/"
-create_folder_if_not_exists(analysis_folder)
+            # Combine datetime objects and y values into a list of tuples and sort by datetime.
+            combined = list(zip(datetime_objects, y))
+            combined.sort(reverse=True, key=lambda x: x[0])
 
-font = 14
-colors = ['orange','blue','purple','green']
-fig, axes = plt.subplots(2, 2, figsize=(12, 8))
-plt.title('Resonator centers vs Time',fontsize = font)
-axes = axes.flatten()
-titles = [f"Res {i + 1}" for i in range(4)]
-from datetime import datetime
-for i, ax in enumerate(axes):
+            # Unpack them back into separate lists, in order from latest to most recent.
+            sorted_x, sorted_y = zip(*combined)
+            ax.scatter(sorted_x, sorted_y, color=colors[i])
 
-    ax.set_title(titles[i], fontsize = font)
+            sorted_x = np.asarray(sorted(x))
 
-    x = date_times[i]
-    y = resonator_centers[i]
+            num_points = 5
+            indices = np.linspace(0, len(sorted_x) - 1, num_points, dtype=int)
 
-    # Convert strings to datetime objects.
-    datetime_objects = [datetime.strptime(date_string, "%Y-%m-%d %H:%M:%S") for date_string in x]
+            # Set new x-ticks using the datetime objects at the selected indices
+            ax.set_xticks(sorted_x[indices])
+            ax.set_xticklabels([dt for dt in sorted_x[indices]], rotation=45)
 
-    # Combine datetime objects and y values into a list of tuples and sort by datetime.
-    combined = list(zip(datetime_objects, y))
-    combined.sort(reverse=True, key=lambda x: x[0])
+            ax.scatter(x, y, color=colors[i])
+            if show_legends:
+                ax.legend(edgecolor='black')
+            ax.set_xlabel('Time (Days)', fontsize=font-2)
+            ax.set_ylabel('Resonator Center (MHz)', fontsize=font-2)
+            ax.tick_params(axis='both', which='major', labelsize=8)
 
-    # Unpack them back into separate lists, in order from latest to most recent.
-    sorted_x, sorted_y = zip(*combined)
-    ax.scatter(sorted_x, sorted_y, color=colors[i])
+        plt.tight_layout()
+        plt.savefig(analysis_folder + 'Res_Centers.pdf', transparent=True, dpi=self.final_figure_quality)
 
-    sorted_x = np.asarray(sorted(x))
-
-    num_points = 5
-    indices = np.linspace(0, len(sorted_x) - 1, num_points, dtype=int)
-
-    # Set new x-ticks using the datetime objects at the selected indices
-    ax.set_xticks(sorted_x[indices])
-    ax.set_xticklabels([dt for dt in sorted_x[indices]], rotation=45)
-
-    ax.scatter(x, y, color=colors[i])
-    if show_legends:
-        ax.legend(edgecolor='black')
-    ax.set_xlabel('Time (Days)', fontsize=font-2)
-    ax.set_ylabel('Resonator Center (MHz)', fontsize=font-2)
-    ax.tick_params(axis='both', which='major', labelsize=8)
-
-plt.tight_layout()
-plt.savefig(analysis_folder + 'Res_Centers.png', transparent=True, dpi=final_figure_quality)
-
-#plt.show()
+        #plt.show()

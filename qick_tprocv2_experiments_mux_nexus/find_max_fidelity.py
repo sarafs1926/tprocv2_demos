@@ -7,7 +7,7 @@ import datetime
 # Directory where your HDF5 files are stored
 outerFolder1 = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/", str(datetime.date.today()))
 outerFolder = outerFolder1 + "/readout_opt/Gain_Freq_Sweeps/"
-print(outerFolder)
+print('For files inside: ', outerFolder)
 def find_max_fidelity(file_path):
     with h5py.File(file_path, "r") as f:
         # Load the results dataset and metadata

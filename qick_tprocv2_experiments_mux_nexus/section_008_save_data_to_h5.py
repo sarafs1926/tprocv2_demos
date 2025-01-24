@@ -2,6 +2,7 @@ import datetime
 import numpy as np
 import h5py
 import os
+np.set_printoptions(threshold=1000000000000000)
 
 class Data_H5:
     def __init__(self, outerFolder, data = None, batch_num = 0, save_r = 0):
@@ -112,6 +113,9 @@ class Data_H5:
                                        'Batch Num': 'Batch Num'}
                     elif data_type == 'Rabi':
                         target_keys = {'Dates': 'Dates', 'I': 'I', 'Q': 'Q', 'Gains': 'Gains', 'Fit': 'Fit',
+                                       'Round Num': 'Round Num', 'Batch Num': 'Batch Num'}
+                    elif data_type == 'SS':
+                        target_keys = {'Fidelity': 'Fidelity', 'Angle': 'Angle', 'Dates': 'Dates', 'I_g': 'I_g', 'Q_g': 'Q_g', 'I_e': 'I_e', 'Q_e': 'Q_e',
                                        'Round Num': 'Round Num', 'Batch Num': 'Batch Num'}
                     elif data_type == 'T1':
                         target_keys = {'T1': 'T1', 'Errors': 'Errors', 'Dates': 'Dates', 'I': 'I', 'Q': 'Q',
