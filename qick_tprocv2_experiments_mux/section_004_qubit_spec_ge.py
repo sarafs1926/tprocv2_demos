@@ -9,8 +9,9 @@ import copy
 import visdom
 
 class QubitSpectroscopy:
-    def __init__(self, QubitIndex, outerFolder,  round_num, signal, save_figs, experiment = None, live_plot = None):
+    def __init__(self, QubitIndex, list_of_all_qubits, outerFolder,  round_num, signal, save_figs, experiment = None, live_plot = None):
         self.QubitIndex = QubitIndex
+        self.list_of_all_qubits = list_of_all_qubits
         self.outerFolder = outerFolder
         self.expt_name = "qubit_spec_ge"
         self.signal = signal
@@ -238,7 +239,12 @@ class QubitSpectroscopy:
 
 
 class PulseProbeSpectroscopyProgram(AveragerProgramV2):
+    def __init__(self, cfg, list_of_all_qubits, **kwargs):
+        super().__init__(cfg, **kwargs)
+        self.list_of_all_qubits = list_of_all_qubits
+
     def _initialize(self, cfg):
+        super()._initialize(cfg)
         ro_ch = cfg['ro_ch']
         res_ch = cfg['res_ch']
         qubit_ch = cfg['qubit_ch']
@@ -254,7 +260,7 @@ class PulseProbeSpectroscopyProgram(AveragerProgramV2):
         self.add_pulse(ch=res_ch, name="res_pulse",
                        style="const",
                        length=cfg["res_length"],
-                       mask=[0, 1, 2, 3, 4, 5],
+                       mask=self.list_of_all_qubits,
                        )
 
         self.declare_gen(ch=qubit_ch, nqz=cfg['nqz_qubit'], mixer_freq=cfg['qubit_mixer_freq'])

@@ -19,6 +19,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import norm
 from scipy.optimize import curve_fit
 import pandas as pd
+import pytz
 
 class GetThermData:
     def __init__(self, folder):
@@ -40,8 +41,13 @@ class GetThermData:
                     mcp2_temps.extend(data['MCP2 Temp (mK)'].tolist())
                     magcan_temps.extend(data['Mag Can Temp (mK)'].tolist())
         datetime_dates = []
+        central = pytz.timezone('America/Chicago')
         for i in unix_dates:
-            datetime_dates.append(datetime.utcfromtimestamp(i))
+            # First, get the UTC datetime
+            utc_dt = datetime.fromtimestamp(i, tz=pytz.utc)
+            # Then convert to Central Time
+            central_dt = utc_dt.astimezone(central)
+            datetime_dates.append(central_dt)
         return datetime_dates, mcp2_temps, magcan_temps
 
 class ResonatorFreqVsTemp:

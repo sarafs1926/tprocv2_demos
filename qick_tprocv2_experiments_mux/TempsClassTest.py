@@ -17,9 +17,10 @@ import math
 sys.path.append(os.path.abspath("/home/quietuser/Documents/GitHub/tprocv2_demos/qick_tprocv2_experiments_mux/"))
 
 class Temperature_Results:
-    def __init__(self, date, figure_quality, save_figs, fit_saved, signal, run_name, number_of_qubits, outerFolder,
+    def __init__(self, list_of_all_qubits, date, figure_quality, save_figs, fit_saved, signal, run_name, number_of_qubits, outerFolder,
                  outerFolder_save_plots):
         #self.exp_cfg = None
+        self.list_of_all_qubits = list_of_all_qubits
         self.date = date
         self.figure_quality = figure_quality
         self.save_figs = save_figs

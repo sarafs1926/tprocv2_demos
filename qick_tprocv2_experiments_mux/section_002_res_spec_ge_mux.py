@@ -7,7 +7,12 @@ import copy
 import datetime
 
 class SingleToneSpectroscopyProgram(AveragerProgramV2):
+    def __init__(self, cfg, list_of_all_qubits, **kwargs):
+        super().__init__(cfg, **kwargs)
+        self.list_of_all_qubits = list_of_all_qubits
+
     def _initialize(self, cfg):
+        super()._initialize(cfg)
         ro_chs = cfg['ro_ch']
         res_ch = cfg['res_ch']
 
@@ -23,7 +28,7 @@ class SingleToneSpectroscopyProgram(AveragerProgramV2):
         self.add_pulse(ch=res_ch, name="mymux",
                        style="const",
                        length=cfg["res_length"],
-                       mask=[0, 1, 2, 3, 4, 5],
+                       mask=self.list_of_all_qubits,
                        )
 
     def _body(self, cfg):
@@ -31,8 +36,9 @@ class SingleToneSpectroscopyProgram(AveragerProgramV2):
         self.pulse(ch=cfg['res_ch'], name="mymux", t=0)
 
 class ResonanceSpectroscopy:
-    def __init__(self, QubitIndex, outerFolder, round_num, save_figs, experiment = None):
+    def __init__(self, QubitIndex, list_of_all_qubits, outerFolder, round_num, save_figs, experiment = None):
         self.QubitIndex = QubitIndex
+        self.list_of_all_qubits = list_of_all_qubits
         self.outerFolder = outerFolder
         self.expt_name = "res_spec"
         self.Qubit = 'Q' + str(self.QubitIndex)
@@ -120,8 +126,9 @@ class ResonanceSpectroscopy:
         return res_freqs
 
 class PostProcessResonanceSpectroscopy:
-    def __init__(self, QubitIndex, outerFolder, round_num, save_figs, experiment = None):
+    def __init__(self, QubitIndex, list_of_all_qubits, outerFolder, round_num, save_figs, experiment = None):
         self.QubitIndex = QubitIndex
+        self.list_of_all_qubits = list_of_all_qubits
         self.outerFolder = outerFolder
         self.expt_name = "res_spec"
         self.Qubit = 'Q' + str(self.QubitIndex)

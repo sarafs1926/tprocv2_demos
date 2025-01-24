@@ -7,7 +7,12 @@ import copy
 import datetime
 
 class SingleToneSpectroscopyProgram(AveragerProgramV2):
+    def __init__(self, cfg, list_of_all_qubits, **kwargs):
+        super().__init__(cfg, **kwargs)
+        self.list_of_all_qubits = list_of_all_qubits
+
     def _initialize(self, cfg):
+        super()._initialize(cfg)
         ro_chs = cfg['ro_ch']
         res_ch = cfg['res_ch']
 
@@ -23,7 +28,7 @@ class SingleToneSpectroscopyProgram(AveragerProgramV2):
         self.add_pulse(ch=res_ch, name="mymux",
                        style="const",
                        length=cfg["res_length"],
-                       mask=[0, 1, 2, 3, 4, 5],
+                       mask=self.list_of_all_qubits,
                        )
 
     def _body(self, cfg):

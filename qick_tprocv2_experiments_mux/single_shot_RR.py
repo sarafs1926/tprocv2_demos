@@ -24,6 +24,8 @@ create_folder_if_not_exists(output_folder)
 
 n = 1  # Number of rounds
 n_loops = 5  # Number of repetitions per length to average
+tot_num_of_qubits=6
+list_of_all_qubits=list(range(tot_num_of_qubits))
 
 # List of qubits and pulse lengths to measure
 Qs = [2,3]
@@ -80,8 +82,8 @@ for QubitIndex in Qs:
                 config = {**q_config[Qubit], **exp_cfg}"""
                 #print(f"Single Shot configuration:", config)
 
-                #ss = SingleShot(QubitIndex, output_folder, k, round(leng, 3)) #Old way
-                ss = SingleShot(QubitIndex, output_folder, experiment, round_num=k, save_figs=True)#New way
+                #ss = SingleShot(QubitIndex,list_of_all_qubits, output_folder, k, round(leng, 3)) #Old way
+                ss = SingleShot(QubitIndex,list_of_all_qubits, output_folder, experiment, round_num=k, save_figs=True)#New way
                 fid, angle, iq_list_g, iq_list_e = ss.run(experiment.soccfg, experiment.soc)
                 fids.append(fid)
                 print(f'FID (round {k}) = {fid}')

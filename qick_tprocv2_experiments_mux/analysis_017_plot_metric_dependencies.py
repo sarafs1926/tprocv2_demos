@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 from datetime import datetime
+import pytz
 
 class PlotMetricDependencies:
     def __init__(self,run_name, number_of_qubits, final_figure_quality):
@@ -202,8 +203,12 @@ class PlotMetricDependencies:
         def ensure_datetime(ts_list):
             if not ts_list:
                 return []
+            central = pytz.timezone("America/Chicago")
             if isinstance(ts_list[0], str):
-                return [datetime.strptime(t_str, "%Y-%m-%d %H:%M:%S") for t_str in ts_list]
+                return [central.localize(datetime.strptime(t_str, "%Y-%m-%d %H:%M:%S")) for t_str in ts_list]
+            elif isinstance(ts_list[0], datetime):
+                # Convert existing datetime objects to Central Time
+                return [dt.astimezone(central) for dt in ts_list]
             return ts_list
 
         q1_t1_times_dt = ensure_datetime(q1_t1_times)
@@ -245,13 +250,13 @@ class PlotMetricDependencies:
         ax1.grid(True, alpha=0.3)
 
         ############################# This sets a limit on the x axis if you only want to look at specific dates
-        # year = 2024
-        # month = 12
-        # day1 = 15
-        # day2 = 15
-        # start_time = datetime(year, month, day1, 4, 0, 0)
-        # end_time = datetime(year, month, day2, 12, 0, 0)
-        # ax1.set_xlim(start_time, end_time)  # Set the x-axis limits
+        year = 2024
+        month = 12
+        day1 = 14
+        day2 = 15
+        start_time = datetime(year, month, day1, 20, 0, 0, tzinfo=pytz.timezone("America/Chicago"))
+        end_time = datetime(year, month, day2, 14, 0, 0, tzinfo=pytz.timezone("America/Chicago"))
+        ax1.set_xlim(start_time, end_time)  # Set the x-axis limits
         #############################
 
         ############################# use these limits to see cooldown data only, (without this it shows quiet thermometry data for the entire run)
@@ -259,19 +264,19 @@ class PlotMetricDependencies:
         # month = 12
         # day1 = 9
         # day2 = 20
-        # start_time = datetime(year, month, day1, 10, 0, 0)
-        # end_time = datetime(year, month, day2, 12, 0, 0)
+        # start_time = datetime(year, month, day1, 8, 0, 0, tzinfo=pytz.timezone("America/Chicago"))
+        # end_time = datetime(year, month, day2, 12, 0, 0, tzinfo=pytz.timezone("America/Chicago"))
         # ax1.set_xlim(start_time, end_time)  # Set the x-axis limits
         #############################
 
         ############################# use these limits to see warmup data only
-        year = 2024
-        month = 12
-        day1 = 20
-        day2 = 20
-        start_time = datetime(year, month, day1, 10, 0, 0)
-        end_time = datetime(year, month, day2, 19, 0, 0)
-        ax1.set_xlim(start_time, end_time)  # Set the x-axis limits
+        # year = 2024
+        # month = 12
+        # day1 = 20
+        # day2 = 20
+        # start_time = datetime(year, month, day1, 10, 0, 0, tzinfo=pytz.timezone("America/Chicago"))
+        # end_time = datetime(year, month, day2, 19, 0, 0, tzinfo=pytz.timezone("America/Chicago"))
+        # ax1.set_xlim(start_time, end_time)  # Set the x-axis limits
         #############################
 
         # Check if we have ANY temperature data to plot on ax2
@@ -293,12 +298,12 @@ class PlotMetricDependencies:
         if mcp2_dates_dt and mcp2_temps:
             ax2.scatter(
                 mcp2_dates_dt, mcp2_temps,
-                color='orange', alpha=0.8, label=mcp2_label, s=10
+                color='orange', alpha=0.8, label=mcp2_label
             )
         if magcan_dates_dt and magcan_temps:
             ax2.scatter(
                 magcan_dates_dt, magcan_temps,
-                color='green', alpha=0.8, label=magcan_label, s=10
+                color='green', alpha=0.8, label=magcan_label
             )
 
         # Plots frequency data on ax3
@@ -328,12 +333,12 @@ class PlotMetricDependencies:
         handles4, labels4 = ax4.get_legend_handles_labels() if ax4 is not None else ([], []) #if provided
 
         # Make one combined legend on ax1 (or plt)
-        ax1.legend(handles1 + handles2 + handles3 + handles4, labels1 + labels2 + labels3 + labels4, loc='best', fontsize=10, markerscale=0.8, handletextpad=0.6, borderpad=0.7, labelspacing=0.4)
+        ax1.legend(handles1 + handles2 + handles3 + handles4, labels1 + labels2 + labels3 + labels4, loc='upper left', fontsize=10, markerscale=0.8, handletextpad=0.6, borderpad=0.7, labelspacing=0.4)
 
         fig.tight_layout()
 
         unique_str = datetime.now().strftime('%Y%m%d%H%M%S')
-        plot_filename = os.path.join(analysis_folder, f"Q1_Temp_and_T1_vs_Time_warmupcloseup_{unique_str}.png")
+        plot_filename = os.path.join(analysis_folder, f"Q1_Temp_and_T1_vs_Time_updatedcooldown_closeup_{unique_str}.png")
         plt.savefig(plot_filename, transparent=False, dpi=self.final_figure_quality)
         #plt.show()
         plt.close()

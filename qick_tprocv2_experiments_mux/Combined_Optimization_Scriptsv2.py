@@ -44,6 +44,8 @@ n = 1  # Number of rounds
 n_loops = 3  # Number of repetitions per length to average
 
 # List of qubits and pulse lengths to measure
+tot_num_of_qubits = 6
+list_of_all_qubits = list(range(tot_num_of_qubits))
 Qs = [0] #,1,2,3,4,5
 res_leng_vals = [2.75, 4, 2.25, 2.75, 3.5, 2.75]
 
@@ -67,7 +69,7 @@ for QubitIndex in Qs:
 
 
     #---------------------Res spec---------------------
-    res_spec   = ResonanceSpectroscopy(QubitIndex, outerFolder, j, save_figs, experiment)
+    res_spec   = ResonanceSpectroscopy(QubitIndex, list_of_all_qubits, outerFolder, j, save_figs, experiment)
     res_freqs, freq_pts, freq_center, amps = res_spec.run(experiment.soccfg, experiment.soc)
     experiment.readout_cfg['res_freq_ge'] = res_freqs
     this_res_freq = res_freqs[QubitIndex]
@@ -75,21 +77,21 @@ for QubitIndex in Qs:
     del res_spec
 
     #--------------------Qubit spec--------------------
-    q_spec = QubitSpectroscopy(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot)
+    q_spec = QubitSpectroscopy(QubitIndex, list_of_all_qubits, outerFolder, j, signal, save_figs, experiment, live_plot)
     qspec_I, qspec_Q, qspec_freqs, qspec_I_fit, qspec_Q_fit, qubit_freq = q_spec.run(experiment.soccfg, experiment.soc)
     experiment.qubit_cfg['qubit_freq_ge'][QubitIndex] = float(qubit_freq)
     print('Qubit freq for qubit ', QubitIndex + 1 ,' is: ',float(qubit_freq))
     del q_spec
 
     #-----------------------Rabi-----------------------
-    rabi = AmplitudeRabiExperiment(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, q1_lowT1=True)
+    rabi = AmplitudeRabiExperiment(QubitIndex,list_of_all_qubits, outerFolder, j, signal, save_figs, experiment, live_plot, q1_lowT1=True)
     rabi_I, rabi_Q, rabi_gains, rabi_fit, pi_amp, conf  = rabi.run(experiment.soccfg, experiment.soc)
     experiment.qubit_cfg['pi_amp'][QubitIndex] = float(pi_amp)
     print('Pi amplitude for qubit ', QubitIndex + 1, ' is: ', float(pi_amp))
     del rabi
 
     # #------------------Single Shot Measurements---------------
-    # ss = SingleShot(QubitIndex, outerFolder, experiment, round_num=0, save_figs=True)
+    # ss = SingleShot(QubitIndex,list_of_all_qubits, outerFolder, experiment, round_num=0, save_figs=True)
     # fid, angle, iq_list_g, iq_list_e = ss.run(experiment.soccfg, experiment.soc)
     #
     # I_g = iq_list_g[QubitIndex][0].T[0]
@@ -137,8 +139,8 @@ for QubitIndex in Qs:
                 res_gains = experiment.mask_gain_res(QubitIndex, IndexGain=gain)
                 experiment.readout_cfg['res_gain_ge'] = res_gains
 
-                # ss = SingleShot(QubitIndex, output_folder, k, round(leng, 3)) #Old way
-                ss = SingleShot(QubitIndex, output_folder, k, False, experiment)  # New way
+                # ss = SingleShot(QubitIndex,list_of_all_qubits, output_folder, k, round(leng, 3)) #Old way
+                ss = SingleShot(QubitIndex, list_of_all_qubits, output_folder, k, False, experiment)  # New way
                 fid, angle, iq_list_g, iq_list_e = ss.run(experiment.soccfg, experiment.soc)
                 fids.append(fid)
                 print(f'FID (round {k}) = {fid}')
@@ -216,7 +218,7 @@ for QubitIndex in Qs:
     # freq_range = [reference_frequency - 1, reference_frequency + 1]  # Frequency range in MHz
     #
     # experiment = copy.deepcopy(tuned_experiment)
-    # sweep = GainFrequencySweep(QubitIndex, experiment, optimal_lengths=optimal_lengths, output_folder=outerFolder)
+    # sweep = GainFrequencySweep(QubitIndex,list_of_all_qubits, experiment, optimal_lengths=optimal_lengths, output_folder=outerFolder)
     # results = sweep.run_sweep(freq_range, gain_range, freq_steps, gain_steps)
     # results = np.array(results)
     #

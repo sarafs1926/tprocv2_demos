@@ -28,8 +28,10 @@ create_folder_if_not_exists(output_folder)
 
 n = 1  # Number of rounds
 n_loops = 5  # Number of repetitions per length to average
+tot_num_of_qubits = 6
 
 # List of qubits and pulse lengths to measure
+list_of_all_qubits = list(range(tot_num_of_qubits))
 Qs = [0,1,2,3,4,5]
 
 optimal_lengths = [None] * 6 # creates list where the script will be storing the optimal readout lengths for each qubit. We currently have 6 qubits in total.
@@ -82,8 +84,8 @@ for QubitIndex in Qs:
 
                 experiment.readout_cfg['res_gain_ge'] = res_gains
 
-                # ss = SingleShot(QubitIndex, output_folder, k, round(leng, 3)) #Old way
-                ss = SingleShot(QubitIndex, output_folder, experiment, round_num=k, save_figs=False)  # New way
+                # ss = SingleShot(QubitIndex,list_of_all_qubits, output_folder, k, round(leng, 3)) #Old way
+                ss = SingleShot(QubitIndex,list_of_all_qubits, output_folder, experiment, round_num=k, save_figs=False)  # New way
                 fid, angle, iq_list_g, iq_list_e = ss.run(experiment.soccfg, experiment.soc)
                 fids.append(fid)
                 print(f'FID (round {k}) = {fid}')
@@ -175,7 +177,7 @@ for QubitIndex in Qs:
     reference_frequency = res_freq_ge[QubitIndex]
     freq_range = [reference_frequency-1, reference_frequency + 1]  # Frequency range in MHz
 
-    sweep = GainFrequencySweep(QubitIndex,  optimal_lengths=optimal_lengths, output_folder=outerFolder)
+    sweep = GainFrequencySweep(QubitIndex,list_of_all_qubits,  optimal_lengths=optimal_lengths, output_folder=outerFolder)
     results = sweep.run_sweep(freq_range, gain_range, freq_steps, gain_steps)
     results = np.array(results)
 
