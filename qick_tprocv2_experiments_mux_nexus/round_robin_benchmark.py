@@ -41,12 +41,12 @@ Qs_to_look_at = [0, 1, 2, 3] #only list the qubits you want to do the RR for
 #res_leng_vals = [10.5, 3.55, 3.55, 3.55] # From NR25
 #res_leng_vals = [9, 5.5, 6.5, 9] # From 12/9 optimization
 res_leng_vals = [10.03, 5.07, 9.54, 4.07] #from 1/22 optimization
-res_gain = [0.15]*4 # Note 0.15 could be better for all, not sure yet
+res_gain = [0.22, 0.18, 0.22, 0.26] #from 1/22 optimization, after implementing punchout threshold
 # res_gain = [0.46, 0.38, 0.46, 0.42] # Note 0.15 could be better for all, not sure yet ## OLD As of Jan 21 morning
 
 # spec_gain= 0.85
 # res_gain = [spec_gain, 1, spec_gain, spec_gain]
-freq_offsets = [-0.08, 0.0, -0.24, -0.32]
+freq_offsets = [-0.16, -0.08, -0.16, -0.08] #from 1/22 optimization, after implementing punchout threshold
 
 #NOTE: Everything below this line was copy pasted from QUIET, to update this RR script
 
@@ -152,31 +152,31 @@ while j < n:
             continue  # skip the rest of this qubit
 
         # ########################################## Single Shot Measurements ############################################
-        # try:
-        #     ss = SingleShot(QubitIndex, outerFolder, j, save_figs, experiment)
-        #     fid, angle, iq_list_g, iq_list_e = ss.run(experiment.soccfg, experiment.soc)
-        #     I_g = iq_list_g[QubitIndex][0].T[0]
-        #     Q_g = iq_list_g[QubitIndex][0].T[1]
-        #     I_e = iq_list_e[QubitIndex][0].T[0]
-        #     Q_e = iq_list_e[QubitIndex][0].T[1]
-        #
-        #     fid, threshold, angle, ig_new, ie_new = ss.hist_ssf(
-        #         data=[I_g, Q_g, I_e, Q_e], cfg=ss.config, plot=save_figs)
-        #
-        # except Exception as e:
-        #     print(f'Got the following error, continuing: {e}')
-        #     continue  # skip the rest of this qubit
+        try:
+            ss = SingleShot(QubitIndex, outerFolder, j, save_figs, experiment)
+            fid, angle, iq_list_g, iq_list_e = ss.run(experiment.soccfg, experiment.soc)
+            I_g = iq_list_g[QubitIndex][0].T[0]
+            Q_g = iq_list_g[QubitIndex][0].T[1]
+            I_e = iq_list_e[QubitIndex][0].T[0]
+            Q_e = iq_list_e[QubitIndex][0].T[1]
+
+            fid, threshold, angle, ig_new, ie_new = ss.hist_ssf(
+                data=[I_g, Q_g, I_e, Q_e], cfg=ss.config, plot=save_figs)
+
+        except Exception as e:
+            print(f'Got the following error, continuing: {e}')
+            continue  # skip the rest of this qubit
         #
         # ###################################################### T1 ######################################################
-        # try:
-        #     t1 = T1Measurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data,
-        #                        increase_qubit_reps, qubit_to_increase_reps_for, multiply_qubit_reps_by)
-        #     t1_est, t1_err, t1_I, t1_Q, t1_delay_times, q1_fit_exponential = t1.run(experiment.soccfg, experiment.soc)
-        #     del t1
-        #
-        # except Exception as e:
-        #     print(f'Got the following error, continuing: {e}')
-        #     continue  # skip the rest of this qubit
+        try:
+            t1 = T1Measurement(QubitIndex, outerFolder, j, signal, save_figs, experiment, live_plot, fit_data,
+                               increase_qubit_reps, qubit_to_increase_reps_for, multiply_qubit_reps_by)
+            t1_est, t1_err, t1_I, t1_Q, t1_delay_times, q1_fit_exponential = t1.run(experiment.soccfg, experiment.soc)
+            del t1
+
+        except Exception as e:
+            print(f'Got the following error, continuing: {e}')
+            continue  # skip the rest of this qubit
 
         ###################################################### T2R #####################################################
         try:

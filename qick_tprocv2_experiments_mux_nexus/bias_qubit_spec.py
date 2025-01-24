@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import csv
 import datetime
+import time
 
 from NetDrivers import E36300
 
@@ -55,22 +56,24 @@ class BiasQubitSpectroscopy:
         amps_arr = []
         freq_arr = []
 
-        for index, v in enumerate(tqdm(vsweep)):
+        for index, v in enumerate(vsweep):
+            print(f"Setting bias to {v}V")
             BiasPS.setVoltage(v, Bias_ch[qubit_index])
+            time.sleep(5)
 
-            #add wait time? Probably
 
             qspec = PulseProbeSpectroscopyProgram(soccfg, reps=self.config['reps'], final_delay = self.exp_cfg['relax_delay'], cfg=self.config)
             iq_list = qspec.acquire(soc, soft_avgs = self.exp_cfg["rounds"], progress=True)
             I = iq_list[self.QubitIndex][0, :, 0]
             Q = iq_list[self.QubitIndex][0, :, 1]
             amps = np.abs(I + 1j * Q)
-            freq = qspec.get_pulse_param('qubit_pulse', "freq", as_array=True)
+            freqs = qspec.get_pulse_param('qubit_pulse', "freq", as_array=True)
             I_arr.append(I)
             Q_arr.append(Q)
             amps_arr.append(amps)
-            freq_arr.append(freq)
+            freq_arr.append(freqs)
         BiasPS.disable(Bias_ch[qubit_index])
+        print(freq_arr[0])
 
         '''outerFolder_expt = os.path.join(self.outerFolder, 'bias_spec')
         self.experiment.create_folder_if_not_exists(outerFolder_expt)

@@ -10,13 +10,13 @@ outerFolder = os.path.join("/home/nexusadmin/qick/NEXUS_sandbox/Data/Run30", str
 experiment = QICK_experiment(outerFolder)
 
 qubit = 1 #Qubit to Run
-start_voltage = -0.1 #V
-stop_voltage = 0.1 #V
+start_voltage = 0 #V
+stop_voltage = 0.01 #V
 voltage_pts = 2
 
 bias_spec = BiasQubitSpectroscopy(qubit-1, outerFolder, experiment)
 
-bias_spec.run(experiment.soccfg, experiment.soc, start_voltage, stop_voltage, voltage_pts, plot_sweeps=True, plot_2d=True)
+bias_spec.run(experiment.soccfg, experiment.soc, start_voltage, stop_voltage, voltage_pts, plot_sweeps=False, plot_2d=False)
 
 del bias_spec
 del experiment
