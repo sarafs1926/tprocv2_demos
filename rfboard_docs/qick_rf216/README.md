@@ -5,7 +5,9 @@ The notebooks you can look at are:
 * For saturation testing specifically, `Saturation_Testing.ipynb`
 
 Note that both notebooks use the September 28, 2024 firmware. If you are using newer firmware and software, 
-you will need to modify the `set_filter()` function:
+you will need to 
+
+1. Modify the `set_filter()` function in the general demo notebook.
 
 ```
 def set_filter(gen_ch, ro_ch, lpf, hpf, state=0):
@@ -21,3 +23,5 @@ def set_filter(gen_ch, ro_ch, lpf, hpf, state=0):
         rfb_ch.filter.write_reg('WR0_SW', sw)
         rfb_ch.filter.write_reg('WR0_FILTER', filt_bits)
 ```
+
+2. You will also need to modify this syntax: `soc['adcs']` to `soc['rf']['adcs']` in the saturation testing notebook.
